@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { TRANSLATIONS, type TranslationId } from '../data/translations'
 import { PLANS } from '../data/bible'
 import { updateSettings } from '../lib/progress'
-import type { UserState } from '../lib/types'
+import type { CustomPlan, UserState } from '../lib/types'
 import { EsvAttribution } from './EsvAttribution'
+import { CustomPlanBuilder } from './CustomPlanBuilder'
 import { testEsvConnection } from '../lib/bibleApi'
 
 type Props = {
@@ -59,6 +60,17 @@ export function Settings({ user, onUserChange, onReset }: Props) {
       ...user,
       planId,
       completedDays: [],
+      completedQuizzes: [],
+    })
+  }
+
+  function createCustomPlan(plan: CustomPlan) {
+    onUserChange({
+      ...user,
+      customPlans: [...user.customPlans, plan],
+      planId: plan.id,
+      completedDays: [],
+      completedQuizzes: [],
     })
   }
 
@@ -167,7 +179,23 @@ export function Settings({ user, onUserChange, onReset }: Props) {
               <span className="plan-days">{plan.days} days</span>
             </button>
           ))}
+          {user.customPlans.map((plan) => (
+            <button
+              key={plan.id}
+              type="button"
+              className={`plan-card ${user.planId === plan.id ? 'selected' : ''}`}
+              onClick={() => switchPlan(plan.id)}
+            >
+              <span className="plan-vibe">Custom</span>
+              <strong>{plan.name}</strong>
+              <span className="plan-blurb">
+                {plan.bookIds.length} book{plan.bookIds.length === 1 ? '' : 's'}
+              </span>
+              <span className="plan-days">{plan.days} days</span>
+            </button>
+          ))}
         </div>
+        <CustomPlanBuilder onCreate={createCustomPlan} />
       </section>
 
       <button className="btn ghost danger" onClick={onReset}>

@@ -1,4 +1,5 @@
 import { PLAN_QUIZZES } from './planQuizzes'
+import type { CustomPlan } from '../lib/types'
 
 export type BibleBook = {
   id: string
@@ -101,7 +102,7 @@ export type ReadingPlan = {
   generate: () => PlanDay[]
 }
 
-function chaptersFrom(bookIds: string[]): PassageRef[] {
+export function chaptersFrom(bookIds: string[]): PassageRef[] {
   const refs: PassageRef[] = []
   for (const id of bookIds) {
     const book = BOOKS.find((b) => b.id === id)
@@ -124,7 +125,7 @@ function titleFor(slice: PassageRef[]): string {
 }
 
 /** Spread passages across N days as evenly as possible (reading days only). */
-function chunkPassages(passages: PassageRef[], days: number): PlanDay[] {
+export function chunkPassages(passages: PassageRef[], days: number): PlanDay[] {
   const total = passages.length
   if (!total) return []
   const dayCount = Math.min(days, total)
@@ -262,8 +263,30 @@ export const PLANS: ReadingPlan[] = [
   },
 ]
 
-export function getPlanById(id: string): ReadingPlan {
-  return PLANS.find((p) => p.id === id) ?? PLANS[0]
+export function getPlanById(
+  id: string,
+  customPlans: CustomPlan[] = [],
+): ReadingPlan {
+  const builtIn = PLANS.find((p) => p.id === id)
+  if (builtIn) return builtIn
+
+  const custom = customPlans.find((p) => p.id === id)
+  if (custom) {
+    return {
+      id: custom.id,
+      name: custom.name,
+      blurb: `Custom plan · ${custom.bookIds.length} book(s) over ${custom.days} days.`,
+      days: custom.days,
+      vibe: 'Custom',
+      generate: () =>
+        chunkPassages(chaptersFrom(custom.bookIds), custom.days).map((d) => ({
+          ...d,
+          kind: 'read' as const,
+        })),
+    }
+  }
+
+  return PLANS[0]
 }
 
 export function apiQuery(ref: PassageRef): string {

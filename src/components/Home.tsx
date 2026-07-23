@@ -4,9 +4,10 @@ import { getTranslation } from '../data/translations'
 import { Memory } from './Memory'
 import { Settings } from './Settings'
 import { CircleGate } from './CircleGate'
+import { BibleReader } from './BibleReader'
 import type { MemoryGrade } from '../lib/progress'
 
-export type HomeView = 'path' | 'memory' | 'circle' | 'badges' | 'settings'
+export type HomeView = 'path' | 'read' | 'memory' | 'circle' | 'badges' | 'settings'
 
 type Props = {
   user: UserState
@@ -98,14 +99,15 @@ export function Home({
         )}
       </div>
 
-      <nav className="tabs tabs-5">
+      <nav className="tabs tabs-6">
         {(
           [
             ['path', 'Path'],
+            ['read', 'Read'],
             ['memory', 'Memory'],
             ['circle', 'Circle'],
             ['badges', 'Badges'],
-            ['settings', 'Settings'],
+            ['settings', 'More'],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -155,6 +157,8 @@ export function Home({
           </button>
         </div>
       )}
+
+      {view === 'read' && <BibleReader user={user} onUserChange={onUserChange} />}
 
       {view === 'memory' && (
         <Memory user={user} onUserChange={onUserChange} onReviewed={onMemoryReview} />

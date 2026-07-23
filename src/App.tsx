@@ -41,8 +41,8 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>(initial.screen)
   const [view, setView] = useState<HomeView>('path')
 
-  const plan = getPlanById(user?.planId ?? 'year')
-  const days = useMemo(() => plan.generate(), [plan.id])
+  const plan = getPlanById(user?.planId ?? 'year', user?.customPlans ?? [])
+  const days = useMemo(() => plan.generate(), [plan.id, user?.customPlans])
 
   const handleCloudState = useCallback((cloud: UserState) => {
     saveState(cloud)

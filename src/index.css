@@ -815,9 +815,161 @@ button {
   padding: 0.45rem 0.15rem;
 }
 
+.tabs-6 {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.tabs-6 button {
+  font-size: 0.68rem;
+  padding: 0.45rem 0.1rem;
+}
+
 a.btn {
   text-decoration: none;
   text-align: center;
+}
+
+.blank-practice {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.blank-verse {
+  display: block;
+  line-height: 2;
+}
+
+.blank-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.2rem;
+  margin: 0 0.15rem;
+  padding: 0.15rem 0.4rem;
+  border: 2px dashed #9bbfb3;
+  border-radius: 8px;
+  background: #f3faf7;
+  color: var(--teal-deep);
+  font-family: var(--font-read);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  vertical-align: baseline;
+}
+
+.blank-slot.active {
+  border-style: solid;
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(15, 110, 92, 0.15);
+}
+
+.blank-slot.filled {
+  border-style: solid;
+  background: #fff;
+}
+
+.blank-slot.right {
+  border-color: var(--good);
+  background: #dff3e8;
+}
+
+.blank-slot.wrong {
+  border-color: var(--danger);
+  background: #f8e8e5;
+}
+
+.word-bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.bank-chip {
+  border: 2px solid #c9ddd6;
+  background: #fff;
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  font-weight: 700;
+  color: inherit;
+}
+
+.bank-chip:hover:not(:disabled) {
+  border-color: var(--teal);
+}
+
+.bank-chip.used,
+.bank-chip:disabled {
+  opacity: 0.35;
+}
+
+.reader-nav {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.book-picker {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 1rem;
+  box-shadow: var(--shadow);
+  margin-bottom: 0.85rem;
+  max-height: 50dvh;
+  overflow: auto;
+}
+
+.book-grid,
+.chapter-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.35rem 0 0.85rem;
+}
+
+.book-chip,
+.chapter-chip {
+  border: 1px solid #c9ddd6;
+  background: #f7fbf9;
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: inherit;
+}
+
+.book-chip.selected,
+.chapter-chip.selected {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #fff;
+}
+
+.chapter-chip {
+  min-width: 2.4rem;
+  justify-content: center;
+}
+
+.sticky-reader {
+  position: sticky;
+  bottom: 0.75rem;
+  margin-top: 1rem;
+}
+
+.custom-plan {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #d5e5df;
+}
+
+.custom-plan h3 {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-brand);
+}
+
+.bible-reader {
+  padding-bottom: 1.5rem;
 }
 
 .tabs-4 button {

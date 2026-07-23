@@ -13,6 +13,7 @@ import {
 } from '../lib/progress'
 import { isMastered, type MemoryVerse, type UserState } from '../lib/types'
 import { EsvAttribution } from './EsvAttribution'
+import { BlankPractice } from './BlankPractice'
 
 type Props = {
   user: UserState
@@ -28,24 +29,6 @@ function normalizeForCompare(s: string): string {
     .replace(/[^\w\s']/g, '')
     .replace(/\s+/g, ' ')
     .trim()
-}
-
-function blankWords(text: string, seed: number): { display: string; answers: string[] } {
-  const words = text.split(/(\s+)/)
-  const contentIdx = words
-    .map((w, i) => ({ w, i }))
-    .filter(({ w }) => /[A-Za-z]{4,}/.test(w))
-  const answers: string[] = []
-  const take = Math.min(4, Math.max(2, Math.floor(contentIdx.length / 5)))
-  const picked = new Set<number>()
-  for (let n = 0; n < take && contentIdx.length; n++) {
-    const pick = contentIdx[(seed + n * 3) % contentIdx.length]
-    if (picked.has(pick.i)) continue
-    picked.add(pick.i)
-    answers.push(pick.w.replace(/[^A-Za-z']/g, ''))
-  }
-  const display = words.map((w, i) => (picked.has(i) ? '______' : w)).join('')
-  return { display, answers }
 }
 
 async function fetchTmsText(
@@ -91,7 +74,6 @@ export function Memory({ user, onUserChange, onReviewed }: Props) {
   const [revealed, setRevealed] = useState(false)
   const [typed, setTyped] = useState('')
   const [practiceKind, setPracticeKind] = useState<'reveal' | 'type' | 'blanks'>('reveal')
-  const [blankInput, setBlankInput] = useState('')
   const [adding, setAdding] = useState(false)
   const [addError, setAddError] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
@@ -101,15 +83,9 @@ export function Memory({ user, onUserChange, onReviewed }: Props) {
   const [quizPick, setQuizPick] = useState<number | null>(null)
   const [quizResult, setQuizResult] = useState<string | null>(null)
 
-  const blanks = useMemo(() => {
-    if (!active) return null
-    return blankWords(active.text, active.reference.length)
-  }, [active])
-
   useEffect(() => {
     setRevealed(false)
     setTyped('')
-    setBlankInput('')
   }, [active, practiceKind])
 
   async function addTms(seed: TmsVerse) {
@@ -239,13 +215,6 @@ export function Memory({ user, onUserChange, onReviewed }: Props) {
     typed.trim().length > 0 &&
     normalizeForCompare(typed).includes(
       normalizeForCompare(active.text).slice(0, Math.min(40, active.text.length)),
-    )
-
-  const blanksOk =
-    active &&
-    blanks &&
-    blanks.answers.every((a) =>
-      normalizeForCompare(blankInput).includes(normalizeForCompare(a)),
     )
 
   const tmsPack = TMS_VERSES.filter((v) => v.seriesId === tmsSeries)
@@ -546,29 +515,11 @@ export function Memory({ user, onUserChange, onReviewed }: Props) {
             </>
           )}
 
-          {practiceKind === 'blanks' && blanks && (
-            <>
-              <p className="memory-text">{blanks.display}</p>
-              <input
-                className="field"
-                placeholder="Fill the missing words…"
-                value={blankInput}
-                onChange={(e) => setBlankInput(e.target.value)}
-              />
-              {revealed && <p className="memory-text answer">{active.text}</p>}
-              <div className="session-actions">
-                <button className="btn ghost-outline" onClick={() => setRevealed(true)}>
-                  Show answer
-                </button>
-                <button
-                  className="btn primary"
-                  disabled={!blanksOk && !revealed}
-                  onClick={() => grade(blanksOk ? 'good' : 'hard')}
-                >
-                  Grade
-                </button>
-              </div>
-            </>
+          {practiceKind === 'blanks' && (
+            <BlankPractice
+              verse={active}
+              onGrade={(ok) => grade(ok ? 'good' : 'hard')}
+            />
           )}
 
           {active.status !== 'memorized' && (

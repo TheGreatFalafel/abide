@@ -34,6 +34,7 @@ function migrate(raw: Partial<UserState> & { name: string; planId: string }): Us
     achievements: raw.achievements ?? [],
     completedDays: raw.completedDays ?? [],
     completedQuizzes: raw.completedQuizzes ?? [],
+    customPlans: raw.customPlans ?? [],
   }
 }
 

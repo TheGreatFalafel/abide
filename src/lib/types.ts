@@ -140,6 +140,14 @@ export type MemoryVerse = {
   seriesName?: string
 }
 
+export type CustomPlan = {
+  id: string
+  name: string
+  bookIds: string[]
+  days: number
+  createdAt: string
+}
+
 export type UserState = {
   name: string
   planId: string
@@ -161,6 +169,7 @@ export type UserState = {
   memoryVerses: MemoryVerse[]
   memoryReviewsToday: number
   completedQuizzes: string[]
+  customPlans: CustomPlan[]
 }
 
 export const XP = {
@@ -229,6 +238,7 @@ export function createInitialState(name: string, planId: string): UserState {
     memoryVerses: [],
     memoryReviewsToday: 0,
     completedQuizzes: [],
+    customPlans: [],
   }
 }
 
