@@ -14,7 +14,10 @@ import { clearPassageCache } from './bibleApi'
 
 const STORAGE_KEY = 'abide-user-v1'
 
-function migrate(raw: Partial<UserState> & { name: string; planId: string }): UserState {
+/** Fill in fields added after a user's state was first saved (local or cloud). */
+export function migrateUserState(
+  raw: Partial<UserState> & { name: string; planId: string },
+): UserState {
   const base = createInitialState(raw.name, raw.planId)
   const memoryVerses = (raw.memoryVerses ?? []).map((v) => ({
     ...v,
@@ -43,7 +46,7 @@ export function loadState(): UserState | null {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw) as Partial<UserState> & { name: string; planId: string }
-    return normalizeDay(migrate(parsed))
+    return normalizeDay(migrateUserState(parsed))
   } catch {
     return null
   }

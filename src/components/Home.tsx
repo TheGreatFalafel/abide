@@ -1,3 +1,6 @@
+'use client'
+
+import { useEffect, useRef, useState } from 'react'
 import { ACHIEVEMENTS, levelFromXp, type UserState } from '../lib/types'
 import type { PlanDay } from '../data/bible'
 import { getTranslation } from '../data/translations'
@@ -8,6 +11,18 @@ import { BibleReader } from './BibleReader'
 import type { MemoryGrade } from '../lib/progress'
 
 export type HomeView = 'path' | 'read' | 'memory' | 'circle' | 'badges' | 'settings'
+
+const PRIMARY_TABS = [
+  ['path', 'Path'],
+  ['read', 'Read'],
+  ['memory', 'Memory'],
+] as const
+
+const MORE_ITEMS = [
+  ['circle', 'Circle'],
+  ['badges', 'Badges'],
+  ['settings', 'Settings'],
+] as const
 
 type Props = {
   user: UserState
@@ -40,6 +55,21 @@ export function Home({
     user.streak > 0 &&
     user.lastReadDate !== new Date().toISOString().slice(0, 10)
   const translation = getTranslation(user.translationId)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  const moreActive = MORE_ITEMS.some(([id]) => id === view)
+  const moreLabel =
+    MORE_ITEMS.find(([id]) => id === view)?.[1] ?? 'More'
+
+  useEffect(() => {
+    if (!menuOpen) return
+    function onDoc(e: MouseEvent) {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [menuOpen])
 
   const visible = days.slice(
     Math.max(0, nextDay - 4),
@@ -99,25 +129,52 @@ export function Home({
         )}
       </div>
 
-      <nav className="tabs tabs-6">
-        {(
-          [
-            ['path', 'Path'],
-            ['read', 'Read'],
-            ['memory', 'Memory'],
-            ['circle', 'Circle'],
-            ['badges', 'Badges'],
-            ['settings', 'More'],
-          ] as const
-        ).map(([id, label]) => (
+      <nav className="tabs tabs-main">
+        {PRIMARY_TABS.map(([id, label]) => (
           <button
             key={id}
+            type="button"
             className={view === id ? 'active' : ''}
-            onClick={() => setView(id)}
+            onClick={() => {
+              setMenuOpen(false)
+              setView(id)
+            }}
           >
             {label}
           </button>
         ))}
+        <div className="nav-more" ref={menuRef}>
+          <button
+            type="button"
+            className={`nav-more-btn ${moreActive ? 'active' : ''}`}
+            aria-expanded={menuOpen}
+            aria-haspopup="menu"
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            {moreLabel}
+            <span className="nav-caret" aria-hidden>
+              ▾
+            </span>
+          </button>
+          {menuOpen && (
+            <div className="nav-menu" role="menu">
+              {MORE_ITEMS.map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="menuitem"
+                  className={view === id ? 'active' : ''}
+                  onClick={() => {
+                    setView(id)
+                    setMenuOpen(false)
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </nav>
 
       {view === 'path' && (

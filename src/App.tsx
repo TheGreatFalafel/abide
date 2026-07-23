@@ -11,6 +11,7 @@ import {
   completeLesson,
   completeSectionQuiz,
   loadState,
+  migrateUserState,
   reviewMemoryVerse,
   saveState,
   startJourney,
@@ -45,8 +46,9 @@ export default function App() {
   const days = useMemo(() => plan.generate(), [plan.id, user?.customPlans])
 
   const handleCloudState = useCallback((cloud: UserState) => {
-    saveState(cloud)
-    setUser(cloud)
+    const next = migrateUserState(cloud)
+    saveState(next)
+    setUser(next)
     setScreen({ name: 'home' })
   }, [])
 
