@@ -145,6 +145,8 @@ export type CustomPlan = {
   name: string
   bookIds: string[]
   days: number
+  /** chapter = whole chapters; section = standard heading breaks; half = mid-chapter. */
+  pace: 'chapter' | 'section' | 'half'
   createdAt: string
 }
 

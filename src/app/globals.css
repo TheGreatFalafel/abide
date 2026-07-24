@@ -1008,6 +1008,134 @@ a.btn {
   opacity: 0.35;
 }
 
+.bank-chip.active {
+  background: var(--teal-deep);
+  color: #fff;
+  border-color: var(--teal-deep);
+}
+
+.section-heading {
+  margin: 1.1rem 0 0.35rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--teal-deep);
+}
+
+.verse-text-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.verse-text-btn:hover {
+  color: var(--teal-deep);
+}
+
+.commentary-sheet {
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: #f3f8f5;
+  border: 1px solid #cfe0d8;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.commentary-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.commentary-verse {
+  font-style: italic;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.commentary-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.commentary-body {
+  max-height: 22rem;
+  overflow: auto;
+  display: grid;
+  gap: 0.65rem;
+  line-height: 1.55;
+}
+
+.commentary-body p {
+  margin: 0;
+}
+
+.stack-actions {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.pace-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.pace-row-3 {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .pace-row-3 {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+.custom-plan-list {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.custom-plan-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.85rem;
+  border: 1px solid #d5e5df;
+  background: #fff;
+}
+
+.custom-plan-row.selected {
+  border-color: var(--teal);
+  background: #e8f3ef;
+}
+
+.custom-plan-main {
+  flex: 1;
+  border: none;
+  background: transparent;
+  text-align: left;
+  display: grid;
+  gap: 0.15rem;
+  padding: 0;
+}
+
+.custom-plan-actions {
+  display: flex;
+  gap: 0.3rem;
+}
+
 .reader-nav {
   display: flex;
   gap: 0.45rem;

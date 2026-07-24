@@ -1,10 +1,13 @@
 import type { PassageRef } from '../data/bible'
 import { apiQuery, verseQuery } from '../data/bible'
 import type { TranslationId } from '../data/translations'
+import { applySectionHeadings } from './sectionHeadings'
 
 export type Verse = {
   number: number
   text: string
+  /** Section heading printed before this verse. */
+  heading?: string
 }
 
 export type PassageContent = {
@@ -12,6 +15,10 @@ export type PassageContent = {
   verses: Verse[]
   translation: string
   translationId: TranslationId
+  /** True when more of this chapter remains after a partial reading. */
+  hasMoreInChapter?: boolean
+  /** Full chapter verses for "Keep reading". */
+  fullChapterVerses?: Verse[]
 }
 
 type BibleApiResponse = {
@@ -44,6 +51,7 @@ function parseEsvPassage(raw: string, fallbackRef: string): PassageContent {
   let reference = fallbackRef
   const verses: Verse[] = []
   let firstContent = true
+  let pendingHeading: string | undefined
 
   for (const line of lines) {
     const trimmed = line.trim()
@@ -56,7 +64,11 @@ function parseEsvPassage(raw: string, fallbackRef: string): PassageContent {
     firstContent = false
 
     const matches = [...trimmed.matchAll(/\[(\d+)\]\s*/g)]
-    if (!matches.length) continue
+    if (!matches.length) {
+      // Section heading (or other non-verse line)
+      pendingHeading = trimmed
+      continue
+    }
 
     for (let i = 0; i < matches.length; i++) {
       const m = matches[i]
@@ -68,7 +80,14 @@ function parseEsvPassage(raw: string, fallbackRef: string): PassageContent {
         .replace(/\(ESV\)\s*$/, '')
         .replace(/\s+/g, ' ')
         .trim()
-      if (text) verses.push({ number: num, text })
+      if (text) {
+        verses.push({
+          number: num,
+          text,
+          heading: i === 0 ? pendingHeading : undefined,
+        })
+        if (i === 0) pendingHeading = undefined
+      }
     }
   }
 
@@ -98,7 +117,7 @@ async function fetchEsv(query: string, apiKey: string): Promise<PassageContent> 
     'include-first-verse-numbers': 'true',
     'include-footnotes': 'false',
     'include-footnote-body': 'false',
-    'include-headings': 'false',
+    'include-headings': 'true',
     'include-short-copyright': 'true',
     'include-selahs': 'false',
   })
@@ -168,12 +187,75 @@ export type FetchOptions = {
   esvApiKey?: string
 }
 
+function withStandardHeadings(
+  bookName: string,
+  chapter: number,
+  content: PassageContent,
+): PassageContent {
+  return {
+    ...content,
+    verses: applySectionHeadings(bookName, chapter, content.verses),
+  }
+}
+
+function sliceChapter(
+  content: PassageContent,
+  verseStart?: number,
+  verseEnd?: number,
+  heading?: string,
+): PassageContent {
+  if (!verseStart && !verseEnd) return content
+  const start = verseStart ?? content.verses[0]?.number ?? 1
+  const end = verseEnd ?? content.verses[content.verses.length - 1]?.number ?? start
+  const sliced = content.verses.filter((v) => v.number >= start && v.number <= end)
+  const hasMore = content.verses.some((v) => v.number > end)
+  const label =
+    heading ||
+    (verseEnd
+      ? `${content.reference}:${start}–${end}`
+      : `${content.reference}:${start}–`)
+  return {
+    ...content,
+    reference: heading ? `${content.reference} · ${heading}` : label,
+    verses: sliced.map((v, i) =>
+      i === 0 && heading ? { ...v, heading } : v,
+    ),
+    hasMoreInChapter: hasMore,
+    fullChapterVerses: content.verses,
+  }
+}
+
 export async function fetchPassage(
   ref: PassageRef,
   opts: FetchOptions,
 ): Promise<PassageContent> {
   const query = apiQuery(ref)
-  return fetchQuery(query, opts)
+  const raw = await fetchQuery(query, opts)
+  const content = withStandardHeadings(ref.bookName, ref.chapter, raw)
+
+  if (ref.verseStart != null || ref.verseEnd != null || ref.heading) {
+    return sliceChapter(content, ref.verseStart, ref.verseEnd, ref.heading)
+  }
+
+  if (!ref.part) return content
+
+  const mid = Math.max(1, Math.ceil(content.verses.length / 2))
+  if (ref.part === 'a') {
+    return {
+      ...content,
+      reference: `${content.reference} (first half)`,
+      verses: content.verses.slice(0, mid),
+      hasMoreInChapter: true,
+      fullChapterVerses: content.verses,
+    }
+  }
+  return {
+    ...content,
+    reference: `${content.reference} (second half)`,
+    verses: content.verses.slice(mid),
+    hasMoreInChapter: false,
+    fullChapterVerses: content.verses,
+  }
 }
 
 export async function fetchVerseRange(

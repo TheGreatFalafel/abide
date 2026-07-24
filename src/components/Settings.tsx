@@ -27,6 +27,8 @@ export function Settings({ user, onUserChange, onReset }: Props) {
   const [testMsg, setTestMsg] = useState<string | null>(null)
   const [testOk, setTestOk] = useState<boolean | null>(null)
   const [open, setOpen] = useState<SectionId>('bible')
+  const [editing, setEditing] = useState<CustomPlan | null>(null)
+  const [showBuilder, setShowBuilder] = useState(false)
   const keyReady = Boolean(esvKey.trim())
 
   function toggle(id: SectionId) {
@@ -76,14 +78,36 @@ export function Settings({ user, onUserChange, onReset }: Props) {
     })
   }
 
-  function createCustomPlan(plan: CustomPlan) {
+  function saveCustomPlan(plan: CustomPlan) {
+    const exists = customPlans.some((p) => p.id === plan.id)
+    const nextPlans = exists
+      ? customPlans.map((p) => (p.id === plan.id ? plan : p))
+      : [...customPlans, plan]
     onUserChange({
       ...user,
-      customPlans: [...customPlans, plan],
+      customPlans: nextPlans,
       planId: plan.id,
-      completedDays: [],
-      completedQuizzes: [],
+      completedDays: exists && user.planId === plan.id ? user.completedDays : [],
+      completedQuizzes: exists && user.planId === plan.id ? user.completedQuizzes : [],
     })
+    setEditing(null)
+    setShowBuilder(false)
+  }
+
+  function deleteCustomPlan(plan: CustomPlan) {
+    if (!confirm(`Delete “${plan.name}”?`)) return
+    const nextPlans = customPlans.filter((p) => p.id !== plan.id)
+    onUserChange({
+      ...user,
+      customPlans: nextPlans,
+      planId: user.planId === plan.id ? 'year' : user.planId,
+      completedDays: user.planId === plan.id ? [] : user.completedDays,
+      completedQuizzes: user.planId === plan.id ? [] : user.completedQuizzes,
+    })
+    if (editing?.id === plan.id) {
+      setEditing(null)
+      setShowBuilder(false)
+    }
   }
 
   return (
@@ -195,23 +219,83 @@ export function Settings({ user, onUserChange, onReset }: Props) {
                     <span className="plan-days">{plan.days} days</span>
                   </button>
                 ))}
-                {customPlans.map((plan) => (
-                  <button
-                    key={plan.id}
-                    type="button"
-                    className={`plan-card ${user.planId === plan.id ? 'selected' : ''}`}
-                    onClick={() => switchPlan(plan.id)}
-                  >
-                    <span className="plan-vibe">Custom</span>
-                    <strong>{plan.name}</strong>
-                    <span className="plan-blurb">
-                      {plan.bookIds.length} book{plan.bookIds.length === 1 ? '' : 's'}
-                    </span>
-                    <span className="plan-days">{plan.days} days</span>
-                  </button>
-                ))}
               </div>
-              <CustomPlanBuilder onCreate={createCustomPlan} />
+              <p className="muted">
+                Plans marked Bible Gateway use open schedules that match popular Bible Gateway
+                reading-plan styles (not an official Bible Gateway feed).
+              </p>
+
+              {customPlans.length > 0 && (
+                <>
+                  <h3>Your custom plans</h3>
+                  <div className="custom-plan-list">
+                    {customPlans.map((plan) => (
+                      <div
+                        key={plan.id}
+                        className={`custom-plan-row ${user.planId === plan.id ? 'selected' : ''}`}
+                      >
+                        <button
+                          type="button"
+                          className="custom-plan-main"
+                          onClick={() => switchPlan(plan.id)}
+                        >
+                          <strong>{plan.name}</strong>
+                          <span className="muted">
+                            {plan.bookIds.length} book
+                            {plan.bookIds.length === 1 ? '' : 's'} · {plan.days} days ·{' '}
+                            {(plan.pace ?? 'chapter') === 'section'
+                              ? 'sections'
+                              : (plan.pace ?? 'chapter') === 'half'
+                                ? 'half-chapters'
+                                : 'chapters'}
+                          </span>
+                        </button>
+                        <div className="custom-plan-actions">
+                          <button
+                            type="button"
+                            className="btn tiny ghost-outline"
+                            onClick={() => {
+                              setEditing(plan)
+                              setShowBuilder(true)
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="btn tiny ghost-outline"
+                            onClick={() => deleteCustomPlan(plan)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {!showBuilder ? (
+                <button
+                  type="button"
+                  className="btn primary"
+                  onClick={() => {
+                    setEditing(null)
+                    setShowBuilder(true)
+                  }}
+                >
+                  New custom plan
+                </button>
+              ) : (
+                <CustomPlanBuilder
+                  initial={editing}
+                  onSave={saveCustomPlan}
+                  onCancel={() => {
+                    setShowBuilder(false)
+                    setEditing(null)
+                  }}
+                />
+              )}
             </section>
           </div>
         )}
@@ -232,6 +316,16 @@ export function Settings({ user, onUserChange, onReset }: Props) {
                 Required by Crossway when using the ESV API. Also shown on reading screens.
               </p>
               <EsvAttribution />
+              <h3>Commentaries</h3>
+              <p className="muted">
+                Tap any verse while reading to open <strong>Matthew Henry</strong> or{' '}
+                <strong>Tyndale Open Study Notes</strong> (free via bible.helloao.org).
+              </p>
+              <h3>Section headings</h3>
+              <p className="muted">
+                Standard chapter section breaks (e.g. “Jesus and Nicodemus”) appear in ESV, WEB,
+                and KJV. Custom plans can use those breaks as daily units.
+              </p>
             </section>
             <button className="btn ghost danger" onClick={onReset}>
               Reset journey

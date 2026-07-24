@@ -1,87 +1,10 @@
 import { PLAN_QUIZZES } from './planQuizzes'
 import type { CustomPlan } from '../lib/types'
+import { buildGatewayStylePlans } from './gatewayPlans'
+import { getSectionBreaks } from '../lib/sectionHeadings'
+import { BOOKS, type BibleBook, type PassageRef } from './books'
 
-export type BibleBook = {
-  id: string
-  name: string
-  chapters: number
-  testament: 'OT' | 'NT'
-}
-
-export const BOOKS: BibleBook[] = [
-  { id: 'genesis', name: 'Genesis', chapters: 50, testament: 'OT' },
-  { id: 'exodus', name: 'Exodus', chapters: 40, testament: 'OT' },
-  { id: 'leviticus', name: 'Leviticus', chapters: 27, testament: 'OT' },
-  { id: 'numbers', name: 'Numbers', chapters: 36, testament: 'OT' },
-  { id: 'deuteronomy', name: 'Deuteronomy', chapters: 34, testament: 'OT' },
-  { id: 'joshua', name: 'Joshua', chapters: 24, testament: 'OT' },
-  { id: 'judges', name: 'Judges', chapters: 21, testament: 'OT' },
-  { id: 'ruth', name: 'Ruth', chapters: 4, testament: 'OT' },
-  { id: '1samuel', name: '1 Samuel', chapters: 31, testament: 'OT' },
-  { id: '2samuel', name: '2 Samuel', chapters: 24, testament: 'OT' },
-  { id: '1kings', name: '1 Kings', chapters: 22, testament: 'OT' },
-  { id: '2kings', name: '2 Kings', chapters: 25, testament: 'OT' },
-  { id: '1chronicles', name: '1 Chronicles', chapters: 29, testament: 'OT' },
-  { id: '2chronicles', name: '2 Chronicles', chapters: 36, testament: 'OT' },
-  { id: 'ezra', name: 'Ezra', chapters: 10, testament: 'OT' },
-  { id: 'nehemiah', name: 'Nehemiah', chapters: 13, testament: 'OT' },
-  { id: 'esther', name: 'Esther', chapters: 10, testament: 'OT' },
-  { id: 'job', name: 'Job', chapters: 42, testament: 'OT' },
-  { id: 'psalms', name: 'Psalms', chapters: 150, testament: 'OT' },
-  { id: 'proverbs', name: 'Proverbs', chapters: 31, testament: 'OT' },
-  { id: 'ecclesiastes', name: 'Ecclesiastes', chapters: 12, testament: 'OT' },
-  { id: 'songofsolomon', name: 'Song of Solomon', chapters: 8, testament: 'OT' },
-  { id: 'isaiah', name: 'Isaiah', chapters: 66, testament: 'OT' },
-  { id: 'jeremiah', name: 'Jeremiah', chapters: 52, testament: 'OT' },
-  { id: 'lamentations', name: 'Lamentations', chapters: 5, testament: 'OT' },
-  { id: 'ezekiel', name: 'Ezekiel', chapters: 48, testament: 'OT' },
-  { id: 'daniel', name: 'Daniel', chapters: 12, testament: 'OT' },
-  { id: 'hosea', name: 'Hosea', chapters: 14, testament: 'OT' },
-  { id: 'joel', name: 'Joel', chapters: 3, testament: 'OT' },
-  { id: 'amos', name: 'Amos', chapters: 9, testament: 'OT' },
-  { id: 'obadiah', name: 'Obadiah', chapters: 1, testament: 'OT' },
-  { id: 'jonah', name: 'Jonah', chapters: 4, testament: 'OT' },
-  { id: 'micah', name: 'Micah', chapters: 7, testament: 'OT' },
-  { id: 'nahum', name: 'Nahum', chapters: 3, testament: 'OT' },
-  { id: 'habakkuk', name: 'Habakkuk', chapters: 3, testament: 'OT' },
-  { id: 'zephaniah', name: 'Zephaniah', chapters: 3, testament: 'OT' },
-  { id: 'haggai', name: 'Haggai', chapters: 2, testament: 'OT' },
-  { id: 'zechariah', name: 'Zechariah', chapters: 14, testament: 'OT' },
-  { id: 'malachi', name: 'Malachi', chapters: 4, testament: 'OT' },
-  { id: 'matthew', name: 'Matthew', chapters: 28, testament: 'NT' },
-  { id: 'mark', name: 'Mark', chapters: 16, testament: 'NT' },
-  { id: 'luke', name: 'Luke', chapters: 24, testament: 'NT' },
-  { id: 'john', name: 'John', chapters: 21, testament: 'NT' },
-  { id: 'acts', name: 'Acts', chapters: 28, testament: 'NT' },
-  { id: 'romans', name: 'Romans', chapters: 16, testament: 'NT' },
-  { id: '1corinthians', name: '1 Corinthians', chapters: 16, testament: 'NT' },
-  { id: '2corinthians', name: '2 Corinthians', chapters: 13, testament: 'NT' },
-  { id: 'galatians', name: 'Galatians', chapters: 6, testament: 'NT' },
-  { id: 'ephesians', name: 'Ephesians', chapters: 6, testament: 'NT' },
-  { id: 'philippians', name: 'Philippians', chapters: 4, testament: 'NT' },
-  { id: 'colossians', name: 'Colossians', chapters: 4, testament: 'NT' },
-  { id: '1thessalonians', name: '1 Thessalonians', chapters: 5, testament: 'NT' },
-  { id: '2thessalonians', name: '2 Thessalonians', chapters: 3, testament: 'NT' },
-  { id: '1timothy', name: '1 Timothy', chapters: 6, testament: 'NT' },
-  { id: '2timothy', name: '2 Timothy', chapters: 4, testament: 'NT' },
-  { id: 'titus', name: 'Titus', chapters: 3, testament: 'NT' },
-  { id: 'philemon', name: 'Philemon', chapters: 1, testament: 'NT' },
-  { id: 'hebrews', name: 'Hebrews', chapters: 13, testament: 'NT' },
-  { id: 'james', name: 'James', chapters: 5, testament: 'NT' },
-  { id: '1peter', name: '1 Peter', chapters: 5, testament: 'NT' },
-  { id: '2peter', name: '2 Peter', chapters: 3, testament: 'NT' },
-  { id: '1john', name: '1 John', chapters: 5, testament: 'NT' },
-  { id: '2john', name: '2 John', chapters: 1, testament: 'NT' },
-  { id: '3john', name: '3 John', chapters: 1, testament: 'NT' },
-  { id: 'jude', name: 'Jude', chapters: 1, testament: 'NT' },
-  { id: 'revelation', name: 'Revelation', chapters: 22, testament: 'NT' },
-]
-
-export type PassageRef = {
-  bookId: string
-  bookName: string
-  chapter: number
-}
+export { BOOKS, type BibleBook, type PassageRef }
 
 export type PlanDay = {
   day: number
@@ -114,10 +37,57 @@ export function chaptersFrom(bookIds: string[]): PassageRef[] {
   return refs
 }
 
+/** Two readings per chapter — useful for longer chapters / slower pace. */
+export function halfChaptersFrom(bookIds: string[]): PassageRef[] {
+  return chaptersFrom(bookIds).flatMap((ref) => [
+    { ...ref, part: 'a' as const },
+    { ...ref, part: 'b' as const },
+  ])
+}
+
+/** One reading unit per standard section heading (works for every translation). */
+export function sectionsFrom(bookIds: string[]): PassageRef[] {
+  const refs: PassageRef[] = []
+  for (const id of bookIds) {
+    const book = BOOKS.find((b) => b.id === id)
+    if (!book) continue
+    for (let c = 1; c <= book.chapters; c++) {
+      const breaks = getSectionBreaks(book.name, c)
+      for (let i = 0; i < breaks.length; i++) {
+        const start = breaks[i].verseStart
+        const end =
+          i + 1 < breaks.length ? breaks[i + 1].verseStart - 1 : undefined
+        refs.push({
+          bookId: book.id,
+          bookName: book.name,
+          chapter: c,
+          verseStart: start,
+          verseEnd: end,
+          heading: breaks[i].heading,
+        })
+      }
+    }
+  }
+  return refs
+}
+
+export function unitsFromPlan(plan: Pick<CustomPlan, 'bookIds' | 'pace'>): PassageRef[] {
+  if (plan.pace === 'section') return sectionsFrom(plan.bookIds)
+  if (plan.pace === 'half') return halfChaptersFrom(plan.bookIds)
+  return chaptersFrom(plan.bookIds)
+}
+
 function titleFor(slice: PassageRef[]): string {
   const first = slice[0]
   const last = slice[slice.length - 1]
-  if (slice.length === 1) return `${first.bookName} ${first.chapter}`
+  if (slice.length === 1) {
+    if (first.heading) {
+      return `${first.bookName} ${first.chapter} · ${first.heading}`
+    }
+    if (first.part === 'a') return `${first.bookName} ${first.chapter} (first half)`
+    if (first.part === 'b') return `${first.bookName} ${first.chapter} (second half)`
+    return `${first.bookName} ${first.chapter}`
+  }
   if (first.bookName === last.bookName) {
     return `${first.bookName} ${first.chapter}–${last.chapter}`
   }
@@ -128,7 +98,7 @@ function titleFor(slice: PassageRef[]): string {
 export function chunkPassages(passages: PassageRef[], days: number): PlanDay[] {
   const total = passages.length
   if (!total) return []
-  const dayCount = Math.min(days, total)
+  const dayCount = Math.max(1, Math.min(days, total))
   const base = Math.floor(total / dayCount)
   const extra = total % dayCount
   const plan: PlanDay[] = []
@@ -145,6 +115,13 @@ export function chunkPassages(passages: PassageRef[], days: number): PlanDay[] {
     })
   }
   return plan
+}
+
+export function generateCustomPlanDays(plan: CustomPlan): PlanDay[] {
+  return chunkPassages(unitsFromPlan(plan), plan.days).map((d) => ({
+    ...d,
+    kind: 'read' as const,
+  }))
 }
 
 /** After every N reading days, insert a quiz checkpoint node. */
@@ -261,6 +238,7 @@ export const PLANS: ReadingPlan[] = [
     generate: () =>
       withPlanQuizzes('proverbs31', chunkPassages(chaptersFrom(['proverbs']), 31)),
   },
+  ...buildGatewayStylePlans({ chaptersFrom, chunkPassages }),
 ]
 
 export function getPlanById(
@@ -272,17 +250,16 @@ export function getPlanById(
 
   const custom = customPlans.find((p) => p.id === id)
   if (custom) {
+    const pace = custom.pace ?? 'chapter'
+    const paceLabel =
+      pace === 'section' ? 'section' : pace === 'half' ? 'half-chapter' : 'chapter'
     return {
       id: custom.id,
       name: custom.name,
-      blurb: `Custom plan · ${custom.bookIds.length} book(s) over ${custom.days} days.`,
+      blurb: `Custom · ${custom.bookIds.length} book(s) · ${paceLabel} pace · ${custom.days} days.`,
       days: custom.days,
       vibe: 'Custom',
-      generate: () =>
-        chunkPassages(chaptersFrom(custom.bookIds), custom.days).map((d) => ({
-          ...d,
-          kind: 'read' as const,
-        })),
+      generate: () => generateCustomPlanDays({ ...custom, pace }),
     }
   }
 
@@ -291,6 +268,20 @@ export function getPlanById(
 
 export function apiQuery(ref: PassageRef): string {
   return `${ref.bookName} ${ref.chapter}`
+}
+
+export function nextChapterRef(ref: PassageRef): PassageRef | null {
+  const idx = BOOKS.findIndex((b) => b.id === ref.bookId)
+  if (idx < 0) return null
+  const book = BOOKS[idx]
+  if (ref.chapter < book.chapters) {
+    return { bookId: book.id, bookName: book.name, chapter: ref.chapter + 1 }
+  }
+  if (idx < BOOKS.length - 1) {
+    const next = BOOKS[idx + 1]
+    return { bookId: next.id, bookName: next.name, chapter: 1 }
+  }
+  return null
 }
 
 export function verseQuery(

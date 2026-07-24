@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { BOOKS, type BibleBook } from '../data/bible'
-import { fetchPassage, type PassageContent } from '../lib/bibleApi'
+import { fetchPassage, type PassageContent, type Verse } from '../lib/bibleApi'
 import { addMemoryVerse } from '../lib/progress'
 import type { UserState } from '../lib/types'
 import { EsvAttribution } from './EsvAttribution'
 import { ESV_SITE } from '../data/esvCopyright'
+import { CommentaryPanel } from './CommentaryPanel'
 
 type Props = {
   user: UserState
@@ -21,6 +22,7 @@ export function BibleReader({ user, onUserChange }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
   const [picker, setPicker] = useState<'book' | 'chapter' | null>(null)
+  const [activeVerse, setActiveVerse] = useState<Verse | null>(null)
 
   const book = BOOKS.find((b) => b.id === bookId) ?? BOOKS[42]
 
@@ -29,6 +31,7 @@ export function BibleReader({ user, onUserChange }: Props) {
     setLoading(true)
     setError(null)
     setContent(null)
+    setActiveVerse(null)
     fetchPassage(
       { bookId: book.id, bookName: book.name, chapter },
       { translation: user.translationId, esvApiKey: user.esvApiKey },
@@ -198,17 +201,26 @@ export function BibleReader({ user, onUserChange }: Props) {
             {note && <p className="nudge good">{note}</p>}
             <article className="verses">
               {content.verses.map((v) => (
-                <p key={v.number} className="verse-line">
-                  <button
-                    type="button"
-                    className="verse-mem"
-                    title="Save to scripture memory"
-                    onClick={() => saveVerse(v.number)}
-                  >
-                    <sup>{v.number}</sup>
-                  </button>
-                  {v.text}
-                </p>
+                <div key={v.number}>
+                  {v.heading && <h3 className="section-heading">{v.heading}</h3>}
+                  <p className="verse-line">
+                    <button
+                      type="button"
+                      className="verse-mem"
+                      title="Open commentary / save"
+                      onClick={() => setActiveVerse(v)}
+                    >
+                      <sup>{v.number}</sup>
+                    </button>
+                    <button
+                      type="button"
+                      className="verse-text-btn"
+                      onClick={() => setActiveVerse(v)}
+                    >
+                      {v.text}
+                    </button>
+                  </p>
+                </div>
               ))}
             </article>
             {content.translationId === 'esv' && (
@@ -217,7 +229,25 @@ export function BibleReader({ user, onUserChange }: Props) {
                 <EsvAttribution compact />
               </>
             )}
-            <p className="muted mem-hint">Tap a verse number to save it for memory practice.</p>
+            <p className="muted mem-hint">
+              Tap a verse for Matthew Henry or Tyndale notes. Section headings show standard
+              chapter breaks in every translation.
+            </p>
+
+            {activeVerse && (
+              <CommentaryPanel
+                bookId={book.id}
+                bookName={book.name}
+                chapter={chapter}
+                verse={activeVerse.number}
+                verseText={activeVerse.text}
+                onClose={() => setActiveVerse(null)}
+                onSaveMemory={() => {
+                  saveVerse(activeVerse.number)
+                  setActiveVerse(null)
+                }}
+              />
+            )}
           </>
         )}
       </div>
@@ -227,7 +257,7 @@ export function BibleReader({ user, onUserChange }: Props) {
           Previous
         </button>
         <button className="btn primary" onClick={nextChapter}>
-          Next chapter
+          Keep reading
         </button>
       </div>
     </div>

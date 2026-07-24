@@ -1,17 +1,33 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { BOOKS, chaptersFrom, chunkPassages } from '../data/bible'
+import { useEffect, useMemo, useState } from 'react'
+import { BOOKS, unitsFromPlan } from '../data/bible'
 import type { CustomPlan } from '../lib/types'
 
 type Props = {
-  onCreate: (plan: CustomPlan) => void
+  onSave: (plan: CustomPlan) => void
+  onCancel?: () => void
+  initial?: CustomPlan | null
 }
 
-export function CustomPlanBuilder({ onCreate }: Props) {
-  const [selected, setSelected] = useState<string[]>(['john'])
-  const [days, setDays] = useState(21)
-  const [name, setName] = useState('')
+export function CustomPlanBuilder({ onSave, onCancel, initial }: Props) {
+  const [selected, setSelected] = useState<string[]>(initial?.bookIds ?? ['john'])
+  const [name, setName] = useState(initial?.name ?? '')
+  const [pace, setPace] = useState<'chapter' | 'section' | 'half'>(
+    initial?.pace ?? 'section',
+  )
+  const [chaptersPerDay, setChaptersPerDay] = useState(1)
+  const [daysMode, setDaysMode] = useState<'pace' | 'days'>('pace')
+  const [days, setDays] = useState(initial?.days ?? 21)
+
+  useEffect(() => {
+    if (!initial) return
+    setSelected(initial.bookIds)
+    setName(initial.name)
+    setPace(initial.pace ?? 'chapter')
+    setDays(initial.days)
+    setDaysMode('days')
+  }, [initial])
 
   const totalChapters = useMemo(() => {
     return selected.reduce((sum, id) => {
@@ -20,9 +36,21 @@ export function CustomPlanBuilder({ onCreate }: Props) {
     }, 0)
   }, [selected])
 
-  const maxDays = Math.max(1, totalChapters)
-  const safeDays = Math.min(Math.max(1, days), maxDays)
-  const perDay = totalChapters ? (totalChapters / safeDays).toFixed(1) : '0'
+  const unitCount = useMemo(() => {
+    if (!selected.length) return 0
+    return unitsFromPlan({ bookIds: selected, pace }).length
+  }, [selected, pace])
+
+  const computedDays = Math.max(
+    1,
+    Math.ceil(unitCount / Math.max(1, chaptersPerDay)),
+  )
+  const safeDays =
+    daysMode === 'pace'
+      ? Math.min(unitCount, computedDays)
+      : Math.min(Math.max(1, days), Math.max(1, unitCount))
+
+  const unitsPerDay = unitCount && safeDays ? unitCount / safeDays : 0
 
   function toggle(id: string) {
     setSelected((prev) =>
@@ -46,35 +74,39 @@ export function CustomPlanBuilder({ onCreate }: Props) {
     setSelected(['matthew', 'mark', 'luke', 'john'])
   }
 
-  function create() {
-    if (!selected.length || totalChapters < 1) return
-    const bookNames = selected
-      .map((id) => BOOKS.find((b) => b.id === id)?.name)
-      .filter(Boolean)
-    const label =
-      name.trim() ||
-      (bookNames.length <= 3
-        ? bookNames.join(', ')
-        : `${bookNames[0]} + ${bookNames.length - 1} more`)
+  function save() {
+    const trimmed = name.trim()
+    if (!trimmed || !selected.length || unitCount < 1) return
     const plan: CustomPlan = {
-      id: `custom-${Date.now()}`,
-      name: `${label} (${safeDays}d)`,
+      id: initial?.id ?? `custom-${Date.now()}`,
+      name: trimmed,
       bookIds: selected,
       days: safeDays,
-      createdAt: new Date().toISOString().slice(0, 10),
+      pace,
+      createdAt: initial?.createdAt ?? new Date().toISOString().slice(0, 10),
     }
-    // Validate generation works
-    chunkPassages(chaptersFrom(plan.bookIds), plan.days)
-    onCreate(plan)
+    unitsFromPlan(plan)
+    onSave(plan)
   }
 
   return (
     <div className="custom-plan">
-      <h3>Custom reading plan</h3>
+      <h3>{initial ? 'Edit custom plan' : 'Custom reading plan'}</h3>
       <p className="muted">
-        Pick books and how many days to spread them across. About {perDay} chapter
-        {perDay === '1.0' ? '' : 's'}/day.
+        Name your plan, pick books, then choose the break style. “Section breaks” follows
+        standard Bible headings (like “Jesus and Nicodemus”) — one section per unit.
       </p>
+
+      <label className="field-label">
+        Plan name
+        <input
+          className="field"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g. John in 3 weeks"
+          required
+        />
+      </label>
 
       <div className="memory-actions row">
         <button type="button" className="btn tiny ghost-outline" onClick={() => selectGroup('gospels')}>
@@ -118,40 +150,100 @@ export function CustomPlanBuilder({ onCreate }: Props) {
         ))}
       </div>
 
-      <label className="field-label">
-        Plan name (optional)
-        <input
-          className="field"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="My John plan"
-        />
-      </label>
+      <div className="pace-row pace-row-3">
+        <button
+          type="button"
+          className={`plan-card ${pace === 'section' ? 'selected' : ''}`}
+          onClick={() => setPace('section')}
+        >
+          <strong>Section breaks</strong>
+          <span className="plan-blurb">Standard headings inside chapters</span>
+        </button>
+        <button
+          type="button"
+          className={`plan-card ${pace === 'chapter' ? 'selected' : ''}`}
+          onClick={() => setPace('chapter')}
+        >
+          <strong>Whole chapters</strong>
+          <span className="plan-blurb">One chapter = one unit</span>
+        </button>
+        <button
+          type="button"
+          className={`plan-card ${pace === 'half' ? 'selected' : ''}`}
+          onClick={() => setPace('half')}
+        >
+          <strong>Half chapters</strong>
+          <span className="plan-blurb">Split each chapter in two</span>
+        </button>
+      </div>
 
-      <label className="field-label">
-        Number of days (1–{maxDays})
-        <input
-          className="field"
-          type="number"
-          min={1}
-          max={maxDays}
-          value={safeDays}
-          onChange={(e) => setDays(Number(e.target.value) || 1)}
-        />
-      </label>
+      <div className="memory-actions row">
+        <button
+          type="button"
+          className={`btn tiny ${daysMode === 'pace' ? 'primary' : 'ghost-outline'}`}
+          onClick={() => setDaysMode('pace')}
+        >
+          By amount/day
+        </button>
+        <button
+          type="button"
+          className={`btn tiny ${daysMode === 'days' ? 'primary' : 'ghost-outline'}`}
+          onClick={() => setDaysMode('days')}
+        >
+          By total days
+        </button>
+      </div>
+
+      {daysMode === 'pace' ? (
+        <label className="field-label">
+          {pace === 'section'
+            ? 'Sections per day'
+            : pace === 'half'
+              ? 'Half-chapters per day'
+              : 'Chapters per day'}
+          <input
+            className="field"
+            type="number"
+            min={1}
+            max={Math.max(1, unitCount)}
+            step={1}
+            value={chaptersPerDay}
+            onChange={(e) => setChaptersPerDay(Number(e.target.value) || 1)}
+          />
+        </label>
+      ) : (
+        <label className="field-label">
+          Number of days (1–{Math.max(1, unitCount)})
+          <input
+            className="field"
+            type="number"
+            min={1}
+            max={Math.max(1, unitCount)}
+            value={safeDays}
+            onChange={(e) => setDays(Number(e.target.value) || 1)}
+          />
+        </label>
+      )}
 
       <p className="memory-meta">
-        {totalChapters} chapters · {selected.length} book{selected.length === 1 ? '' : 's'} ·{' '}
-        {safeDays} days
+        {totalChapters} chapters · {unitCount} reading unit
+        {unitCount === 1 ? '' : 's'} · ~{unitsPerDay.toFixed(1)}/day · {safeDays} days
       </p>
 
-      <button
-        className="btn primary"
-        disabled={!selected.length}
-        onClick={create}
-      >
-        Create & start this plan
-      </button>
+      <div className="session-actions">
+        {onCancel && (
+          <button type="button" className="btn ghost-outline" onClick={onCancel}>
+            Cancel
+          </button>
+        )}
+        <button
+          className="btn primary"
+          disabled={!selected.length || !name.trim()}
+          onClick={save}
+        >
+          {initial ? 'Save changes' : 'Create & start'}
+        </button>
+      </div>
     </div>
   )
 }

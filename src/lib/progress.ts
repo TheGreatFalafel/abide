@@ -37,7 +37,10 @@ export function migrateUserState(
     achievements: raw.achievements ?? [],
     completedDays: raw.completedDays ?? [],
     completedQuizzes: raw.completedQuizzes ?? [],
-    customPlans: raw.customPlans ?? [],
+    customPlans: (raw.customPlans ?? []).map((p) => ({
+      ...p,
+      pace: p.pace ?? 'chapter',
+    })),
   }
 }
 
