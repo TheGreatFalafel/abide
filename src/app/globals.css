@@ -1095,6 +1095,14 @@ a.btn {
   margin: 0 0 0.75rem;
 }
 
+.listen-wrap {
+  margin: 0.35rem 0 0.75rem;
+}
+
+.listen-btn {
+  min-width: 6.5rem;
+}
+
 .pace-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -8,6 +8,7 @@ import type { UserState } from '../lib/types'
 import { EsvAttribution } from './EsvAttribution'
 import { ESV_SITE } from '../data/esvCopyright'
 import { CommentaryPanel } from './CommentaryPanel'
+import { ListenButton } from './ListenButton'
 
 type Props = {
   user: UserState
@@ -262,6 +263,18 @@ export function BibleReader({ user, onUserChange }: Props) {
               Tap a verse for Matthew Henry or Tyndale notes. Section headings show standard
               chapter breaks in every translation.
             </p>
+            <ListenButton
+              text={
+                content
+                  ? [
+                      content.reference,
+                      ...content.verses.flatMap((v) =>
+                        v.heading ? [v.heading, v.text] : [v.text],
+                      ),
+                    ].join('. ')
+                  : ''
+              }
+            />
 
             {activeVerse && (
               <CommentaryPanel

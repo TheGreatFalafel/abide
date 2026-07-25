@@ -10,6 +10,7 @@ import type { UserState } from '../lib/types'
 import { EsvAttribution } from './EsvAttribution'
 import { ESV_SITE } from '../data/esvCopyright'
 import { CommentaryPanel } from './CommentaryPanel'
+import { ListenButton } from './ListenButton'
 
 type Props = {
   day: PlanDay
@@ -72,6 +73,14 @@ export function ReadingSession({ day, user, onUserChange, onComplete, onBack }: 
   const current = passages[passageIndex]
   const currentRef = refs[passageIndex]
   const lastPassage = passageIndex >= passages.length - 1
+  const listenText = current
+    ? [
+        current.reference,
+        ...current.verses.flatMap((v) =>
+          v.heading ? [v.heading, v.text] : [v.text],
+        ),
+      ].join('. ')
+    : ''
 
   function saveVerseToMemory(verseNum: number) {
     if (!current || !currentRef) return
@@ -232,6 +241,7 @@ export function ReadingSession({ day, user, onUserChange, onComplete, onBack }: 
                 Tap a verse for Matthew Henry or Tyndale study notes, or to save it for memory.
                 Section headings mark the usual breaks in the chapter.
               </p>
+              <ListenButton text={listenText} />
 
               {activeVerse && (
                 <CommentaryPanel
