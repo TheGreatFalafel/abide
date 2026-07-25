@@ -37,6 +37,9 @@ export function CloudBridge({ state, onCloudState }: Props) {
       completedDays: state.completedDays,
       memory: state.memoryVerses.length,
       achievements: state.achievements.length,
+      translationId: state.translationId,
+      esvApiKey: state.esvApiKey,
+      customPlans: state.customPlans.length,
     })
     if (fingerprint === lastSaved.current) return
     const timer = window.setTimeout(() => {

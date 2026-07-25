@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ACHIEVEMENTS, levelFromXp, type UserState } from '../lib/types'
+import { ACHIEVEMENTS, levelFromXp, titleForLevel, type UserState } from '../lib/types'
 import type { PlanDay } from '../data/bible'
 import { getTranslation } from '../data/translations'
 import { Memory } from './Memory'
@@ -46,6 +46,7 @@ export function Home({
   onMemoryReview,
 }: Props) {
   const level = levelFromXp(user.xp)
+  const levelTitle = titleForLevel(level.level)
   const nextDay =
     days.find((d) => !user.completedDays.includes(d.day))?.day ??
     days[days.length - 1]?.day ??
@@ -101,12 +102,14 @@ export function Home({
       </header>
 
       <div className="level-row">
-        <div className="level-badge">Lv {level.level}</div>
+        <div className="level-badge" title={levelTitle}>
+          Lv {level.level}
+        </div>
         <div className="meter">
           <div className="meter-fill" style={{ width: `${(level.into / level.need) * 100}%` }} />
         </div>
         <span className="meter-label">
-          {level.into}/{level.need} XP
+          {levelTitle} · {level.into}/{level.need} XP
         </span>
       </div>
 
@@ -120,6 +123,10 @@ export function Home({
         <div className="meter tall">
           <div className="meter-fill gold" style={{ width: `${goalPct}%` }} />
         </div>
+        <p className="muted xp-why">
+          XP fuels your level and title — friends in Circle can see both. Hit the daily goal to
+          keep the streak strong.
+        </p>
         {streakAtRisk ? (
           <p className="nudge risk">Your streak needs you today — keep it alive.</p>
         ) : user.todayXp >= user.dailyGoalXp ? (

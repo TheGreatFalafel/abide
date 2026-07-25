@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ACHIEVEMENTS, type AchievementId } from '../lib/types'
+import { ACHIEVEMENTS, titleForLevel, type AchievementId } from '../lib/types'
 
 type Props = {
   earnedXp: number
@@ -44,7 +44,9 @@ export function Celebration({
         {leveledUp && (
           <div className="level-up">
             <span>Level up</span>
-            <strong>Lv {level}</strong>
+            <strong>
+              Lv {level} · {titleForLevel(level)}
+            </strong>
           </div>
         )}
         {goalMet && (

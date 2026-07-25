@@ -198,6 +198,35 @@ export function levelFromXp(xp: number): { level: number; into: number; need: nu
   return { level, into: remaining, need }
 }
 
+/** Visible titles unlocked by level — shown on Home and in Circle. */
+const LEVEL_TITLES: { min: number; title: string }[] = [
+  { min: 1, title: 'Seeker' },
+  { min: 2, title: 'Listener' },
+  { min: 3, title: 'Disciple' },
+  { min: 5, title: 'Sojourner' },
+  { min: 7, title: 'Watchman' },
+  { min: 10, title: 'Scribe' },
+  { min: 12, title: 'Beacon' },
+  { min: 15, title: 'Elder Path' },
+  { min: 20, title: 'Torchbearer' },
+  { min: 25, title: 'Abiding One' },
+  { min: 30, title: 'Pillar' },
+  { min: 40, title: 'Wellspring' },
+  { min: 50, title: 'Ancient Paths' },
+]
+
+export function titleForLevel(level: number): string {
+  let title = LEVEL_TITLES[0].title
+  for (const row of LEVEL_TITLES) {
+    if (level >= row.min) title = row.title
+  }
+  return title
+}
+
+export function titleForXp(xp: number): string {
+  return titleForLevel(levelFromXp(xp).level)
+}
+
 export function todayKey(d = new Date()): string {
   return d.toISOString().slice(0, 10)
 }

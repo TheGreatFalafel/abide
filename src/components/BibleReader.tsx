@@ -59,6 +59,23 @@ export function BibleReader({ user, onUserChange }: Props) {
     setPicker(null)
   }
 
+  function goRandom(scope: 'all' | 'OT' | 'NT') {
+    const pool =
+      scope === 'all'
+        ? BOOKS
+        : BOOKS.filter((b) => b.testament === scope)
+    const book = pool[Math.floor(Math.random() * pool.length)]
+    const ch = 1 + Math.floor(Math.random() * book.chapters)
+    setBookId(book.id)
+    setChapter(ch)
+    setPicker(null)
+    setNote(
+      scope === 'all'
+        ? `Random · ${book.name} ${ch}`
+        : `Random ${scope} · ${book.name} ${ch}`,
+    )
+  }
+
   function prevChapter() {
     if (chapter > 1) {
       setChapter((c) => c - 1)
@@ -120,6 +137,18 @@ export function BibleReader({ user, onUserChange }: Props) {
           Ch {chapter}
         </button>
         <span className="memory-meta">{user.translationId.toUpperCase()}</span>
+      </div>
+
+      <div className="random-row">
+        <button type="button" className="btn tiny ghost-outline" onClick={() => goRandom('all')}>
+          Random
+        </button>
+        <button type="button" className="btn tiny ghost-outline" onClick={() => goRandom('OT')}>
+          Random OT
+        </button>
+        <button type="button" className="btn tiny ghost-outline" onClick={() => goRandom('NT')}>
+          Random NT
+        </button>
       </div>
 
       {picker === 'book' && (

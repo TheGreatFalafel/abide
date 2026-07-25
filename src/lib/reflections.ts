@@ -1,42 +1,209 @@
-export const REFLECTIONS = [
+import type { PassageRef } from '../data/books'
+
+export type Reflection = {
+  prompt: string
+  options: string[]
+}
+
+function mulberry32(seed: number) {
+  let t = seed >>> 0
+  return () => {
+    t += 0x6d2b79f5
+    let r = Math.imul(t ^ (t >>> 15), 1 | t)
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r)
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+function pick<T>(items: T[], rand: () => number): T {
+  return items[Math.floor(rand() * items.length) % items.length]
+}
+
+function readingLabel(passages: PassageRef[]): string {
+  if (!passages.length) return 'today’s reading'
+  const first = passages[0]
+  const last = passages[passages.length - 1]
+  if (passages.length === 1) {
+    if (first.heading) return `${first.bookName} ${first.chapter} (“${first.heading}”)`
+    return `${first.bookName} ${first.chapter}`
+  }
+  if (first.bookName === last.bookName) {
+    return `${first.bookName} ${first.chapter}–${last.chapter}`
+  }
+  return `${first.bookName} ${first.chapter} → ${last.bookName} ${last.chapter}`
+}
+
+function bookIds(passages: PassageRef[]): string[] {
+  return [...new Set(passages.map((p) => p.bookId))]
+}
+
+type BankItem = {
+  /** Match if any of these book ids appear (empty = always eligible) */
+  books?: string[]
+  /** Match testament */
+  testament?: 'OT' | 'NT'
+  prompt: (label: string) => string
+  options: string[]
+}
+
+const BANK: BankItem[] = [
   {
-    prompt: 'What word or phrase stood out to you?',
+    prompt: (label) => `In ${label}, what stood out to you most?`,
     options: [
       'A promise from God',
-      'A challenge to obey',
-      'Comfort in hard times',
-      'Something I want to remember',
+      'A warning or challenge',
+      'Comfort for hard times',
+      'A detail I had never noticed',
     ],
   },
   {
-    prompt: 'How might this shape your day?',
+    prompt: (label) => `After reading ${label}, who is God revealing Himself to be?`,
     options: [
-      'Speak kindly to someone',
-      'Pray about what I read',
-      'Trust God with a worry',
-      'Give thanks for a gift',
+      'Faithful and near',
+      'Holy and just',
+      'Merciful and patient',
+      'Wise and sovereign',
     ],
   },
   {
-    prompt: 'Who is God revealing Himself to be here?',
+    prompt: (label) => `What response does ${label} invite from you today?`,
     options: [
-      'Faithful & near',
-      'Holy & just',
-      'Merciful & patient',
-      'Wise & sovereign',
+      'Trust God with something specific',
+      'Obey in a concrete step',
+      'Give thanks or praise',
+      'Pray for someone else',
     ],
   },
   {
-    prompt: 'What will you carry from this passage?',
+    prompt: (label) => `If you retold ${label} in one sentence, what would you emphasize?`,
     options: [
-      'A verse to memorize',
-      'A prayer to pray',
-      'A truth to believe',
-      'An action to take',
+      'God’s initiative and grace',
+      'Human failure and need',
+      'A call to follow or believe',
+      'Hope that still stands',
+    ],
+  },
+  {
+    books: ['genesis', 'exodus', 'leviticus', 'numbers', 'deuteronomy'],
+    prompt: (label) => `In ${label}, how do you see God’s covenant care?`,
+    options: [
+      'He keeps His promises',
+      'He provides in need',
+      'He confronts sin',
+      'He makes a way forward',
+    ],
+  },
+  {
+    books: ['matthew', 'mark', 'luke', 'john'],
+    prompt: (label) => `In ${label}, what about Jesus most draws your attention?`,
+    options: [
+      'His compassion',
+      'His authority',
+      'His teaching',
+      'His mission to save',
+    ],
+  },
+  {
+    books: ['psalms'],
+    prompt: (label) => `Praying with ${label}, what do you want to bring to God?`,
+    options: [
+      'Honest lament',
+      'Grateful praise',
+      'A request for help',
+      'Quiet trust',
+    ],
+  },
+  {
+    books: ['proverbs', 'ecclesiastes', 'job'],
+    prompt: (label) => `From ${label}, what wisdom do you want to practice?`,
+    options: [
+      'Watch my words',
+      'Fear the Lord first',
+      'Seek counsel',
+      'Hold plans loosely',
+    ],
+  },
+  {
+    books: ['romans', 'galatians', 'ephesians', 'philippians', 'colossians', 'hebrews'],
+    prompt: (label) => `How does ${label} reshape the gospel for you today?`,
+    options: [
+      'Saved by grace, not works',
+      'United to Christ',
+      'Called to holy living',
+      'Hope secured in Him',
+    ],
+  },
+  {
+    books: ['acts'],
+    prompt: (label) => `In ${label}, where do you see the Spirit advancing the mission?`,
+    options: [
+      'Bold witness',
+      'Unexpected doors',
+      'Care for the church',
+      'Joy in hardship',
+    ],
+  },
+  {
+    testament: 'OT',
+    prompt: (label) => `Looking at ${label}, what Old Testament theme feels alive for you?`,
+    options: [
+      'God’s faithfulness to His people',
+      'Justice and mercy together',
+      'Waiting on the Lord’s timing',
+      'Worship in every season',
+    ],
+  },
+  {
+    testament: 'NT',
+    prompt: (label) => `After ${label}, how will you walk as a disciple today?`,
+    options: [
+      'Love someone practically',
+      'Speak truth with grace',
+      'Abide in Christ’s words',
+      'Serve without needing credit',
     ],
   },
 ]
 
+const OT = new Set(
+  [
+    'genesis', 'exodus', 'leviticus', 'numbers', 'deuteronomy', 'joshua', 'judges', 'ruth',
+    '1samuel', '2samuel', '1kings', '2kings', '1chronicles', '2chronicles', 'ezra', 'nehemiah',
+    'esther', 'job', 'psalms', 'proverbs', 'ecclesiastes', 'songofsolomon', 'isaiah', 'jeremiah',
+    'lamentations', 'ezekiel', 'daniel', 'hosea', 'joel', 'amos', 'obadiah', 'jonah', 'micah',
+    'nahum', 'habakkuk', 'zephaniah', 'haggai', 'zechariah', 'malachi',
+  ],
+)
+
+function eligible(passages: PassageRef[]): BankItem[] {
+  const ids = bookIds(passages)
+  const hasOt = ids.some((id) => OT.has(id))
+  const hasNt = ids.some((id) => !OT.has(id))
+  return BANK.filter((item) => {
+    if (item.books?.length) return item.books.some((b) => ids.includes(b))
+    if (item.testament === 'OT') return hasOt
+    if (item.testament === 'NT') return hasNt
+    return true
+  })
+}
+
+/** Passage-aware heart check; `seed` changes which prompt you get on repeat visits. */
+export function reflectionForPassages(
+  passages: PassageRef[],
+  day: number,
+  seed = 0,
+): Reflection {
+  const label = readingLabel(passages)
+  const pool = eligible(passages)
+  const rand = mulberry32(day * 10007 + seed * 9176 + passages.length * 13)
+  const item = pick(pool, rand)
+  return {
+    prompt: item.prompt(label),
+    options: item.options,
+  }
+}
+
+/** @deprecated Prefer reflectionForPassages */
 export function reflectionForDay(day: number) {
-  return REFLECTIONS[(day - 1) % REFLECTIONS.length]
+  return reflectionForPassages([], day, 0)
 }

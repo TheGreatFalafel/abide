@@ -1083,6 +1083,18 @@ a.btn {
   align-items: stretch;
 }
 
+.xp-why {
+  margin: 0.35rem 0 0.15rem;
+  font-size: 0.82rem;
+}
+
+.random-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0 0 0.75rem;
+}
+
 .pace-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

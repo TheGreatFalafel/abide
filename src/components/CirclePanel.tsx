@@ -7,6 +7,7 @@ import {
   fetchCircle,
   type CirclePayload,
 } from '../lib/cloud'
+import { titleForXp } from '../lib/types'
 
 type Props = {
   onSyncedName?: (name: string) => void
@@ -136,7 +137,7 @@ export function CirclePanel({ onSyncedName }: Props) {
                   <div>
                     <strong>{m.displayName || 'Friend'}</strong>
                     <p className="memory-meta">
-                      🔥 {m.streak ?? 0} · ✦ {m.xp ?? 0}
+                      {titleForXp(m.xp ?? 0)} · 🔥 {m.streak ?? 0} · ✦ {m.xp ?? 0}
                       {m.lastReadDate ? ` · last ${m.lastReadDate}` : ''}
                     </p>
                   </div>

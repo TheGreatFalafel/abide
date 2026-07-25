@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { nextChapterRef, type PlanDay, type PassageRef } from '../data/bible'
 import { fetchPassage, type PassageContent, type Verse } from '../lib/bibleApi'
-import { reflectionForDay } from '../lib/reflections'
+import { reflectionForPassages } from '../lib/reflections'
 import type { TranslationId } from '../data/translations'
 import { addMemoryVerse } from '../lib/progress'
 import type { UserState } from '../lib/types'
@@ -30,10 +30,16 @@ export function ReadingSession({ day, user, onUserChange, onComplete, onBack }: 
   const [memoryNote, setMemoryNote] = useState<string | null>(null)
   const [activeVerse, setActiveVerse] = useState<Verse | null>(null)
   const [extraMode, setExtraMode] = useState(false)
-  const reflection = reflectionForDay(day.day)
+  const [reflectSeed] = useState(() => Date.now())
+  const readerTopRef = useRef<HTMLDivElement>(null)
+  const reflection = reflectionForPassages(day.passages, day.day, reflectSeed)
 
   const translation = user.translationId
   const esvApiKey = user.esvApiKey
+
+  useEffect(() => {
+    readerTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [passageIndex, phase])
 
   useEffect(() => {
     let cancelled = false
@@ -160,7 +166,7 @@ export function ReadingSession({ day, user, onUserChange, onComplete, onBack }: 
       </header>
 
       {phase === 'read' && (
-        <div className="reader enter">
+        <div className="reader enter" ref={readerTopRef}>
           {loading && <p className="muted center">Gathering the passage…</p>}
           {error && (
             <div className="error-box">
@@ -278,8 +284,9 @@ export function ReadingSession({ day, user, onUserChange, onComplete, onBack }: 
       )}
 
       {phase === 'reflect' && (
-        <div className="reflect enter">
-          <p className="eyebrow">+10 XP bonus</p>
+        <div className="reflect enter" ref={readerTopRef}>
+          <p className="eyebrow">Heart check · +10 XP</p>
+          <p className="muted">About today’s reading: {day.title}</p>
           <h2>{reflection.prompt}</h2>
           <div className="options">
             {reflection.options.map((opt, i) => (

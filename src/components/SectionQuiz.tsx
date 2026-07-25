@@ -1,12 +1,15 @@
 import { useMemo, useState } from 'react'
 import type { SectionQuiz } from '../data/planQuizzes'
 import { PLAN_QUIZZES } from '../data/planQuizzes'
+import { pickQuizQuestions } from '../lib/quizCycle'
 
 type Props = {
   planId: string
   quizIndex: number
   quizId?: string
   title: string
+  /** Short summary of readings this checkpoint covers */
+  coverage?: string
   onComplete: (result: { correctMc: number; totalMc: number }) => void
   onBack: () => void
 }
@@ -16,6 +19,7 @@ export function SectionQuizSession({
   quizIndex,
   quizId,
   title,
+  coverage,
   onComplete,
   onBack,
 }: Props) {
@@ -28,6 +32,12 @@ export function SectionQuizSession({
     return pack.quizzes[quizIndex] ?? null
   }, [planId, quizId, quizIndex])
 
+  const [seed] = useState(() => Date.now())
+  const questions = useMemo(
+    () => (quiz ? pickQuizQuestions(quiz, seed) : []),
+    [quiz, seed],
+  )
+
   const [step, setStep] = useState(0)
   const [correctMc, setCorrectMc] = useState(0)
   const [totalMc, setTotalMc] = useState(0)
@@ -35,7 +45,7 @@ export function SectionQuizSession({
   const [checked, setChecked] = useState(false)
   const [openText, setOpenText] = useState('')
 
-  if (!quiz) {
+  if (!quiz || !questions.length) {
     return (
       <div className="screen session">
         <p className="muted center">Quiz not found.</p>
@@ -46,8 +56,8 @@ export function SectionQuizSession({
     )
   }
 
-  const q = quiz.questions[step]
-  const last = step >= quiz.questions.length - 1
+  const q = questions[step]
+  const last = step >= questions.length - 1
 
   function goNext(nextCorrect: number, nextTotal: number) {
     if (last) {
@@ -79,7 +89,7 @@ export function SectionQuizSession({
         <div>
           <p className="brand sm">Abide</p>
           <strong>
-            {title} · {step + 1}/{quiz.questions.length}
+            {title} · {step + 1}/{questions.length}
           </strong>
         </div>
         <div className="session-progress">?</div>
@@ -87,6 +97,7 @@ export function SectionQuizSession({
 
       <div className="reflect enter">
         <p className="eyebrow">{quiz.blurb}</p>
+        {coverage && <p className="muted">Covering: {coverage}</p>}
         <h2>{q.prompt}</h2>
 
         {q.type === 'mc' && (

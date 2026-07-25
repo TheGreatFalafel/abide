@@ -116,6 +116,15 @@ export default function App() {
   if (screen.name === 'lesson') {
     const day = days.find((d) => d.day === screen.day) ?? days[0]
     if (day.kind === 'quiz') {
+      const quizDay = day.day
+      const prior = days
+        .filter((d) => d.kind === 'read' && d.day < quizDay)
+        .slice(-12)
+      const coverage =
+        prior.length > 0
+          ? prior.map((d) => d.title).slice(0, 6).join(' · ') +
+            (prior.length > 6 ? '…' : '')
+          : day.sectionLabel || 'From the start of your path'
       return (
         <>
           {bridge}
@@ -124,6 +133,7 @@ export default function App() {
             quizIndex={day.quizIndex ?? 0}
             quizId={day.quizId}
             title={day.title}
+            coverage={coverage}
             onBack={() => setScreen({ name: 'home' })}
             onComplete={(score) =>
               handleQuizComplete(day.day, day.quizId ?? `quiz-${day.day}`, score)
