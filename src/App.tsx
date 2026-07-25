@@ -5,7 +5,7 @@ import { ReadingSession } from './components/ReadingSession'
 import { Celebration } from './components/Celebration'
 import { SectionQuizSession } from './components/SectionQuiz'
 import { CloudBridge } from './components/CloudBridge'
-import { getPlanById } from './data/bible'
+import { getPlanById, type PassageRef } from './data/bible'
 import {
   clearState,
   completeLesson,
@@ -24,9 +24,17 @@ type Screen =
   | { name: 'onboarding' }
   | { name: 'home' }
   | { name: 'lesson'; day: number }
+  | {
+      name: 'chapterQuiz'
+      quizId: string
+      passages: PassageRef[]
+      coverage: string
+      readingResult: LessonResult
+    }
   | { name: 'celebrate'; result: LessonResult }
 
 const HAS_CLERK = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY)
+const CHAPTER_QUIZ_EVERY = 7
 
 function boot(): { user: UserState | null; screen: Screen } {
   const user = loadState()
@@ -44,12 +52,12 @@ export default function App() {
 
   const plan = getPlanById(user?.planId ?? 'year', user?.customPlans ?? [])
   const days = useMemo(() => plan.generate(), [plan.id, user?.customPlans])
+  const hasPathQuizzes = useMemo(() => days.some((d) => d.kind === 'quiz'), [days])
 
   const handleCloudState = useCallback((cloud: UserState) => {
     const next = migrateUserState(cloud)
     saveState(next)
     setUser(next)
-    setScreen({ name: 'home' })
   }, [])
 
   function handleStart(name: string, planId: string) {
@@ -65,6 +73,33 @@ export default function App() {
       planTotalDays: days.length,
     })
     setUser(result.state)
+
+    // Plans without path quiz nodes get a chapter check every N reading days
+    if (!hasPathQuizzes) {
+      const completedReads = result.state.completedDays.filter((id) => {
+        const d = days.find((x) => x.day === id)
+        return !d || d.kind === 'read'
+      }).length
+      if (completedReads > 0 && completedReads % CHAPTER_QUIZ_EVERY === 0) {
+        const recent = days
+          .filter((d) => d.kind === 'read' && result.state.completedDays.includes(d.day))
+          .slice(-CHAPTER_QUIZ_EVERY)
+        const passages = recent.flatMap((d) => d.passages)
+        const quizNum = Math.floor(completedReads / CHAPTER_QUIZ_EVERY)
+        const quizId = `chapter-check-${quizNum}`
+        if (!result.state.completedQuizzes.includes(quizId) && passages.length) {
+          setScreen({
+            name: 'chapterQuiz',
+            quizId,
+            passages,
+            coverage: recent.map((d) => d.title).slice(0, 4).join(' · '),
+            readingResult: result,
+          })
+          return
+        }
+      }
+    }
+
     setScreen({ name: 'celebrate', result })
   }
 
@@ -113,17 +148,38 @@ export default function App() {
     )
   }
 
+  if (screen.name === 'chapterQuiz') {
+    return (
+      <>
+        {bridge}
+        <SectionQuizSession
+          planId={user.planId}
+          quizIndex={0}
+          quizId={screen.quizId}
+          title="Chapter check"
+          coverage={screen.coverage}
+          priorPassages={screen.passages}
+          onBack={() => setScreen({ name: 'celebrate', result: screen.readingResult })}
+          onComplete={(score) =>
+            handleQuizComplete(screen.readingResult.state.completedDays.at(-1) ?? 1, screen.quizId, score)
+          }
+        />
+      </>
+    )
+  }
+
   if (screen.name === 'lesson') {
     const day = days.find((d) => d.day === screen.day) ?? days[0]
     if (day.kind === 'quiz') {
       const quizDay = day.day
-      const prior = days
+      const priorDays = days
         .filter((d) => d.kind === 'read' && d.day < quizDay)
         .slice(-12)
+      const priorPassages = priorDays.flatMap((d) => d.passages)
       const coverage =
-        prior.length > 0
-          ? prior.map((d) => d.title).slice(0, 6).join(' · ') +
-            (prior.length > 6 ? '…' : '')
+        priorDays.length > 0
+          ? priorDays.map((d) => d.title).slice(0, 6).join(' · ') +
+            (priorDays.length > 6 ? '…' : '')
           : day.sectionLabel || 'From the start of your path'
       return (
         <>
@@ -134,6 +190,7 @@ export default function App() {
             quizId={day.quizId}
             title={day.title}
             coverage={coverage}
+            priorPassages={priorPassages}
             onBack={() => setScreen({ name: 'home' })}
             onComplete={(score) =>
               handleQuizComplete(day.day, day.quizId ?? `quiz-${day.day}`, score)

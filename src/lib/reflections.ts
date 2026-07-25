@@ -19,18 +19,20 @@ function pick<T>(items: T[], rand: () => number): T {
   return items[Math.floor(rand() * items.length) % items.length]
 }
 
-function readingLabel(passages: PassageRef[]): string {
-  if (!passages.length) return 'today’s reading'
-  const first = passages[0]
-  const last = passages[passages.length - 1]
-  if (passages.length === 1) {
-    if (first.heading) return `${first.bookName} ${first.chapter} (“${first.heading}”)`
-    return `${first.bookName} ${first.chapter}`
-  }
-  if (first.bookName === last.bookName) {
-    return `${first.bookName} ${first.chapter}–${last.chapter}`
-  }
-  return `${first.bookName} ${first.chapter} → ${last.bookName} ${last.chapter}`
+function chapterLabel(ref: PassageRef): string {
+  if (ref.heading) return `${ref.bookName} ${ref.chapter} (“${ref.heading}”)`
+  return `${ref.bookName} ${ref.chapter}`
+}
+
+/** On multi-stream days, focus the heart check on one chapter (cycles with seed). */
+function focusPassage(passages: PassageRef[], day: number, seed: number): PassageRef[] {
+  if (passages.length <= 1) return passages
+  const unique = new Map<string, PassageRef>()
+  for (const p of passages) unique.set(`${p.bookId}:${p.chapter}`, p)
+  const chapters = [...unique.values()]
+  if (chapters.length <= 1) return chapters
+  const rand = mulberry32(day * 10007 + seed * 9176 + chapters.length * 13)
+  return [chapters[Math.floor(rand() * chapters.length) % chapters.length]]
 }
 
 function bookIds(passages: PassageRef[]): string[] {
@@ -187,15 +189,16 @@ function eligible(passages: PassageRef[]): BankItem[] {
   })
 }
 
-/** Passage-aware heart check; `seed` changes which prompt you get on repeat visits. */
+/** Passage-aware heart check; focuses on one chapter and cycles with `seed`. */
 export function reflectionForPassages(
   passages: PassageRef[],
   day: number,
   seed = 0,
 ): Reflection {
-  const label = readingLabel(passages)
-  const pool = eligible(passages)
-  const rand = mulberry32(day * 10007 + seed * 9176 + passages.length * 13)
+  const focused = focusPassage(passages, day, seed)
+  const label = focused[0] ? chapterLabel(focused[0]) : 'today’s reading'
+  const pool = eligible(focused.length ? focused : passages)
+  const rand = mulberry32(day * 10007 + seed * 9176 + (focused[0]?.chapter ?? 0) * 13)
   const item = pick(pool, rand)
   return {
     prompt: item.prompt(label),

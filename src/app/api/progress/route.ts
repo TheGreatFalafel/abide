@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 import { getDb, hasDatabase } from '@/db/client'
 import { profiles } from '@/db/schema'
+import { mergeUserStates } from '@/lib/mergeState'
 import type { UserState } from '@/lib/types'
 
 export async function GET() {
@@ -45,39 +46,44 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: 'Missing state' }, { status: 400 })
   }
 
+  const incoming = body.state
   const user = await currentUser()
   const displayName =
-    body.state.name ||
+    incoming.name ||
     user?.firstName ||
     user?.username ||
     user?.primaryEmailAddress?.emailAddress ||
     'Friend'
 
   const db = getDb()
+  const existing = await db.select().from(profiles).where(eq(profiles.userId, userId)).limit(1)
+  const prior = existing[0]?.stateJson as UserState | null | undefined
+  const merged = prior ? mergeUserStates(incoming, prior) : incoming
+
   await db
     .insert(profiles)
     .values({
       userId,
       displayName,
-      streak: body.state.streak ?? 0,
-      longestStreak: body.state.longestStreak ?? 0,
-      xp: body.state.xp ?? 0,
-      lastReadDate: body.state.lastReadDate,
-      stateJson: body.state,
+      streak: merged.streak ?? 0,
+      longestStreak: merged.longestStreak ?? 0,
+      xp: merged.xp ?? 0,
+      lastReadDate: merged.lastReadDate,
+      stateJson: merged,
       updatedAt: new Date(),
     })
     .onConflictDoUpdate({
       target: profiles.userId,
       set: {
         displayName,
-        streak: body.state.streak ?? 0,
-        longestStreak: body.state.longestStreak ?? 0,
-        xp: body.state.xp ?? 0,
-        lastReadDate: body.state.lastReadDate,
-        stateJson: body.state,
+        streak: merged.streak ?? 0,
+        longestStreak: merged.longestStreak ?? 0,
+        xp: merged.xp ?? 0,
+        lastReadDate: merged.lastReadDate,
+        stateJson: merged,
         updatedAt: new Date(),
       },
     })
 
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, state: merged })
 }

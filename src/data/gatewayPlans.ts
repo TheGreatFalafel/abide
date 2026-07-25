@@ -52,6 +52,8 @@ function fromData2(
 /**
  * Popular Bible Gateway reading-plan styles.
  * Schedules are open JSON equivalents (not scraped from Bible Gateway).
+ * Quiz checkpoints are not inserted into the day list (would renumber days);
+ * the app offers chapter checks from recent passages instead.
  */
 export function buildGatewayStylePlans(helpers: {
   chaptersFrom: (bookIds: string[]) => import('./books').PassageRef[]

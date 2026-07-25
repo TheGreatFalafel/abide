@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import type { PassageRef } from '../data/books'
+import { buildChapterQuiz } from '../data/chapterQuizzes'
 import type { SectionQuiz } from '../data/planQuizzes'
 import { PLAN_QUIZZES } from '../data/planQuizzes'
 import { pickQuizQuestions } from '../lib/quizCycle'
@@ -10,6 +12,8 @@ type Props = {
   title: string
   /** Short summary of readings this checkpoint covers */
   coverage?: string
+  /** Recent reading passages — used for chapter-specific questions */
+  priorPassages?: PassageRef[]
   onComplete: (result: { correctMc: number; totalMc: number }) => void
   onBack: () => void
 }
@@ -20,22 +24,34 @@ export function SectionQuizSession({
   quizId,
   title,
   coverage,
+  priorPassages = [],
   onComplete,
   onBack,
 }: Props) {
+  const [seed] = useState(() => Date.now())
+
   const quiz: SectionQuiz | null = useMemo(() => {
+    if (priorPassages.length > 0) {
+      const built = buildChapterQuiz(priorPassages, seed + quizIndex * 997)
+      return {
+        id: quizId ?? `chapter-check-${quizIndex}`,
+        title: title || built.title,
+        blurb: built.blurb,
+        questions: built.questions,
+        askCount: built.questions.length,
+      }
+    }
     const pack = PLAN_QUIZZES[planId]
     if (!pack) return null
     if (quizId) {
       return pack.quizzes.find((q) => q.id === quizId) ?? pack.quizzes[quizIndex] ?? null
     }
     return pack.quizzes[quizIndex] ?? null
-  }, [planId, quizId, quizIndex])
+  }, [planId, quizId, quizIndex, title, priorPassages, seed])
 
-  const [seed] = useState(() => Date.now())
   const questions = useMemo(
-    () => (quiz ? pickQuizQuestions(quiz, seed) : []),
-    [quiz, seed],
+    () => (quiz ? (priorPassages.length > 0 ? quiz.questions : pickQuizQuestions(quiz, seed)) : []),
+    [quiz, seed, priorPassages.length],
   )
 
   const [step, setStep] = useState(0)
@@ -89,7 +105,7 @@ export function SectionQuizSession({
         <div>
           <p className="brand sm">Abide</p>
           <strong>
-            {title} · {step + 1}/{questions.length}
+            {quiz.title} · {step + 1}/{questions.length}
           </strong>
         </div>
         <div className="session-progress">?</div>
@@ -97,7 +113,7 @@ export function SectionQuizSession({
 
       <div className="reflect enter">
         <p className="eyebrow">{quiz.blurb}</p>
-        {coverage && <p className="muted">Covering: {coverage}</p>}
+        {coverage && <p className="muted">From recent reading: {coverage}</p>}
         <h2>{q.prompt}</h2>
 
         {q.type === 'mc' && (

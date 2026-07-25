@@ -124,11 +124,38 @@ export function generateCustomPlanDays(plan: CustomPlan): PlanDay[] {
   }))
 }
 
+/** Insert chapter-check quiz nodes every N reading days (dynamic questions from recent passages). */
+export function withChapterCheckpoints(readDays: PlanDay[], every = 7): PlanDay[] {
+  const out: PlanDay[] = []
+  let quizCount = 0
+  let readsSinceQuiz = 0
+
+  for (const day of readDays) {
+    out.push({ ...day, kind: 'read' as const })
+    readsSinceQuiz += 1
+    if (readsSinceQuiz >= every) {
+      quizCount += 1
+      out.push({
+        day: 0,
+        passages: [],
+        title: 'Chapter check',
+        kind: 'quiz',
+        sectionLabel: `Checkpoint ${quizCount}`,
+        quizId: `chapter-check-${quizCount}`,
+        quizIndex: quizCount - 1,
+      })
+      readsSinceQuiz = 0
+    }
+  }
+
+  return out.map((d, i) => ({ ...d, day: i + 1 }))
+}
+
 /** After every N reading days, insert a quiz checkpoint node. */
 function withPlanQuizzes(planId: string, readDays: PlanDay[]): PlanDay[] {
   const pack = PLAN_QUIZZES[planId]
   if (!pack) {
-    return readDays.map((d, i) => ({ ...d, day: i + 1, kind: 'read' as const }))
+    return withChapterCheckpoints(readDays, 7)
   }
 
   const out: PlanDay[] = []
