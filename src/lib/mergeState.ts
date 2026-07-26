@@ -71,6 +71,16 @@ export function mergeUserStates(local: UserState, cloud: UserState): UserState {
     return a >= b ? a : b
   })()
 
+  const localKey = local.esvApiKey?.trim() || ''
+  const cloudKey = cloud.esvApiKey?.trim() || ''
+  // Never let an empty key wipe a saved Crossway token on the account
+  const esvApiKey = localKey || cloudKey
+  const translationId = localKey
+    ? local.translationId
+    : cloudKey
+      ? cloud.translationId || local.translationId
+      : local.translationId || cloud.translationId
+
   return {
     ...cloud,
     ...local,
@@ -86,12 +96,8 @@ export function mergeUserStates(local: UserState, cloud: UserState): UserState {
     completedQuizzes,
     memoryVerses: mergeMemories(local.memoryVerses, cloud.memoryVerses),
     customPlans,
-    esvApiKey: local.esvApiKey?.trim() || cloud.esvApiKey || '',
-    translationId: local.esvApiKey?.trim()
-      ? local.translationId
-      : cloud.esvApiKey?.trim()
-        ? cloud.translationId
-        : local.translationId || cloud.translationId,
+    esvApiKey,
+    translationId,
     dailyGoalXp: local.dailyGoalXp || cloud.dailyGoalXp,
     todayXp: Math.max(local.todayXp, cloud.todayXp),
     todayXpDate:

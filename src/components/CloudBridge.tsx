@@ -34,12 +34,24 @@ function fingerprint(state: UserState): string {
   })
 }
 
+function applyMerged(merged: UserState, onCloudState: (s: UserState) => void) {
+  const next = migrateUserState(merged)
+  saveState(next)
+  onCloudState(next)
+  return next
+}
+
 /** Syncs local progress to Neon when signed in with Clerk. */
 export function CloudBridge({ state, onCloudState }: Props) {
   const { isSignedIn, isLoaded } = useAuth()
   const lastSaved = useRef('')
   const hydrated = useRef(false)
   const [syncNote, setSyncNote] = useState<string | null>(null)
+
+  // Re-hydrate after sign-out (fresh sign-in should pull account ESV key again)
+  useEffect(() => {
+    if (!isSignedIn) hydrated.current = false
+  }, [isSignedIn])
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn || hydrated.current) return
@@ -49,28 +61,33 @@ export function CloudBridge({ state, onCloudState }: Props) {
       .then((cloud) => {
         if (!cloud && !local) return
         if (!cloud && local) {
-          void saveCloudProgress(local).then((ok) => {
-            if (ok) lastSaved.current = fingerprint(local)
+          void saveCloudProgress(local).then((saved) => {
+            if (saved) lastSaved.current = fingerprint(saved)
           })
           return
         }
         if (cloud && !local) {
-          const next = migrateUserState(cloud)
-          saveState(next)
-          onCloudState(next)
+          const next = applyMerged(cloud, onCloudState)
           lastSaved.current = fingerprint(next)
           setSyncNote('Progress restored from your account')
           window.setTimeout(() => setSyncNote(null), 2500)
           return
         }
         if (cloud && local) {
-          const merged = migrateUserState(mergeUserStates(local, cloud))
-          saveState(merged)
-          onCloudState(merged)
-          void saveCloudProgress(merged).then((ok) => {
-            if (ok) lastSaved.current = fingerprint(merged)
+          const merged = mergeUserStates(local, cloud)
+          const next = applyMerged(merged, onCloudState)
+          void saveCloudProgress(next).then((saved) => {
+            if (!saved) return
+            lastSaved.current = fingerprint(saved)
+            // Server may have preserved an ESV key local was missing
+            if (saved.esvApiKey?.trim() && saved.esvApiKey !== next.esvApiKey) {
+              applyMerged(saved, onCloudState)
+            }
           })
-          setSyncNote('Progress synced to your account')
+          const note = next.esvApiKey?.trim()
+            ? 'Account synced — ESV key restored'
+            : 'Progress synced to your account'
+          setSyncNote(note)
           window.setTimeout(() => setSyncNote(null), 2500)
         }
       })
@@ -86,13 +103,21 @@ export function CloudBridge({ state, onCloudState }: Props) {
     if (fp === lastSaved.current) return
     const timer = window.setTimeout(() => {
       saveCloudProgress(state)
-        .then((ok) => {
-          if (ok) lastSaved.current = fp
+        .then((saved) => {
+          if (!saved) return
+          lastSaved.current = fingerprint(saved)
+          if (
+            saved.esvApiKey?.trim() &&
+            !state.esvApiKey?.trim() &&
+            saved.esvApiKey !== state.esvApiKey
+          ) {
+            applyMerged(saved, onCloudState)
+          }
         })
         .catch(() => {})
     }, 500)
     return () => window.clearTimeout(timer)
-  }, [state, isSignedIn])
+  }, [state, isSignedIn, onCloudState])
 
   // Flush pending progress when leaving the tab
   useEffect(() => {
@@ -100,8 +125,8 @@ export function CloudBridge({ state, onCloudState }: Props) {
     const flush = () => {
       const fp = fingerprint(state)
       if (fp === lastSaved.current) return
-      void saveCloudProgress(state).then((ok) => {
-        if (ok) lastSaved.current = fp
+      void saveCloudProgress(state).then((saved) => {
+        if (saved) lastSaved.current = fingerprint(saved)
       })
     }
     const onVis = () => {

@@ -1,9 +1,11 @@
-'use client'
+﻿'use client'
 
-import { useState } from 'react'
+import { useAuth } from '@clerk/nextjs'
+import { useEffect, useState } from 'react'
 import { TRANSLATIONS, type TranslationId } from '../data/translations'
 import { PLANS } from '../data/bible'
 import { updateSettings } from '../lib/progress'
+import { saveCloudProgress } from '../lib/cloud'
 import type { CustomPlan, UserState } from '../lib/types'
 import { EsvAttribution } from './EsvAttribution'
 import { CustomPlanBuilder } from './CustomPlanBuilder'
@@ -17,11 +19,15 @@ type Props = {
 
 type SectionId = 'bible' | 'plan' | 'about'
 
+const HAS_CLERK = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY)
+
 export function Settings({ user, onUserChange, onReset }: Props) {
+  const { isSignedIn } = useAuth()
   const customPlans = user.customPlans ?? []
   const esvKey = user.esvApiKey ?? ''
   const [keyDraft, setKeyDraft] = useState(esvKey)
   const [saved, setSaved] = useState(false)
+  const [savingAccount, setSavingAccount] = useState(false)
   const [showKey, setShowKey] = useState(false)
   const [testing, setTesting] = useState(false)
   const [testMsg, setTestMsg] = useState<string | null>(null)
@@ -30,24 +36,55 @@ export function Settings({ user, onUserChange, onReset }: Props) {
   const [editing, setEditing] = useState<CustomPlan | null>(null)
   const [showBuilder, setShowBuilder] = useState(false)
   const keyReady = Boolean(esvKey.trim())
+  const accountSync = HAS_CLERK && isSignedIn
+
+  useEffect(() => {
+    setKeyDraft(esvKey)
+  }, [esvKey])
 
   function toggle(id: SectionId) {
     setOpen((prev) => (prev === id ? prev : id))
   }
 
   function setTranslation(id: TranslationId) {
+    if (id === 'esv' && !user.esvApiKey?.trim() && !keyDraft.trim()) {
+      setOpen('bible')
+      setTestMsg('Add your ESV API key above first, then switch to ESV.')
+      setTestOk(false)
+      return
+    }
     onUserChange(updateSettings(user, { translationId: id }))
   }
 
-  function saveKey() {
+  async function saveKey() {
     const trimmed = keyDraft.trim()
-    onUserChange(
-      updateSettings(user, {
-        esvApiKey: trimmed,
-        translationId: trimmed ? 'esv' : user.translationId,
-      }),
-    )
+    if (!trimmed) return
+    const next = updateSettings(user, {
+      esvApiKey: trimmed,
+      translationId: 'esv',
+    })
+    onUserChange(next)
     setSaved(true)
+
+    if (accountSync) {
+      setSavingAccount(true)
+      try {
+        const savedState = await saveCloudProgress(next)
+        if (savedState) {
+          onUserChange(savedState)
+          setTestMsg('ESV key saved to your account — available whenever you sign in.')
+          setTestOk(true)
+        } else {
+          setTestMsg('Saved on this device. Sign in to keep the key on your account.')
+          setTestOk(false)
+        }
+      } catch {
+        setTestMsg('Saved on this device, but account sync failed. Try again while signed in.')
+        setTestOk(false)
+      }
+      setSavingAccount(false)
+    }
+
     window.setTimeout(() => setSaved(false), 1600)
   }
 
@@ -95,7 +132,7 @@ export function Settings({ user, onUserChange, onReset }: Props) {
   }
 
   function deleteCustomPlan(plan: CustomPlan) {
-    if (!confirm(`Delete “${plan.name}”?`)) return
+    if (!confirm(`Delete "${plan.name}"?`)) return
     const nextPlans = customPlans.filter((p) => p.id !== plan.id)
     onUserChange({
       ...user,
@@ -133,10 +170,17 @@ export function Settings({ user, onUserChange, onReset }: Props) {
                   api.esv.org
                 </a>
                 . WEB and KJV need no key.
+                {accountSync
+                  ? ' When signed in, your key is stored on your Abide account.'
+                  : HAS_CLERK
+                    ? ' Sign in so the key is saved to your account, not only this browser.'
+                    : ''}
               </p>
               <p className={`nudge ${keyReady ? 'good' : 'risk'}`}>
                 {keyReady
-                  ? 'ESV key saved on this device.'
+                  ? accountSync
+                    ? 'ESV key is on your account — ESV stays available when you sign in.'
+                    : 'ESV key saved on this device.'
                   : 'No key yet — ESV readings will not load until you save one.'}
               </p>
               <label className="field-label">
@@ -160,12 +204,24 @@ export function Settings({ user, onUserChange, onReset }: Props) {
                 </div>
               </label>
               <div className="session-actions">
-                <button className="btn primary" onClick={saveKey} disabled={!keyDraft.trim()}>
-                  {saved ? 'Saved ✓' : 'Save key'}
+                <button
+                  className="btn primary"
+                  onClick={() => void saveKey()}
+                  disabled={!keyDraft.trim() || savingAccount}
+                >
+                  {savingAccount
+                    ? 'Saving to account…'
+                    : saved
+                      ? accountSync
+                        ? 'Saved to account ✓'
+                        : 'Saved ✓'
+                      : accountSync
+                        ? 'Save to account'
+                        : 'Save key'}
                 </button>
                 <button
                   className="btn ghost-outline"
-                  onClick={runTest}
+                  onClick={() => void runTest()}
                   disabled={testing || !(keyDraft.trim() || esvKey.trim())}
                 >
                   {testing ? 'Testing…' : 'Test'}

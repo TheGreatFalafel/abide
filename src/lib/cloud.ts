@@ -8,15 +8,17 @@ export async function fetchCloudProgress(): Promise<UserState | null> {
   return data.state
 }
 
-export async function saveCloudProgress(state: UserState): Promise<boolean> {
+/** Saves progress; returns the server-merged state (keeps account ESV key, etc.). */
+export async function saveCloudProgress(state: UserState): Promise<UserState | null> {
   const res = await fetch('/api/progress', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ state }),
   })
-  if (res.status === 401 || res.status === 503) return false
+  if (res.status === 401 || res.status === 503) return null
   if (!res.ok) throw new Error('Could not save cloud progress')
-  return true
+  const data = (await res.json()) as { ok?: boolean; state?: UserState }
+  return data.state ?? state
 }
 
 export type CircleMember = {

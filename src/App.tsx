@@ -58,9 +58,22 @@ export default function App() {
     const next = migrateUserState(cloud)
     saveState(next)
     setUser(next)
+    setScreen((s) => (s.name === 'onboarding' ? { name: 'home' } : s))
   }, [])
 
   function handleStart(name: string, planId: string) {
+    // Don't wipe account progress (including ESV key) if cloud already restored a profile
+    if (user && (user.esvApiKey?.trim() || user.xp > 0 || user.completedDays.length > 0)) {
+      const next = {
+        ...user,
+        name: name.trim() || user.name,
+        planId: user.planId || planId,
+      }
+      saveState(next)
+      setUser(next)
+      setScreen({ name: 'home' })
+      return
+    }
     const next = startJourney(name, planId)
     setUser(next)
     setScreen({ name: 'home' })
@@ -137,7 +150,13 @@ export default function App() {
   }
 
   const bridge =
-    HAS_CLERK ? <CloudBridge state={user} onCloudState={handleCloudState} /> : null
+    HAS_CLERK ? (
+      <CloudBridge
+        key={user ? `sync-${user.createdAt}` : 'sync-anon'}
+        state={user}
+        onCloudState={handleCloudState}
+      />
+    ) : null
 
   if (screen.name === 'onboarding' || !user) {
     return (
