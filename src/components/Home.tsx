@@ -228,7 +228,7 @@ export function Home({
         <Memory user={user} onUserChange={onUserChange} onReviewed={onMemoryReview} />
       )}
 
-      {view === 'circle' && <CircleGate />}
+      {view === 'circle' && <CircleGate user={user} onUserChange={onUserChange} />}
 
       {view === 'badges' && (
         <div className="badges">

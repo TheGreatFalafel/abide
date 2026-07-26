@@ -1559,6 +1559,72 @@ a.btn {
   pointer-events: none;
 }
 
+.challenge-create {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.challenge-card {
+  margin-top: 1rem;
+  padding: 0.85rem 0 0;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+}
+
+.challenge-card.ended {
+  opacity: 0.85;
+}
+
+.challenge-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.challenge-board {
+  list-style: none;
+  margin: 0.65rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.challenge-board li {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.challenge-board li.me {
+  font-weight: 700;
+  color: var(--teal-deep);
+}
+
+.challenge-board .rank {
+  font-weight: 800;
+  color: var(--muted, #6b7280);
+}
+
+.challenge-board .pts {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.82rem;
+  color: var(--muted, #6b7280);
+}
+
+.challenge-prompt {
+  font-size: 1.15rem;
+  margin: 0.5rem 0 0.85rem;
+}
+
+.challenge-quiz .option {
+  text-align: left;
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
 @media (max-width: 480px) {
   .path-row {
     transform: translateX(calc(var(--offset, 0) * 8px));

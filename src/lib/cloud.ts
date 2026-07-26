@@ -55,3 +55,62 @@ export async function circleAction(
   if (!res.ok) return { error: data.error || 'Request failed' }
   return data
 }
+
+export type ChallengeVerse = {
+  id: string
+  reference: string
+  bookId: string
+  bookName: string
+  chapter: number
+  verseStart: number
+  verseEnd: number
+}
+
+export type ChallengeScore = {
+  userId: string
+  score: number
+  correct: number
+  attempts: number
+  updatedAt: string
+  displayName: string | null
+}
+
+export type MemoryChallenge = {
+  id: string
+  circleId: string
+  createdBy: string
+  name: string
+  source: string
+  verses: ChallengeVerse[]
+  startsAt: string
+  endsAt: string
+  status: string
+  createdAt: string
+  scores: ChallengeScore[]
+}
+
+export async function fetchChallenges(): Promise<MemoryChallenge[]> {
+  const res = await fetch('/api/circle/challenge')
+  if (res.status === 401 || res.status === 503) return []
+  if (!res.ok) throw new Error('Could not load challenges')
+  const data = (await res.json()) as { challenges: MemoryChallenge[] }
+  return data.challenges ?? []
+}
+
+export async function challengeAction(
+  body: Record<string, unknown>,
+): Promise<{ ok?: boolean; challengeId?: string; score?: ChallengeScore; error?: string }> {
+  const res = await fetch('/api/circle/challenge', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const data = (await res.json()) as {
+    ok?: boolean
+    challengeId?: string
+    score?: ChallengeScore
+    error?: string
+  }
+  if (!res.ok) return { error: data.error || 'Request failed' }
+  return data
+}

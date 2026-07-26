@@ -51,3 +51,36 @@ export const nudges = pgTable('nudges', {
   message: text('message').notNull().default('Keep the streak going!'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
+
+/** Shared memorization competition for a circle. */
+export const memoryChallenges = pgTable('memory_challenges', {
+  id: text('id').primaryKey(),
+  circleId: text('circle_id')
+    .notNull()
+    .references(() => circles.id, { onDelete: 'cascade' }),
+  createdBy: text('created_by').notNull(),
+  name: text('name').notNull(),
+  /** TMS series id (A–E) or "custom" */
+  source: text('source').notNull().default('custom'),
+  /** ChallengeVerse[] — shared references everyone quizzes on */
+  versesJson: jsonb('verses_json').notNull(),
+  startsAt: timestamp('starts_at', { withTimezone: true }).defaultNow().notNull(),
+  endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+  status: text('status').notNull().default('active'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
+export const memoryChallengeScores = pgTable(
+  'memory_challenge_scores',
+  {
+    challengeId: text('challenge_id')
+      .notNull()
+      .references(() => memoryChallenges.id, { onDelete: 'cascade' }),
+    userId: text('user_id').notNull(),
+    score: integer('score').notNull().default(0),
+    correct: integer('correct').notNull().default(0),
+    attempts: integer('attempts').notNull().default(0),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.challengeId, t.userId] })],
+)

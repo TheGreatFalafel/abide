@@ -7,15 +7,18 @@ import {
   fetchCircle,
   type CirclePayload,
 } from '../lib/cloud'
-import { titleForXp } from '../lib/types'
+import { titleForXp, type UserState } from '../lib/types'
+import { MemoryChallengePanel } from './MemoryChallengePanel'
 
 type Props = {
+  user: UserState
+  onUserChange: (user: UserState) => void
   onSyncedName?: (name: string) => void
 }
 
-export function CirclePanel({ onSyncedName }: Props) {
+export function CirclePanel({ user, onUserChange, onSyncedName }: Props) {
   const { isSignedIn, isLoaded } = useAuth()
-  const { user } = useUser()
+  const { user: clerkUser } = useUser()
   const [data, setData] = useState<CirclePayload | null>(null)
   const [invite, setInvite] = useState('')
   const [msg, setMsg] = useState<string | null>(null)
@@ -36,8 +39,8 @@ export function CirclePanel({ onSyncedName }: Props) {
   }, [reload])
 
   useEffect(() => {
-    if (user?.firstName) onSyncedName?.(user.firstName)
-  }, [user, onSyncedName])
+    if (clerkUser?.firstName) onSyncedName?.(clerkUser.firstName)
+  }, [clerkUser, onSyncedName])
 
   if (!isLoaded) return <p className="muted">Loading account…</p>
 
@@ -88,7 +91,7 @@ export function CirclePanel({ onSyncedName }: Props) {
       <div className="settings-block">
         <h3>Signed in</h3>
         <p className="muted">
-          {user?.primaryEmailAddress?.emailAddress || user?.username || 'Account connected'}
+          {clerkUser?.primaryEmailAddress?.emailAddress || clerkUser?.username || 'Account connected'}
         </p>
         <a className="btn tiny ghost-outline" href="/sign-in">
           Manage account
@@ -101,7 +104,7 @@ export function CirclePanel({ onSyncedName }: Props) {
 
         {!data?.circle && (
           <>
-            <button className="btn primary" disabled={busy} onClick={() => run('create')}>
+            <button className="btn primary" disabled={busy} onClick={() => void run('create')}>
               Create a circle
             </button>
             <label className="field-label">
@@ -117,7 +120,7 @@ export function CirclePanel({ onSyncedName }: Props) {
             <button
               className="btn ghost-outline"
               disabled={busy || invite.trim().length < 4}
-              onClick={() => run('join', { inviteCode: invite.trim() })}
+              onClick={() => void run('join', { inviteCode: invite.trim() })}
             >
               Join circle
             </button>
@@ -137,19 +140,23 @@ export function CirclePanel({ onSyncedName }: Props) {
                   <div>
                     <strong>{m.displayName || 'Friend'}</strong>
                     <p className="memory-meta">
-                      {titleForXp(m.xp ?? 0)} · 🔥 {m.streak ?? 0} · ✦ {m.xp ?? 0}
+                      {titleForXp(m.xp ?? 0)} · {m.streak ?? 0} day streak · {m.xp ?? 0} XP
                       {m.lastReadDate ? ` · last ${m.lastReadDate}` : ''}
                     </p>
                   </div>
-                  {m.userId !== user?.id && (
-                    <button className="btn tiny" disabled={busy} onClick={() => nudge(m.userId)}>
+                  {m.userId !== clerkUser?.id && (
+                    <button
+                      className="btn tiny"
+                      disabled={busy}
+                      onClick={() => void nudge(m.userId)}
+                    >
                       Encourage
                     </button>
                   )}
                 </div>
               ))}
             </div>
-            <button className="btn ghost danger" disabled={busy} onClick={() => run('leave')}>
+            <button className="btn ghost danger" disabled={busy} onClick={() => void run('leave')}>
               Leave circle
             </button>
           </>
@@ -168,6 +175,14 @@ export function CirclePanel({ onSyncedName }: Props) {
 
         {msg && <p className="nudge">{msg}</p>}
       </div>
+
+      {data?.circle && (
+        <MemoryChallengePanel
+          user={user}
+          onUserChange={onUserChange}
+          myUserId={clerkUser?.id}
+        />
+      )}
     </div>
   )
 }
