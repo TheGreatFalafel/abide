@@ -40,6 +40,7 @@ export function migrateUserState(
     customPlans: (raw.customPlans ?? []).map((p) => ({
       ...p,
       pace: p.pace ?? 'chapter',
+      versesPerDay: p.versesPerDay,
     })),
   }
 }

@@ -145,8 +145,10 @@ export type CustomPlan = {
   name: string
   bookIds: string[]
   days: number
-  /** chapter = whole chapters; section = standard heading breaks; half = mid-chapter. */
-  pace: 'chapter' | 'section' | 'half'
+  /** chapter | section | half | verses (N verses per reading unit). */
+  pace: 'chapter' | 'section' | 'half' | 'verses'
+  /** Used when pace is "verses" — how many verses make one reading unit. */
+  versesPerDay?: number
   createdAt: string
 }
 

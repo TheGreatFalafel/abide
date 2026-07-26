@@ -2,6 +2,7 @@ import { PLAN_QUIZZES } from './planQuizzes'
 import type { CustomPlan } from '../lib/types'
 import { buildGatewayStylePlans } from './gatewayPlans'
 import { getSectionBreaks } from '../lib/sectionHeadings'
+import { versesInChapter } from './chapterVerseCounts'
 import { BOOKS, type BibleBook, type PassageRef } from './books'
 
 export { BOOKS, type BibleBook, type PassageRef }
@@ -71,9 +72,39 @@ export function sectionsFrom(bookIds: string[]): PassageRef[] {
   return refs
 }
 
-export function unitsFromPlan(plan: Pick<CustomPlan, 'bookIds' | 'pace'>): PassageRef[] {
+/**
+ * Chunk selected books into reading units of about `versesPerUnit` verses.
+ * Stays inside a chapter when possible; leftover verses keep their own unit.
+ */
+export function verseUnitsFrom(bookIds: string[], versesPerUnit: number): PassageRef[] {
+  const size = Math.max(1, Math.min(50, Math.floor(versesPerUnit) || 1))
+  const refs: PassageRef[] = []
+  for (const id of bookIds) {
+    const book = BOOKS.find((b) => b.id === id)
+    if (!book) continue
+    for (let c = 1; c <= book.chapters; c++) {
+      const total = versesInChapter(id, c) || 1
+      for (let start = 1; start <= total; start += size) {
+        const end = Math.min(start + size - 1, total)
+        refs.push({
+          bookId: book.id,
+          bookName: book.name,
+          chapter: c,
+          verseStart: start,
+          verseEnd: end,
+        })
+      }
+    }
+  }
+  return refs
+}
+
+export function unitsFromPlan(
+  plan: Pick<CustomPlan, 'bookIds' | 'pace' | 'versesPerDay'>,
+): PassageRef[] {
   if (plan.pace === 'section') return sectionsFrom(plan.bookIds)
   if (plan.pace === 'half') return halfChaptersFrom(plan.bookIds)
+  if (plan.pace === 'verses') return verseUnitsFrom(plan.bookIds, plan.versesPerDay ?? 10)
   return chaptersFrom(plan.bookIds)
 }
 
@@ -84,11 +115,28 @@ function titleFor(slice: PassageRef[]): string {
     if (first.heading) {
       return `${first.bookName} ${first.chapter} · ${first.heading}`
     }
+    if (first.verseStart) {
+      if (first.verseEnd && first.verseEnd !== first.verseStart) {
+        return `${first.bookName} ${first.chapter}:${first.verseStart}–${first.verseEnd}`
+      }
+      return `${first.bookName} ${first.chapter}:${first.verseStart}`
+    }
     if (first.part === 'a') return `${first.bookName} ${first.chapter} (first half)`
     if (first.part === 'b') return `${first.bookName} ${first.chapter} (second half)`
     return `${first.bookName} ${first.chapter}`
   }
+  if (
+    first.bookId === last.bookId &&
+    first.chapter === last.chapter &&
+    first.verseStart &&
+    last.verseEnd
+  ) {
+    return `${first.bookName} ${first.chapter}:${first.verseStart}–${last.verseEnd}`
+  }
   if (first.bookName === last.bookName) {
+    if (first.verseStart && last.verseEnd) {
+      return `${first.bookName} ${first.chapter}:${first.verseStart} → ${last.chapter}:${last.verseEnd}`
+    }
     return `${first.bookName} ${first.chapter}–${last.chapter}`
   }
   return `${first.bookName} ${first.chapter} → ${last.bookName} ${last.chapter}`
@@ -279,7 +327,13 @@ export function getPlanById(
   if (custom) {
     const pace = custom.pace ?? 'chapter'
     const paceLabel =
-      pace === 'section' ? 'section' : pace === 'half' ? 'half-chapter' : 'chapter'
+      pace === 'section'
+        ? 'section'
+        : pace === 'half'
+          ? 'half-chapter'
+          : pace === 'verses'
+            ? `${custom.versesPerDay ?? 10}-verse`
+            : 'chapter'
     return {
       id: custom.id,
       name: custom.name,

@@ -1,8 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { BOOKS, unitsFromPlan } from '../data/bible'
+import { totalVersesInBooks } from '../data/chapterVerseCounts'
 import type { CustomPlan } from '../lib/types'
+
+type Pace = CustomPlan['pace']
 
 type Props = {
   onSave: (plan: CustomPlan) => void
@@ -11,12 +14,12 @@ type Props = {
 }
 
 export function CustomPlanBuilder({ onSave, onCancel, initial }: Props) {
+  const rootRef = useRef<HTMLDivElement>(null)
   const [selected, setSelected] = useState<string[]>(initial?.bookIds ?? ['john'])
   const [name, setName] = useState(initial?.name ?? '')
-  const [pace, setPace] = useState<'chapter' | 'section' | 'half'>(
-    initial?.pace ?? 'section',
-  )
-  const [chaptersPerDay, setChaptersPerDay] = useState(1)
+  const [pace, setPace] = useState<Pace>(initial?.pace ?? 'section')
+  const [versesPerDay, setVersesPerDay] = useState(initial?.versesPerDay ?? 10)
+  const [unitsPerDay, setUnitsPerDay] = useState(1)
   const [daysMode, setDaysMode] = useState<'pace' | 'days'>('pace')
   const [days, setDays] = useState(initial?.days ?? 21)
 
@@ -25,8 +28,13 @@ export function CustomPlanBuilder({ onSave, onCancel, initial }: Props) {
     setSelected(initial.bookIds)
     setName(initial.name)
     setPace(initial.pace ?? 'chapter')
+    setVersesPerDay(initial.versesPerDay ?? 10)
     setDays(initial.days)
     setDaysMode('days')
+    setUnitsPerDay(1)
+    window.requestAnimationFrame(() => {
+      rootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
   }, [initial])
 
   const totalChapters = useMemo(() => {
@@ -36,21 +44,27 @@ export function CustomPlanBuilder({ onSave, onCancel, initial }: Props) {
     }, 0)
   }, [selected])
 
+  const verseTotal = useMemo(() => totalVersesInBooks(selected), [selected])
+
   const unitCount = useMemo(() => {
     if (!selected.length) return 0
-    return unitsFromPlan({ bookIds: selected, pace }).length
-  }, [selected, pace])
+    return unitsFromPlan({
+      bookIds: selected,
+      pace,
+      versesPerDay: pace === 'verses' ? versesPerDay : undefined,
+    }).length
+  }, [selected, pace, versesPerDay])
 
   const computedDays = Math.max(
     1,
-    Math.ceil(unitCount / Math.max(1, chaptersPerDay)),
+    Math.ceil(unitCount / Math.max(1, unitsPerDay)),
   )
   const safeDays =
     daysMode === 'pace'
       ? Math.min(unitCount, computedDays)
       : Math.min(Math.max(1, days), Math.max(1, unitCount))
 
-  const unitsPerDay = unitCount && safeDays ? unitCount / safeDays : 0
+  const unitsEachDay = unitCount && safeDays ? unitCount / safeDays : 0
 
   function toggle(id: string) {
     setSelected((prev) =>
@@ -83,18 +97,27 @@ export function CustomPlanBuilder({ onSave, onCancel, initial }: Props) {
       bookIds: selected,
       days: safeDays,
       pace,
+      versesPerDay: pace === 'verses' ? Math.max(1, Math.min(50, versesPerDay)) : undefined,
       createdAt: initial?.createdAt ?? new Date().toISOString().slice(0, 10),
     }
-    unitsFromPlan(plan)
     onSave(plan)
   }
 
+  const amountLabel =
+    pace === 'verses'
+      ? 'Verse-chunks per day'
+      : pace === 'section'
+        ? 'Sections per day'
+        : pace === 'half'
+          ? 'Half-chapters per day'
+          : 'Chapters per day'
+
   return (
-    <div className="custom-plan">
+    <div className="custom-plan" ref={rootRef}>
       <h3>{initial ? 'Edit custom plan' : 'Custom reading plan'}</h3>
       <p className="muted">
-        Name your plan, pick books, then choose the break style. “Section breaks” follows
-        standard Bible headings (like “Jesus and Nicodemus”) — one section per unit.
+        Name your plan, pick books, then choose how readings are sized — including a fixed number of
+        verses at a time.
       </p>
 
       <label className="field-label">
@@ -150,7 +173,15 @@ export function CustomPlanBuilder({ onSave, onCancel, initial }: Props) {
         ))}
       </div>
 
-      <div className="pace-row pace-row-3">
+      <div className="pace-row pace-row-4">
+        <button
+          type="button"
+          className={`plan-card ${pace === 'verses' ? 'selected' : ''}`}
+          onClick={() => setPace('verses')}
+        >
+          <strong>By verses</strong>
+          <span className="plan-blurb">Read a set number of verses at a time</span>
+        </button>
         <button
           type="button"
           className={`plan-card ${pace === 'section' ? 'selected' : ''}`}
@@ -177,6 +208,21 @@ export function CustomPlanBuilder({ onSave, onCancel, initial }: Props) {
         </button>
       </div>
 
+      {pace === 'verses' && (
+        <label className="field-label">
+          Verses per reading
+          <input
+            className="field"
+            type="number"
+            min={1}
+            max={50}
+            step={1}
+            value={versesPerDay}
+            onChange={(e) => setVersesPerDay(Number(e.target.value) || 1)}
+          />
+        </label>
+      )}
+
       <div className="memory-actions row">
         <button
           type="button"
@@ -196,19 +242,15 @@ export function CustomPlanBuilder({ onSave, onCancel, initial }: Props) {
 
       {daysMode === 'pace' ? (
         <label className="field-label">
-          {pace === 'section'
-            ? 'Sections per day'
-            : pace === 'half'
-              ? 'Half-chapters per day'
-              : 'Chapters per day'}
+          {amountLabel}
           <input
             className="field"
             type="number"
             min={1}
             max={Math.max(1, unitCount)}
             step={1}
-            value={chaptersPerDay}
-            onChange={(e) => setChaptersPerDay(Number(e.target.value) || 1)}
+            value={unitsPerDay}
+            onChange={(e) => setUnitsPerDay(Number(e.target.value) || 1)}
           />
         </label>
       ) : (
@@ -226,8 +268,10 @@ export function CustomPlanBuilder({ onSave, onCancel, initial }: Props) {
       )}
 
       <p className="memory-meta">
-        {totalChapters} chapters · {unitCount} reading unit
-        {unitCount === 1 ? '' : 's'} · ~{unitsPerDay.toFixed(1)}/day · {safeDays} days
+        {totalChapters} chapters
+        {verseTotal ? ` · ${verseTotal} verses` : ''} · {unitCount} reading unit
+        {unitCount === 1 ? '' : 's'} · ~{unitsEachDay.toFixed(1)}/day · {safeDays} days
+        {pace === 'verses' ? ` · ~${versesPerDay} verses/unit` : ''}
       </p>
 
       <div className="session-actions">

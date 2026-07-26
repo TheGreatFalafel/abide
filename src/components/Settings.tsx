@@ -124,15 +124,27 @@ export function Settings({ user, onUserChange, onReset }: Props) {
       ...user,
       customPlans: nextPlans,
       planId: plan.id,
-      completedDays: exists && user.planId === plan.id ? user.completedDays : [],
-      completedQuizzes: exists && user.planId === plan.id ? user.completedQuizzes : [],
+      // Keep progress only when editing the active plan without changing length/books drastically
+      completedDays:
+        exists && user.planId === plan.id && plan.days === user.customPlans.find((p) => p.id === plan.id)?.days
+          ? user.completedDays.filter((d) => d <= plan.days)
+          : [],
+      completedQuizzes:
+        exists && user.planId === plan.id ? user.completedQuizzes : [],
     })
     setEditing(null)
     setShowBuilder(false)
+    setOpen('plan')
   }
 
   function deleteCustomPlan(plan: CustomPlan) {
-    if (!confirm(`Delete "${plan.name}"?`)) return
+    if (
+      !confirm(
+        `Delete custom plan “${plan.name}”? This cannot be undone.`,
+      )
+    ) {
+      return
+    }
     const nextPlans = customPlans.filter((p) => p.id !== plan.id)
     onUserChange({
       ...user,
@@ -145,6 +157,12 @@ export function Settings({ user, onUserChange, onReset }: Props) {
       setEditing(null)
       setShowBuilder(false)
     }
+  }
+
+  function startEdit(plan: CustomPlan) {
+    setOpen('plan')
+    setEditing(plan)
+    setShowBuilder(true)
   }
 
   return (
@@ -284,6 +302,7 @@ export function Settings({ user, onUserChange, onReset }: Props) {
               {customPlans.length > 0 && (
                 <>
                   <h3>Your custom plans</h3>
+                  <p className="muted">Edit or delete any plan below. Tap the name to switch to it.</p>
                   <div className="custom-plan-list">
                     {customPlans.map((plan) => (
                       <div
@@ -303,23 +322,22 @@ export function Settings({ user, onUserChange, onReset }: Props) {
                               ? 'sections'
                               : (plan.pace ?? 'chapter') === 'half'
                                 ? 'half-chapters'
-                                : 'chapters'}
+                                : (plan.pace ?? 'chapter') === 'verses'
+                                  ? `${plan.versesPerDay ?? 10} verses`
+                                  : 'chapters'}
                           </span>
                         </button>
                         <div className="custom-plan-actions">
                           <button
                             type="button"
                             className="btn tiny ghost-outline"
-                            onClick={() => {
-                              setEditing(plan)
-                              setShowBuilder(true)
-                            }}
+                            onClick={() => startEdit(plan)}
                           >
                             Edit
                           </button>
                           <button
                             type="button"
-                            className="btn tiny ghost-outline"
+                            className="btn tiny ghost danger"
                             onClick={() => deleteCustomPlan(plan)}
                           >
                             Delete

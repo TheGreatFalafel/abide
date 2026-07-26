@@ -26,7 +26,9 @@ function fingerprint(state: UserState): string {
     achievements: state.achievements,
     translationId: state.translationId,
     esvApiKey: state.esvApiKey,
-    customPlans: state.customPlans.map((p) => `${p.id}:${p.days}:${p.pace}`),
+      customPlans: state.customPlans.map(
+        (p) => `${p.id}:${p.days}:${p.pace}:${p.versesPerDay ?? ''}`,
+      ),
     name: state.name,
     lastReadDate: state.lastReadDate,
     todayXp: state.todayXp,

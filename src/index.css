@@ -1120,6 +1120,16 @@ a.btn {
   }
 }
 
+.pace-row-4 {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (min-width: 720px) {
+  .pace-row-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 .custom-plan-list {
   display: grid;
   gap: 0.55rem;
