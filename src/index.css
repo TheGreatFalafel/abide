@@ -1851,13 +1851,6 @@ a.btn {
   opacity: 0.85;
 }
 
-.memory-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
 @media (max-width: 480px) {
   .path-row {
     transform: translateX(calc(var(--offset, 0) * 8px));
