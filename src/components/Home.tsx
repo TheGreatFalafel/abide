@@ -28,6 +28,7 @@ type Props = {
   user: UserState
   days: PlanDay[]
   onOpenLesson: (day: number) => void
+  onStartMemoryQuest: () => void
   onReset: () => void
   view: HomeView
   setView: (v: HomeView) => void
@@ -39,6 +40,7 @@ export function Home({
   user,
   days,
   onOpenLesson,
+  onStartMemoryQuest,
   onReset,
   view,
   setView,
@@ -142,13 +144,16 @@ export function Home({
         </p>
         {streakAtRisk ? (
           <p className="nudge risk streak-banner">
-            Streak on the line — finish today&apos;s reading before midnight.
+            Streak on the line — a 2-min memory quest or today&apos;s reading will save it.
           </p>
         ) : user.todayXp >= user.dailyGoalXp ? (
           <p className="nudge good">Quest complete. Come back tomorrow?</p>
         ) : (
-          <p className="nudge">Read, reflect, or review a memory verse to fill the bar.</p>
+          <p className="nudge">Read, reflect, or run a quick memory quest to fill the bar.</p>
         )}
+        <button type="button" className="btn primary quest-cta" onClick={onStartMemoryQuest}>
+          2-min Memory Quest
+        </button>
       </div>
 
       <nav className="tabs tabs-main">
@@ -240,7 +245,12 @@ export function Home({
       {view === 'read' && <BibleReader user={user} onUserChange={onUserChange} />}
 
       {view === 'memory' && (
-        <Memory user={user} onUserChange={onUserChange} onReviewed={onMemoryReview} />
+        <Memory
+          user={user}
+          onUserChange={onUserChange}
+          onReviewed={onMemoryReview}
+          onStartQuest={onStartMemoryQuest}
+        />
       )}
 
       {view === 'circle' && <CircleGate user={user} onUserChange={onUserChange} />}

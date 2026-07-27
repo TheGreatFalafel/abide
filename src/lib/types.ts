@@ -195,6 +195,8 @@ export const XP = {
   memoryHard: 6,
   sectionQuiz: 25,
   memoryQuiz: 10,
+  /** Flat bonus for finishing a 2-min memory quest */
+  memoryQuest: 15,
 } as const
 
 export function levelFromXp(xp: number): { level: number; into: number; need: number } {

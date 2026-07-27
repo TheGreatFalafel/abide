@@ -485,6 +485,109 @@ export function scoreMemoryQuiz(
   }
 }
 
+/** Build a short deck for a ~2-minute memory quest (due verses first). */
+export function buildMemoryQuestDeck(state: UserState, count = 5): MemoryVerse[] {
+  const due = dueMemoryVerses(state)
+  const rest = state.memoryVerses.filter(
+    (v) => v.text?.trim() && !due.some((d) => d.id === v.id),
+  )
+  const pool = [...due, ...rest].filter((v) => v.text?.trim())
+  const shuffled = [...pool].sort(() => Math.random() - 0.5)
+  // Prefer due verses at the front after shuffle within groups
+  const ordered = [
+    ...due.filter((v) => v.text?.trim()).sort(() => Math.random() - 0.5),
+    ...rest.sort(() => Math.random() - 0.5),
+  ]
+  const seen = new Set<string>()
+  const out: MemoryVerse[] = []
+  for (const v of [...ordered, ...shuffled]) {
+    if (seen.has(v.id)) continue
+    seen.add(v.id)
+    out.push(v)
+    if (out.length >= count) break
+  }
+  return out
+}
+
+/**
+ * Finish a timed memory quest: applies SRS grades, awards XP, and counts toward streak.
+ */
+export function completeMemoryQuest(
+  state: UserState,
+  opts: {
+    rounds: { verseId: string; correct: boolean }[]
+  },
+): LessonResult {
+  const prevLevel = levelFromXp(state.xp).level
+  const today = todayKey()
+  let next = { ...state }
+  let earned = 0
+
+  for (const round of opts.rounds) {
+    const grade: MemoryGrade = round.correct ? 'good' : 'again'
+    const xpGain = round.correct ? XP.memoryGood : 0
+    earned += xpGain
+    next = {
+      ...addXp(next, xpGain),
+      memoryVerses: next.memoryVerses.map((v) =>
+        v.id === round.verseId ? schedule(v, grade) : v,
+      ),
+      memoryReviewsToday: next.memoryReviewsToday + 1,
+    }
+  }
+
+  // Completion bonus for finishing the quest
+  const finished = opts.rounds.length > 0
+  if (finished) {
+    earned += XP.memoryQuest
+    next = addXp(next, XP.memoryQuest)
+  }
+
+  // Keep the streak alive — short quests count as daily abiding
+  let streak = next.streak
+  let lastReadDate = next.lastReadDate
+  let streakFreezes = next.streakFreezes
+  if (finished) {
+    if (lastReadDate === today) {
+      // already counted today
+    } else if (lastReadDate === yesterdayKey() || lastReadDate === null) {
+      streak = lastReadDate === null ? 1 : streak + 1
+    } else if (streakFreezes > 0) {
+      streakFreezes -= 1
+      streak += 1
+    } else {
+      streak = 1
+    }
+    lastReadDate = today
+  }
+
+  next = {
+    ...next,
+    streak,
+    longestStreak: Math.max(next.longestStreak, streak),
+    lastReadDate,
+    streakFreezes,
+  }
+
+  const bonus: AchievementId[] = []
+  if (opts.rounds.some((r) => r.correct)) bonus.push('memory_first')
+  if (next.memoryVerses.some(isMastered)) bonus.push('memory_master')
+  if (streak >= 3) bonus.push('streak_3')
+  if (streak >= 7) bonus.push('streak_7')
+
+  const unlocked = unlock(next, bonus, 1)
+  next = unlocked.state
+  saveState(next)
+
+  return {
+    state: next,
+    earnedXp: earned,
+    newAchievements: unlocked.newAchievements,
+    leveledUp: levelFromXp(next.xp).level > prevLevel,
+    previousLevel: prevLevel,
+  }
+}
+
 export function reviewMemoryVerse(
   state: UserState,
   verseId: string,

@@ -19,6 +19,7 @@ type Props = {
   user: UserState
   onUserChange: (user: UserState) => void
   onReviewed: (verseId: string, grade: MemoryGrade) => void
+  onStartQuest?: () => void
 }
 
 type Tab = 'learn' | 'memorized' | 'tms' | 'quiz'
@@ -59,7 +60,7 @@ async function fetchTmsText(
   return { reference, text }
 }
 
-export function Memory({ user, onUserChange, onReviewed }: Props) {
+export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) {
   const dueLearn = useMemo(() => dueMemoryVerses(user, 'learning'), [user])
   const dueMemorized = useMemo(() => dueMemoryVerses(user, 'memorized'), [user])
   const mastered = useMemo(() => memorizedVerses(user), [user])
@@ -229,6 +230,11 @@ export function Memory({ user, onUserChange, onReviewed }: Props) {
             {mastered.length} memorized
           </p>
         </div>
+        {onStartQuest && (
+          <button type="button" className="btn primary" onClick={onStartQuest}>
+            2-min quest
+          </button>
+        )}
       </div>
 
       <nav className="tabs tabs-4 memory-tabs">

@@ -4,6 +4,7 @@ import { Home, type HomeView } from './components/Home'
 import { ReadingSession } from './components/ReadingSession'
 import { Celebration } from './components/Celebration'
 import { SectionQuizSession } from './components/SectionQuiz'
+import { MemoryQuest } from './components/MemoryQuest'
 import { CloudBridge } from './components/CloudBridge'
 import { getPlanById, type PassageRef } from './data/bible'
 import {
@@ -24,6 +25,7 @@ type Screen =
   | { name: 'onboarding' }
   | { name: 'home' }
   | { name: 'lesson'; day: number }
+  | { name: 'memoryQuest' }
   | {
       name: 'chapterQuiz'
       quizId: string
@@ -232,6 +234,24 @@ export default function App() {
     )
   }
 
+  if (screen.name === 'memoryQuest') {
+    return (
+      <>
+        {bridge}
+        <MemoryQuest
+          user={user}
+          onUserChange={handleUserChange}
+          onBack={() => setScreen({ name: 'home' })}
+          onGoMemory={() => {
+            setView('memory')
+            setScreen({ name: 'home' })
+          }}
+          onComplete={(result) => setScreen({ name: 'celebrate', result })}
+        />
+      </>
+    )
+  }
+
   if (screen.name === 'celebrate') {
     const { result } = screen
     const level = levelFromXp(result.state.xp).level
@@ -260,6 +280,7 @@ export default function App() {
         view={view}
         setView={setView}
         onOpenLesson={(day) => setScreen({ name: 'lesson', day })}
+        onStartMemoryQuest={() => setScreen({ name: 'memoryQuest' })}
         onReset={handleReset}
         onUserChange={handleUserChange}
         onMemoryReview={handleMemoryReview}
