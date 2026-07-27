@@ -102,6 +102,14 @@ export function mergeUserStates(local: UserState, cloud: UserState): UserState {
     todayXp: Math.max(local.todayXp, cloud.todayXp),
     todayXpDate:
       local.todayXpDate >= cloud.todayXpDate ? local.todayXpDate : cloud.todayXpDate,
+    weekXp:
+      local.weekKey === cloud.weekKey
+        ? Math.max(local.weekXp ?? 0, cloud.weekXp ?? 0)
+        : (local.weekKey ?? '') >= (cloud.weekKey ?? '')
+          ? local.weekXp ?? 0
+          : cloud.weekXp ?? 0,
+    weekKey:
+      (local.weekKey ?? '') >= (cloud.weekKey ?? '') ? local.weekKey : cloud.weekKey,
     createdAt:
       local.createdAt && cloud.createdAt
         ? local.createdAt <= cloud.createdAt

@@ -33,6 +33,9 @@ function fingerprint(state: UserState): string {
     lastReadDate: state.lastReadDate,
     todayXp: state.todayXp,
     todayXpDate: state.todayXpDate,
+    weekXp: state.weekXp,
+    weekKey: state.weekKey,
+    dailyGoalXp: state.dailyGoalXp,
   })
 }
 

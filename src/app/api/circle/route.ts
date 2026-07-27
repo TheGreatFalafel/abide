@@ -39,10 +39,41 @@ export async function GET() {
       streak: profiles.streak,
       xp: profiles.xp,
       lastReadDate: profiles.lastReadDate,
+      stateJson: profiles.stateJson,
     })
     .from(circleMembers)
     .leftJoin(profiles, eq(profiles.userId, circleMembers.userId))
     .where(eq(circleMembers.circleId, circleId))
+
+  const currentWeek = (() => {
+    const d = new Date()
+    const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+    const day = tmp.getUTCDay() || 7
+    tmp.setUTCDate(tmp.getUTCDate() + 4 - day)
+    const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1))
+    const week = Math.ceil(((tmp.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
+    return `${tmp.getUTCFullYear()}-W${week}`
+  })()
+
+  const members = memberRows.map((m) => {
+    const state = m.stateJson as {
+      weekXp?: number
+      weekKey?: string
+      lessonsThisWeek?: number
+    } | null
+    const weekXp =
+      state?.weekKey === currentWeek ? Math.max(0, state.weekXp ?? 0) : 0
+    return {
+      userId: m.userId,
+      joinedAt: m.joinedAt,
+      displayName: m.displayName,
+      streak: m.streak,
+      xp: m.xp,
+      lastReadDate: m.lastReadDate,
+      weekXp,
+      lessonsThisWeek: state?.weekKey === currentWeek ? state.lessonsThisWeek ?? 0 : 0,
+    }
+  })
 
   const nudgeRows = await db
     .select()
@@ -53,8 +84,9 @@ export async function GET() {
 
   return NextResponse.json({
     circle: circleRows[0] ?? null,
-    members: memberRows,
+    members,
     nudges: nudgeRows,
+    weekKey: currentWeek,
   })
 }
 

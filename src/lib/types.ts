@@ -167,6 +167,8 @@ export type UserState = {
   todayXpDate: string
   createdAt: string
   lessonsThisWeek: number
+  /** XP earned in the current ISO week — fuels Circle weekly league. */
+  weekXp: number
   weekKey: string
   translationId: TranslationId
   esvApiKey: string
@@ -175,6 +177,13 @@ export type UserState = {
   completedQuizzes: string[]
   customPlans: CustomPlan[]
 }
+
+export const DAILY_GOAL_OPTIONS = [
+  { id: 'easy', xp: 20, label: 'Easy', blurb: '~1 lesson' },
+  { id: 'regular', xp: 30, label: 'Regular', blurb: 'Lesson + heart check' },
+  { id: 'serious', xp: 50, label: 'Serious', blurb: 'Lesson + memory' },
+] as const
+
 
 export const XP = {
   lesson: 20,
@@ -265,6 +274,7 @@ export function createInitialState(name: string, planId: string): UserState {
     todayXpDate: today,
     createdAt: today,
     lessonsThisWeek: 0,
+    weekXp: 0,
     weekKey: weekKey(),
     translationId: 'web',
     esvApiKey: '',

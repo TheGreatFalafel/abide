@@ -134,6 +134,31 @@ export function CirclePanel({ user, onUserChange, onSyncedName }: Props) {
               <br />
               <span className="memory-meta">Invite code: {data.circle.inviteCode}</span>
             </p>
+
+            <div className="league-card">
+              <div className="league-head">
+                <h3>Weekly league</h3>
+                <span className="memory-meta">Resets each week · XP this week</span>
+              </div>
+              <ol className="challenge-board league-board">
+                {[...data.members]
+                  .sort((a, b) => (b.weekXp ?? 0) - (a.weekXp ?? 0) || (b.xp ?? 0) - (a.xp ?? 0))
+                  .map((m, i) => (
+                    <li key={m.userId} className={m.userId === clerkUser?.id ? 'me' : ''}>
+                      <span className="rank">{i + 1}</span>
+                      <span className="who">
+                        {m.displayName || 'Friend'}
+                        {i === 0 && (m.weekXp ?? 0) > 0 ? ' · leading' : ''}
+                      </span>
+                      <span className="pts">{m.weekXp ?? 0} XP</span>
+                    </li>
+                  ))}
+              </ol>
+              <p className="muted league-hint">
+                Read, reflect, or quiz to climb. Your circle only — no strangers.
+              </p>
+            </div>
+
             <div className="memory-list">
               {data.members.map((m) => (
                 <div key={m.userId} className="memory-card">

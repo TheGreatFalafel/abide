@@ -27,12 +27,15 @@ export type CircleMember = {
   streak: number | null
   xp: number | null
   lastReadDate: string | null
+  weekXp?: number
+  lessonsThisWeek?: number
 }
 
 export type CirclePayload = {
   circle: { id: string; name: string; inviteCode: string } | null
   members: CircleMember[]
   nudges: { id: string; fromUserId: string; message: string; createdAt: string }[]
+  weekKey?: string
 }
 
 export async function fetchCircle(): Promise<CirclePayload | null> {

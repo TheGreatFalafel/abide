@@ -42,6 +42,7 @@ export function migrateUserState(
       pace: p.pace ?? 'chapter',
       versesPerDay: p.versesPerDay,
     })),
+    weekXp: raw.weekXp ?? 0,
   }
 }
 
@@ -73,7 +74,7 @@ function normalizeDay(state: UserState): UserState {
     next = { ...next, todayXp: 0, todayXpDate: today, memoryReviewsToday: 0 }
   }
   if (next.weekKey !== wk) {
-    next = { ...next, weekKey: wk, lessonsThisWeek: 0 }
+    next = { ...next, weekKey: wk, lessonsThisWeek: 0, weekXp: 0 }
   }
 
   if (
@@ -151,17 +152,22 @@ function unlock(
 
 function addXp(state: UserState, amount: number): UserState {
   const today = todayKey()
+  const wk = weekKey()
+  const sameWeek = state.weekKey === wk
   return {
     ...state,
     xp: state.xp + amount,
     todayXp: (state.todayXpDate === today ? state.todayXp : 0) + amount,
     todayXpDate: today,
+    weekKey: wk,
+    weekXp: (sameWeek ? state.weekXp : 0) + amount,
+    lessonsThisWeek: sameWeek ? state.lessonsThisWeek : 0,
   }
 }
 
 export function updateSettings(
   state: UserState,
-  patch: Partial<Pick<UserState, 'translationId' | 'esvApiKey' | 'planId'>>,
+  patch: Partial<Pick<UserState, 'translationId' | 'esvApiKey' | 'planId' | 'dailyGoalXp'>>,
 ): UserState {
   if (patch.translationId && patch.translationId !== state.translationId) {
     clearPassageCache()

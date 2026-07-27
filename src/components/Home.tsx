@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ACHIEVEMENTS, levelFromXp, titleForLevel, type UserState } from '../lib/types'
+import { ACHIEVEMENTS, DAILY_GOAL_OPTIONS, levelFromXp, titleForLevel, type UserState } from '../lib/types'
 import type { PlanDay } from '../data/bible'
 import { getTranslation } from '../data/translations'
 import { Memory } from './Memory'
@@ -9,7 +9,7 @@ import { Settings } from './Settings'
 import { CircleGate } from './CircleGate'
 import { BibleReader } from './BibleReader'
 import type { MemoryGrade } from '../lib/progress'
-
+import { updateSettings } from '../lib/progress'
 export type HomeView = 'path' | 'read' | 'memory' | 'circle' | 'badges' | 'settings'
 
 const PRIMARY_TABS = [
@@ -88,8 +88,8 @@ export function Home({
           <div className="pill" title="Translation">
             <strong>{translation.short}</strong>
           </div>
-          <div className={`pill streak ${streakAtRisk ? 'risk' : ''}`} title="Streak">
-            <span className="flame" aria-hidden>
+          <div className={`pill streak ${streakAtRisk ? 'risk pulse-risk' : ''}`} title="Streak">
+            <span className={`flame ${streakAtRisk ? 'flame-urgent' : ''}`} aria-hidden>
               🔥
             </span>
             <strong>{user.streak}</strong>
@@ -113,9 +113,9 @@ export function Home({
         </span>
       </div>
 
-      <div className="goal-card">
+      <div className={`goal-card ${streakAtRisk ? 'at-risk' : ''} ${goalPct >= 100 ? 'goal-done' : ''}`}>
         <div className="goal-head">
-          <span>Daily goal</span>
+          <span>Today&apos;s quest</span>
           <strong>
             {user.todayXp}/{user.dailyGoalXp} XP
           </strong>
@@ -123,16 +123,31 @@ export function Home({
         <div className="meter tall">
           <div className="meter-fill gold" style={{ width: `${goalPct}%` }} />
         </div>
+        <div className="goal-picks" role="group" aria-label="Daily goal intensity">
+          {DAILY_GOAL_OPTIONS.map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              className={`goal-pick ${user.dailyGoalXp === opt.xp ? 'selected' : ''}`}
+              onClick={() => onUserChange(updateSettings(user, { dailyGoalXp: opt.xp }))}
+            >
+              <strong>{opt.label}</strong>
+              <span>{opt.xp} XP</span>
+            </button>
+          ))}
+        </div>
         <p className="muted xp-why">
-          XP fuels your level and title — friends in Circle can see both. Hit the daily goal to
-          keep the streak strong.
+          Week XP: {user.weekXp ?? 0} · fuels your Circle league. Hit the daily goal to keep the
+          streak strong.
         </p>
         {streakAtRisk ? (
-          <p className="nudge risk">Your streak needs you today — keep it alive.</p>
+          <p className="nudge risk streak-banner">
+            Streak on the line — finish today&apos;s reading before midnight.
+          </p>
         ) : user.todayXp >= user.dailyGoalXp ? (
-          <p className="nudge good">Goal crushed. Come back tomorrow?</p>
+          <p className="nudge good">Quest complete. Come back tomorrow?</p>
         ) : (
-          <p className="nudge">Read or review a memory verse to keep the flame going.</p>
+          <p className="nudge">Read, reflect, or review a memory verse to fill the bar.</p>
         )}
       </div>
 
