@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ACHIEVEMENTS, DAILY_GOAL_OPTIONS, levelFromXp, titleForLevel, type UserState } from '../lib/types'
+import { ACHIEVEMENTS, levelFromXp, titleForLevel, type UserState } from '../lib/types'
 import type { PlanDay } from '../data/bible'
 import { getTranslation } from '../data/translations'
 import { Memory } from './Memory'
@@ -9,7 +9,6 @@ import { Settings } from './Settings'
 import { CircleGate } from './CircleGate'
 import { BibleReader } from './BibleReader'
 import type { MemoryGrade } from '../lib/progress'
-import { updateSettings } from '../lib/progress'
 export type HomeView = 'path' | 'read' | 'memory' | 'circle' | 'badges' | 'settings'
 
 const PRIMARY_TABS = [
@@ -125,22 +124,9 @@ export function Home({
         <div className="meter tall">
           <div className="meter-fill gold" style={{ width: `${goalPct}%` }} />
         </div>
-        <div className="goal-picks" role="group" aria-label="Daily goal intensity">
-          {DAILY_GOAL_OPTIONS.map((opt) => (
-            <button
-              key={opt.id}
-              type="button"
-              className={`goal-pick ${user.dailyGoalXp === opt.xp ? 'selected' : ''}`}
-              onClick={() => onUserChange(updateSettings(user, { dailyGoalXp: opt.xp }))}
-            >
-              <strong>{opt.label}</strong>
-              <span>{opt.xp} XP</span>
-            </button>
-          ))}
-        </div>
         <p className="muted xp-why">
-          Week XP: {user.weekXp ?? 0} · fuels your Circle league. Hit the daily goal to keep the
-          streak strong.
+          Week XP: {user.weekXp ?? 0} · fuels your Circle league. Change your daily goal size in
+          Settings.
         </p>
         {streakAtRisk ? (
           <p className="nudge risk streak-banner">

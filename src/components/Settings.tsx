@@ -7,6 +7,7 @@ import { PLANS } from '../data/bible'
 import { updateSettings } from '../lib/progress'
 import { saveCloudProgress } from '../lib/cloud'
 import type { CustomPlan, UserState } from '../lib/types'
+import { DAILY_GOAL_OPTIONS } from '../lib/types'
 import { EsvAttribution } from './EsvAttribution'
 import { CustomPlanBuilder } from './CustomPlanBuilder'
 import { testEsvConnection } from '../lib/bibleApi'
@@ -261,6 +262,29 @@ export function Settings({ user, onUserChange, onReset }: Props) {
                     <span className="plan-vibe">{t.short}</span>
                     <strong>{t.name}</strong>
                     <span className="plan-blurb">{t.note}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="settings-block tight">
+              <h3>Daily XP goal</h3>
+              <p className="muted">
+                How much XP fills “Today’s quest.” This only changes the target — it does not add XP.
+              </p>
+              <div className="plan-grid">
+                {DAILY_GOAL_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    className={`plan-card ${user.dailyGoalXp === opt.xp ? 'selected' : ''}`}
+                    onClick={() =>
+                      onUserChange(updateSettings(user, { dailyGoalXp: opt.xp }))
+                    }
+                  >
+                    <span className="plan-vibe">{opt.xp} XP</span>
+                    <strong>{opt.label}</strong>
+                    <span className="plan-blurb">{opt.blurb}</span>
                   </button>
                 ))}
               </div>
