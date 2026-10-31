@@ -1,5 +1,6 @@
 import { neon } from '@neondatabase/serverless'
 import { drizzle } from 'drizzle-orm/neon-http'
+import { ensureSchema } from './ensureSchema'
 import * as schema from './schema'
 
 export function getDb() {
@@ -13,4 +14,18 @@ export function getDb() {
 
 export function hasDatabase(): boolean {
   return Boolean(process.env.DATABASE_URL)
+}
+
+let ensureOnce: Promise<void> | null = null
+
+/** Drizzle client after ensuring Phase 2/5 tables exist (idempotent). */
+export async function getReadyDb() {
+  if (!ensureOnce) {
+    ensureOnce = ensureSchema().catch((err) => {
+      ensureOnce = null
+      throw err
+    })
+  }
+  await ensureOnce
+  return getDb()
 }

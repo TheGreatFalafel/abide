@@ -3,6 +3,7 @@ import type { getDb } from '@/db/client'
 import { gemEvents, profiles } from '@/db/schema'
 import { getCosmetic } from '@/data/cosmetics/catalog'
 import { grantCosmetic, migrateCosmeticsState } from './cosmetics'
+import { isUniqueViolation } from './dbErrors'
 import {
   GEM_DAILY_EARN_CAP,
   type ValidatedGemEvent,
@@ -136,9 +137,12 @@ export async function commitGemEvents(
         activityKey: event.activityKey,
         clientCreatedAt: new Date(event.clientCreatedAt),
       })
-    } catch {
-      duplicates.push(event.id)
-      continue
+    } catch (err) {
+      if (isUniqueViolation(err)) {
+        duplicates.push(event.id)
+        continue
+      }
+      throw err
     }
 
     balance += delta

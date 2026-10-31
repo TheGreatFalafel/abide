@@ -197,13 +197,22 @@ export async function challengeAction(
     headers,
     body: JSON.stringify(body),
   })
-  const data = (await res.json()) as {
+  let data: {
     ok?: boolean
     challengeId?: string
     score?: ChallengeScore
     correct?: boolean
     duplicate?: boolean
     error?: string
+  }
+  try {
+    data = (await res.json()) as typeof data
+  } catch {
+    return {
+      error: res.ok
+        ? 'Challenge server returned an invalid response'
+        : `Challenge request failed (${res.status})`,
+    }
   }
   if (!res.ok) return { error: data.error || 'Request failed' }
   return data

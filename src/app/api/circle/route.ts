@@ -1,8 +1,9 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { and, desc, eq } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
-import { getDb, hasDatabase } from '@/db/client'
+import { getReadyDb, hasDatabase } from '@/db/client'
 import { circleMembers, circles, nudges, profiles } from '@/db/schema'
+import { isSchemaDriftError, schemaDriftMessage } from '@/lib/dbErrors'
 
 function code() {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -18,7 +19,15 @@ export async function GET() {
     return NextResponse.json({ error: 'DATABASE_URL not configured.' }, { status: 503 })
   }
 
-  const db = getDb()
+  let db
+  try {
+    db = await getReadyDb()
+  } catch (err) {
+    if (isSchemaDriftError(err)) {
+      return NextResponse.json({ error: schemaDriftMessage() }, { status: 503 })
+    }
+    throw err
+  }
   const membership = await db
     .select()
     .from(circleMembers)
@@ -105,7 +114,15 @@ export async function POST(req: Request) {
     message?: string
   }
 
-  const db = getDb()
+  let db
+  try {
+    db = await getReadyDb()
+  } catch (err) {
+    if (isSchemaDriftError(err)) {
+      return NextResponse.json({ error: schemaDriftMessage() }, { status: 503 })
+    }
+    throw err
+  }
   const user = await currentUser()
   const displayName =
     user?.firstName || user?.username || user?.primaryEmailAddress?.emailAddress || 'Friend'

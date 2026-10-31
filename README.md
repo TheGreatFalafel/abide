@@ -105,7 +105,7 @@ npm run db:push
 | `memory_challenges` | Async circle memory competitions |
 | `memory_challenge_scores` | Per-user challenge tallies |
 
-Challenge tables may also be ensured at runtime via `CREATE TABLE IF NOT EXISTS` in the challenge API (technical debt).
+Phase 2/5 tables (`progress_events`, `challenge_submissions`, `gem_events`, `profiles.gems`) are also ensured at runtime via `getReadyDb()` / `ensureSchema()` so Memory sync and competitions recover after a deploy that skipped `db:migrate`. Prefer running migrations in shared environments; the runtime path is idempotent backup.
 
 ### Migrations (Phase 2+)
 Versioned SQL lives in `drizzle/`:

@@ -1,6 +1,7 @@
 import { and, eq, sql } from 'drizzle-orm'
 import type { getDb } from '@/db/client'
 import { profiles, progressEvents } from '@/db/schema'
+import { isUniqueViolation } from './dbErrors'
 import {
   type ValidatedProgressEvent,
   validateProgressEventBatch,
@@ -59,8 +60,12 @@ export async function commitProgressEvents(
         clientCreatedAt: new Date(event.clientCreatedAt),
       })
       inserted.push(event)
-    } catch {
-      duplicates.push(event.id)
+    } catch (err) {
+      if (isUniqueViolation(err)) {
+        duplicates.push(event.id)
+        continue
+      }
+      throw err
     }
   }
 
