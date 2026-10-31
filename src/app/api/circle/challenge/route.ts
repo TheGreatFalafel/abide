@@ -1,13 +1,22 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 import { getDb, hasDatabase } from '@/db/client'
 import {
+  challengeSubmissions,
   circleMembers,
   memoryChallengeScores,
   memoryChallenges,
   profiles,
 } from '@/db/schema'
+import { assertChallengeSubmitRateLimit } from '@/lib/rateLimit'
+import {
+  fetchScripturePlainText,
+  gradeSelectedText,
+  type ServerTranslationId,
+} from '@/lib/serverScripture'
+import { newProgressEventId } from '@/lib/progressEvents'
+import { commitProgressEvents, validateAndBuildChallengeXpEvent } from '@/lib/challengeProgress'
 
 export type ChallengeVerse = {
   id: string
@@ -17,35 +26,6 @@ export type ChallengeVerse = {
   chapter: number
   verseStart: number
   verseEnd: number
-}
-
-async function ensureTables() {
-  const db = getDb()
-  await db.execute(sql`
-    CREATE TABLE IF NOT EXISTS memory_challenges (
-      id text PRIMARY KEY,
-      circle_id text NOT NULL REFERENCES circles(id) ON DELETE CASCADE,
-      created_by text NOT NULL,
-      name text NOT NULL,
-      source text NOT NULL DEFAULT 'custom',
-      verses_json jsonb NOT NULL DEFAULT '[]'::jsonb,
-      starts_at timestamptz NOT NULL DEFAULT now(),
-      ends_at timestamptz NOT NULL,
-      status text NOT NULL DEFAULT 'active',
-      created_at timestamptz NOT NULL DEFAULT now()
-    )
-  `)
-  await db.execute(sql`
-    CREATE TABLE IF NOT EXISTS memory_challenge_scores (
-      challenge_id text NOT NULL REFERENCES memory_challenges(id) ON DELETE CASCADE,
-      user_id text NOT NULL,
-      score integer NOT NULL DEFAULT 0,
-      correct integer NOT NULL DEFAULT 0,
-      attempts integer NOT NULL DEFAULT 0,
-      updated_at timestamptz NOT NULL DEFAULT now(),
-      PRIMARY KEY (challenge_id, user_id)
-    )
-  `)
 }
 
 async function requireMembership(userId: string) {
@@ -58,17 +38,15 @@ async function requireMembership(userId: string) {
   return rows[0] ?? null
 }
 
+function isTranslationId(v: unknown): v is ServerTranslationId {
+  return v === 'web' || v === 'kjv' || v === 'esv'
+}
+
 export async function GET() {
   const { userId } = await auth()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!hasDatabase()) {
     return NextResponse.json({ error: 'DATABASE_URL not configured.' }, { status: 503 })
-  }
-
-  try {
-    await ensureTables()
-  } catch {
-    return NextResponse.json({ error: 'Could not prepare challenge tables.' }, { status: 500 })
   }
 
   const membership = await requireMembership(userId)
@@ -135,12 +113,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'DATABASE_URL not configured.' }, { status: 503 })
   }
 
-  try {
-    await ensureTables()
-  } catch {
-    return NextResponse.json({ error: 'Could not prepare challenge tables.' }, { status: 500 })
-  }
-
   const body = (await req.json()) as {
     action: 'create' | 'submit' | 'end'
     name?: string
@@ -148,7 +120,12 @@ export async function POST(req: Request) {
     verses?: ChallengeVerse[]
     days?: number
     challengeId?: string
+    /** @deprecated Ignored — server grades answers. */
     correct?: boolean
+    submissionId?: string
+    verseId?: string
+    selectedText?: string
+    translationId?: string
   }
 
   const membership = await requireMembership(userId)
@@ -180,6 +157,11 @@ export async function POST(req: Request) {
     if (verses.length > 40) {
       return NextResponse.json({ error: 'Max 40 verses per challenge.' }, { status: 400 })
     }
+    for (const v of verses) {
+      if (!v?.id || !v.bookId || !v.bookName || !v.chapter || !v.verseStart) {
+        return NextResponse.json({ error: 'Invalid verse payload' }, { status: 400 })
+      }
+    }
 
     const days = Math.min(30, Math.max(1, body.days ?? 7))
     const endsAt = new Date()
@@ -197,7 +179,6 @@ export async function POST(req: Request) {
       status: 'active',
     })
 
-    // Seed creator on the board at 0
     await db.insert(memoryChallengeScores).values({
       challengeId: id,
       userId,
@@ -210,8 +191,54 @@ export async function POST(req: Request) {
   }
 
   if (body.action === 'submit') {
-    if (!body.challengeId) {
-      return NextResponse.json({ error: 'challengeId required' }, { status: 400 })
+    if (!body.challengeId || !body.verseId || typeof body.selectedText !== 'string') {
+      return NextResponse.json(
+        { error: 'challengeId, verseId, and selectedText are required' },
+        { status: 400 },
+      )
+    }
+    if (!isTranslationId(body.translationId)) {
+      return NextResponse.json({ error: 'translationId must be web, kjv, or esv' }, { status: 400 })
+    }
+
+    const submissionId =
+      typeof body.submissionId === 'string' && body.submissionId.trim()
+        ? body.submissionId.trim()
+        : newProgressEventId()
+
+    const rateError = await assertChallengeSubmitRateLimit(db, userId)
+    if (rateError) {
+      return NextResponse.json({ error: rateError }, { status: 429 })
+    }
+
+    // Idempotent replay of the same submission id
+    const priorSub = await db
+      .select()
+      .from(challengeSubmissions)
+      .where(
+        and(
+          eq(challengeSubmissions.id, submissionId),
+          eq(challengeSubmissions.userId, userId),
+        ),
+      )
+      .limit(1)
+    if (priorSub[0]) {
+      const mine = await db
+        .select()
+        .from(memoryChallengeScores)
+        .where(
+          and(
+            eq(memoryChallengeScores.challengeId, body.challengeId),
+            eq(memoryChallengeScores.userId, userId),
+          ),
+        )
+        .limit(1)
+      return NextResponse.json({
+        ok: true,
+        duplicate: true,
+        correct: priorSub[0].correct,
+        score: mine[0] ?? null,
+      })
     }
 
     const chRows = await db
@@ -238,8 +265,53 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'This challenge has ended.' }, { status: 400 })
     }
 
-    const correct = Boolean(body.correct)
+    const verses = (ch.versesJson as ChallengeVerse[]) || []
+    const verse = verses.find((v) => v.id === body.verseId)
+    if (!verse) {
+      return NextResponse.json({ error: 'Verse is not part of this challenge' }, { status: 400 })
+    }
+
+    const esvKey =
+      body.translationId === 'esv'
+        ? (req.headers.get('x-esv-api-key') || '').trim()
+        : undefined
+    if (body.translationId === 'esv' && !esvKey) {
+      return NextResponse.json(
+        { error: 'ESV answers require X-ESV-API-Key for this request only' },
+        { status: 400 },
+      )
+    }
+
+    let expected: string
+    try {
+      expected = await fetchScripturePlainText({
+        bookName: verse.bookName,
+        chapter: verse.chapter,
+        verseStart: verse.verseStart,
+        verseEnd: verse.verseEnd,
+        translationId: body.translationId,
+        esvApiKey: esvKey,
+      })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not verify answer'
+      // Never include key material in error responses
+      return NextResponse.json(
+        { error: message.replace(/Token\s+\S+/gi, 'Token [redacted]') },
+        { status: 502 },
+      )
+    }
+
+    const correct = gradeSelectedText(body.selectedText, expected)
     const scoreDelta = correct ? 10 : 0
+
+    await db.insert(challengeSubmissions).values({
+      id: submissionId,
+      challengeId: body.challengeId,
+      userId,
+      verseId: body.verseId,
+      translationId: body.translationId,
+      correct,
+    })
 
     const existing = await db
       .select()
@@ -277,6 +349,13 @@ export async function POST(req: Request) {
       })
     }
 
+    if (correct) {
+      const xpEvent = validateAndBuildChallengeXpEvent(submissionId)
+      if (xpEvent) {
+        await commitProgressEvents(db, userId, [xpEvent], { displayName })
+      }
+    }
+
     const mine = await db
       .select()
       .from(memoryChallengeScores)
@@ -288,7 +367,12 @@ export async function POST(req: Request) {
       )
       .limit(1)
 
-    return NextResponse.json({ ok: true, score: mine[0] ?? null })
+    return NextResponse.json({
+      ok: true,
+      correct,
+      score: mine[0] ?? null,
+      // FSRS / memory bank are never modified here
+    })
   }
 
   if (body.action === 'end') {

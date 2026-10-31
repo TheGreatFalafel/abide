@@ -4,6 +4,8 @@ export type McQuestion = {
   prompt: string
   choices: string[]
   answer: number
+  /** Optional brief rationale shown after the learner checks an answer */
+  explanation?: string
 }
 
 export type OpenQuestion = {

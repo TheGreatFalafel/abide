@@ -1,24 +1,37 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { TMS_SERIES, TMS_VERSES, tmsRefLabel, type TmsVerse } from '../data/tms'
 import { fetchVerseRange, passageToPlainText } from '../lib/bibleApi'
+import { sameScriptureRef } from '../lib/memoryIds'
 import {
   addMemoryVerse,
   dueMemoryVerses,
   makeMemoryId,
   markMemorized,
+  memoryDashboardStats,
   memorizedVerses,
   removeMemoryVerse,
   scoreMemoryQuiz,
+  selectQuizCard,
   type MemoryGrade,
 } from '../lib/progress'
-import { isMastered, type MemoryVerse, type UserState } from '../lib/types'
+import { cardIsDue as isDueNow } from '../lib/memorySelect'
+import {
+  CURRENT_MEMORY_TEXT_VERSION,
+  isMastered,
+  type MemoryVerse,
+  type UserState,
+} from '../lib/types'
 import { EsvAttribution } from './EsvAttribution'
 import { BlankPractice } from './BlankPractice'
 
 type Props = {
   user: UserState
   onUserChange: (user: UserState) => void
-  onReviewed: (verseId: string, grade: MemoryGrade) => void
+  onReviewed: (
+    verseId: string,
+    grade: MemoryGrade,
+    opts?: { applySchedule?: boolean; source?: 'practice' | 'type' | 'blanks' },
+  ) => void
   onStartQuest?: () => void
 }
 
@@ -35,10 +48,11 @@ function normalizeForCompare(s: string): string {
 async function fetchTmsText(
   seed: TmsVerse,
   user: UserState,
+  translationId = user.translationId,
 ): Promise<{ reference: string; text: string }> {
   const end = seed.verseEnd ?? seed.verseStart
   const primary = await fetchVerseRange(seed.bookName, seed.chapter, seed.verseStart, end, {
-    translation: user.translationId,
+    translation: translationId,
     esvApiKey: user.esvApiKey,
   })
   let text = passageToPlainText(primary)
@@ -48,7 +62,7 @@ async function fetchTmsText(
     const extras: string[] = []
     for (const n of seed.extraVerses) {
       const extra = await fetchVerseRange(seed.bookName, seed.chapter, n, n, {
-        translation: user.translationId,
+        translation: translationId,
         esvApiKey: user.esvApiKey,
       })
       extras.push(passageToPlainText(extra))
@@ -60,7 +74,37 @@ async function fetchTmsText(
   return { reference, text }
 }
 
+async function fetchSavedMemoryText(
+  verse: MemoryVerse,
+  user: UserState,
+): Promise<string> {
+  const seed = TMS_VERSES.find((candidate) => {
+    const end = candidate.verseEnd ?? candidate.verseStart
+    return sameScriptureRef(
+      {
+        bookId: candidate.bookId,
+        chapter: candidate.chapter,
+        verseStart: candidate.verseStart,
+        verseEnd: end,
+      },
+      verse,
+    )
+  })
+  if (seed) {
+    return (await fetchTmsText(seed, user, verse.translationId)).text
+  }
+  const content = await fetchVerseRange(
+    verse.bookName,
+    verse.chapter,
+    verse.verseStart,
+    verse.verseEnd,
+    { translation: verse.translationId, esvApiKey: user.esvApiKey },
+  )
+  return passageToPlainText(content)
+}
+
 export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) {
+  const stats = useMemo(() => memoryDashboardStats(user), [user])
   const dueLearn = useMemo(() => dueMemoryVerses(user, 'learning'), [user])
   const dueMemorized = useMemo(() => dueMemoryVerses(user, 'memorized'), [user])
   const mastered = useMemo(() => memorizedVerses(user), [user])
@@ -72,6 +116,7 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
   const [tab, setTab] = useState<Tab>('learn')
   const [mode, setMode] = useState<'list' | 'practice' | 'quiz'>('list')
   const [active, setActive] = useState<MemoryVerse | null>(null)
+  const [scheduleActive, setScheduleActive] = useState(true)
   const [revealed, setRevealed] = useState(false)
   const [typed, setTyped] = useState('')
   const [practiceKind, setPracticeKind] = useState<'reveal' | 'type' | 'blanks'>('reveal')
@@ -79,15 +124,68 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
   const [addError, setAddError] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
   const [tmsSeries, setTmsSeries] = useState<(typeof TMS_SERIES)[number]['id']>('A')
-  const [quizIndex, setQuizIndex] = useState(0)
+  const [quizCard, setQuizCard] = useState<MemoryVerse | null>(null)
+  const [quizExclude, setQuizExclude] = useState<string[]>([])
   const [quizChoices, setQuizChoices] = useState<string[]>([])
   const [quizPick, setQuizPick] = useState<number | null>(null)
   const [quizResult, setQuizResult] = useState<string | null>(null)
+  const latestUser = useRef(user)
+  const auditStarted = useRef(new Set<string>())
+  const mounted = useRef(true)
+  latestUser.current = user
 
   useEffect(() => {
     setRevealed(false)
     setTyped('')
   }, [active, practiceKind])
+
+  useEffect(
+    () => () => {
+      mounted.current = false
+    },
+    [],
+  )
+
+  useEffect(() => {
+    if (!user.esvApiKey?.trim()) return
+    const stale = user.memoryVerses.filter(
+      (v) =>
+        v.translationId === 'esv' &&
+        (v.textVersion ?? 0) < CURRENT_MEMORY_TEXT_VERSION &&
+        !auditStarted.current.has(v.id),
+    )
+    if (!stale.length) return
+    stale.forEach((v) => auditStarted.current.add(v.id))
+
+    void (async () => {
+      const verified = new Map<string, string>()
+      for (const verse of stale) {
+        try {
+          verified.set(verse.id, await fetchSavedMemoryText(verse, latestUser.current))
+        } catch {
+          // Keep this verse unversioned so a later app session can retry.
+        }
+      }
+      if (!mounted.current || !verified.size) return
+
+      const current = latestUser.current
+      let repaired = 0
+      const memoryVerses = current.memoryVerses.map((verse) => {
+        const text = verified.get(verse.id)
+        if (text == null) return verse
+        if (text !== verse.text) repaired += 1
+        return {
+          ...verse,
+          text,
+          textVersion: CURRENT_MEMORY_TEXT_VERSION,
+        }
+      })
+      onUserChange({ ...current, memoryVerses })
+      if (repaired > 0) {
+        setMsg(`Repaired incomplete text in ${repaired} saved verse${repaired === 1 ? '' : 's'}`)
+      }
+    })()
+  }, [user.memoryVerses, user.esvApiKey, onUserChange])
 
   async function addTms(seed: TmsVerse) {
     setAdding(true)
@@ -96,7 +194,7 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
       const { reference, text } = await fetchTmsText(seed, user)
       const end = seed.verseEnd ?? seed.verseStart
       const result = addMemoryVerse(user, {
-        id: makeMemoryId(seed.bookId, seed.chapter, seed.verseStart, end),
+        id: makeMemoryId(seed.bookId, seed.chapter, seed.verseStart, end, user.translationId),
         reference,
         text,
         bookName: seed.bookName,
@@ -110,7 +208,7 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
         seriesName: seed.seriesName,
       })
       onUserChange(result.state)
-      setMsg(result.added ? `Added ${reference}` : 'Already in your bank')
+      setMsg(result.added ? `Added ${reference} (${user.translationId.toUpperCase()})` : 'Already in your bank for this translation')
     } catch (err) {
       setAddError(err instanceof Error ? err.message : 'Could not add verse')
     } finally {
@@ -127,7 +225,13 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
       const pack = TMS_VERSES.filter((v) => v.seriesId === tmsSeries)
       for (const seed of pack) {
         const end = seed.verseEnd ?? seed.verseStart
-        const id = makeMemoryId(seed.bookId, seed.chapter, seed.verseStart, end)
+        const id = makeMemoryId(
+          seed.bookId,
+          seed.chapter,
+          seed.verseStart,
+          end,
+          state.translationId,
+        )
         if (state.memoryVerses.some((v) => v.id === id)) continue
         const { reference, text } = await fetchTmsText(seed, state)
         const result = addMemoryVerse(state, {
@@ -157,21 +261,36 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
     }
   }
 
-  function startPractice(verse?: MemoryVerse, prefer: 'learning' | 'memorized' = 'learning') {
+  function startPractice(
+    verse?: MemoryVerse,
+    prefer: 'learning' | 'memorized' = 'learning',
+    forceExtra = false,
+  ) {
     const pool = prefer === 'memorized' ? dueMemorized : dueLearn
     const target = verse ?? pool[0] ?? (prefer === 'memorized' ? mastered[0] : learning[0])
     if (!target) {
       setMsg(prefer === 'memorized' ? 'Mark some verses memorized first' : 'Add a verse first')
       return
     }
+    const due = !forceExtra && isDueNow(target)
+    setScheduleActive(due)
     setActive(target)
     setMode('practice')
+    if (!due) {
+      setMsg('Extra practice — this won’t change your review schedule')
+    }
   }
 
-  function grade(g: MemoryGrade) {
+  function grade(g: MemoryGrade, source: 'practice' | 'type' | 'blanks' = 'practice') {
     if (!active) return
-    onReviewed(active.id, g)
-    setMsg(g === 'again' ? 'We’ll bring that one back soon' : 'Nice — scheduled for later')
+    onReviewed(active.id, g, { applySchedule: scheduleActive, source })
+    setMsg(
+      !scheduleActive
+        ? 'Logged as extra practice'
+        : g === 'again'
+          ? 'We’ll bring that one back soon'
+          : 'Nice — scheduled with FSRS',
+    )
     setActive(null)
     setMode('list')
   }
@@ -181,12 +300,22 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
       setMsg('Memorize at least one verse to unlock the quiz')
       return
     }
-    const idx = Math.floor(Math.random() * mastered.length)
-    setQuizIndex(idx)
-    const answer = mastered[idx]
+    const answer = selectQuizCard(user, new Date(), quizExclude)
+    if (!answer) {
+      setQuizExclude([])
+      const again = selectQuizCard(user, new Date(), [])
+      if (!again) return
+      prepareQuiz(again)
+      return
+    }
+    prepareQuiz(answer)
+  }
+
+  function prepareQuiz(answer: MemoryVerse) {
+    setQuizCard(answer)
     const distractors = mastered
       .filter((v) => v.id !== answer.id)
-      .sort(() => Math.random() - 0.5)
+      .sort((a, b) => a.fsrs.stability - b.fsrs.stability)
       .slice(0, 3)
       .map((v) => v.text)
     while (distractors.length < 3 && learning.length) {
@@ -203,12 +332,15 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
   }
 
   function submitQuiz() {
-    if (quizPick === null) return
-    const answer = mastered[quizIndex]
-    const ok = quizChoices[quizPick] === answer.text
-    const result = scoreMemoryQuiz(user, ok)
+    if (quizPick === null || !quizCard) return
+    const ok = quizChoices[quizPick] === quizCard.text
+    const result = scoreMemoryQuiz(user, ok, {
+      verseId: quizCard.id,
+      updateSchedule: true,
+    })
     onUserChange(result.state)
-    setQuizResult(ok ? `Correct! +${result.earnedXp} XP` : `Not quite — ${answer.reference}`)
+    setQuizExclude((prev) => [...prev, quizCard.id].slice(-12))
+    setQuizResult(ok ? `Correct! +${result.earnedXp} XP` : `Not quite — ${quizCard.reference}`)
   }
 
   const typeOk =
@@ -219,6 +351,13 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
     )
 
   const tmsPack = TMS_VERSES.filter((v) => v.seriesId === tmsSeries)
+  const sessionProgress =
+    stats.dueCount === 0
+      ? 100
+      : Math.min(
+          100,
+          Math.round((stats.reviewedToday / Math.max(1, stats.dueCount + stats.reviewedToday)) * 100),
+        )
 
   return (
     <div className="memory">
@@ -226,8 +365,8 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
         <div>
           <h2>Scripture memory</h2>
           <p className="muted">
-            {dueLearn.length + dueMemorized.length} due · {learning.length} learning ·{' '}
-            {mastered.length} memorized
+            {stats.dueCount} due · {stats.newCount} new · {stats.reviewedToday} reviewed today ·{' '}
+            {stats.upcoming7Days} due in 7 days
           </p>
         </div>
         {onStartQuest && (
@@ -235,6 +374,29 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
             2-min quest
           </button>
         )}
+      </div>
+
+      <div className="memory-stats" aria-label="Review workload">
+        <div className="memory-stat">
+          <strong>{stats.dueCount}</strong>
+          <span>Due</span>
+        </div>
+        <div className="memory-stat">
+          <strong>{stats.newCount}</strong>
+          <span>New</span>
+        </div>
+        <div className="memory-stat">
+          <strong>{stats.learningCount}</strong>
+          <span>Learning</span>
+        </div>
+        <div className="memory-stat">
+          <strong>{stats.memorizedCount}</strong>
+          <span>Memorized</span>
+        </div>
+        <div className="memory-stat">
+          <strong>{sessionProgress}%</strong>
+          <span>Today</span>
+        </div>
       </div>
 
       <nav className="tabs tabs-4 memory-tabs">
@@ -268,9 +430,9 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
             <button
               className="btn tiny"
               onClick={() => startPractice(undefined, 'learning')}
-              disabled={!learning.length}
+              disabled={!dueLearn.length && !learning.length}
             >
-              Practice due
+              Practice due ({dueLearn.length})
             </button>
           </div>
           {!learning.length && (
@@ -280,13 +442,21 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
             <div key={v.id} className="memory-card">
               <div>
                 <strong>{v.reference}</strong>
-                {v.topic && <span className="memory-meta"> · {v.topic}</span>}
+                <span className="memory-meta">
+                  {' '}
+                  · {v.translationId.toUpperCase()}
+                  {v.topic ? ` · ${v.topic}` : ''}
+                  {isDueNow(v) ? ' · Due' : ''}
+                </span>
                 <p className="memory-preview">{v.text}</p>
                 <span className="memory-meta">Next: {v.nextReview}</span>
               </div>
               <div className="memory-card-actions">
-                <button className="btn tiny" onClick={() => startPractice(v)}>
-                  Review
+                <button
+                  className="btn tiny"
+                  onClick={() => startPractice(v, 'learning', !isDueNow(v))}
+                >
+                  {isDueNow(v) ? 'Review' : 'Practice'}
                 </button>
                 <button
                   className="btn tiny ghost-outline"
@@ -317,14 +487,14 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
               onClick={() => startPractice(undefined, 'memorized')}
               disabled={!mastered.length}
             >
-              Retention review
+              Retention review ({dueMemorized.length})
             </button>
             <button className="btn tiny ghost-outline" onClick={startQuiz} disabled={!mastered.length}>
               Start quiz
             </button>
           </div>
           <p className="muted">
-            Memorized verses return periodically so they stay fresh. Due today: {dueMemorized.length}.
+            Memorized verses return on an FSRS schedule. Due today: {dueMemorized.length}.
           </p>
           {!mastered.length && (
             <p className="muted">When a verse is solid, tap Memorized on a learning card.</p>
@@ -333,6 +503,7 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
             <div key={v.id} className="memory-card mastered">
               <div>
                 <strong>{v.reference}</strong>
+                <span className="memory-meta"> · {v.translationId.toUpperCase()}</span>
                 <p className="memory-preview">{v.text}</p>
                 <span className="memory-meta">
                   Retention · next {v.nextReview}
@@ -340,8 +511,11 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
                 </span>
               </div>
               <div className="memory-card-actions">
-                <button className="btn tiny" onClick={() => startPractice(v, 'memorized')}>
-                  Review
+                <button
+                  className="btn tiny"
+                  onClick={() => startPractice(v, 'memorized', !isDueNow(v))}
+                >
+                  {isDueNow(v) ? 'Review' : 'Practice'}
                 </button>
                 <button
                   className="btn tiny ghost-outline"
@@ -359,7 +533,8 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
         <div className="memory-add">
           <p className="muted">
             Topical Memory System verse references from The Navigators (60 verses). Text loads in your
-            current translation. TMS © The Navigators.
+            current translation ({user.translationId.toUpperCase()}). Same verse in another
+            translation is a separate card. TMS © The Navigators.
           </p>
           <div className="practice-tabs">
             {TMS_SERIES.map((s) => (
@@ -381,7 +556,13 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
           <div className="starter-grid">
             {tmsPack.map((s) => {
               const end = s.verseEnd ?? s.verseStart
-              const id = makeMemoryId(s.bookId, s.chapter, s.verseStart, end)
+              const id = makeMemoryId(
+                s.bookId,
+                s.chapter,
+                s.verseStart,
+                end,
+                user.translationId,
+              )
               const owned = user.memoryVerses.some((v) => v.id === id)
               return (
                 <button
@@ -406,7 +587,7 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
       {mode === 'list' && tab === 'quiz' && (
         <div className="memory-add">
           <p className="muted">
-            Cycle through memorized verses — see the reference, pick the right text.
+            Prioritizes overdue and weaker memorized verses — not a random shuffle of favorites.
           </p>
           <button className="btn primary" onClick={startQuiz} disabled={mastered.length < 1}>
             Start memory quiz
@@ -414,10 +595,10 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
         </div>
       )}
 
-      {mode === 'quiz' && mastered[quizIndex] && (
+      {mode === 'quiz' && quizCard && (
         <div className="memory-practice enter">
-          <p className="eyebrow">Memory quiz</p>
-          <h3>{mastered[quizIndex].reference}</h3>
+          <p className="eyebrow">Memory quiz · FSRS</p>
+          <h3>{quizCard.reference}</h3>
           <p className="muted">Which text matches this reference?</p>
           <div className="options">
             {quizChoices.map((c, i) => (
@@ -428,12 +609,12 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
                 disabled={quizResult !== null}
                 onClick={() => setQuizPick(i)}
               >
-                {c.length > 140 ? `${c.slice(0, 140)}…` : c}
+                {c}
               </button>
             ))}
           </div>
           {quizResult && <p className="nudge good">{quizResult}</p>}
-          {mastered[quizIndex].translationId === 'esv' && <EsvAttribution compact />}
+          {quizCard.translationId === 'esv' && <EsvAttribution compact />}
           <div className="session-actions">
             {quizResult === null ? (
               <button className="btn primary" disabled={quizPick === null} onClick={submitQuiz}>
@@ -465,13 +646,15 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
             ))}
           </div>
           <p className="eyebrow">
-            {active.status === 'memorized' ? 'Retention' : 'Learning'} · {active.reference}
+            {scheduleActive ? 'Scheduled review' : 'Extra practice'} ·{' '}
+            {active.status === 'memorized' ? 'Retention' : 'Learning'} · {active.reference} ·{' '}
+            {active.translationId.toUpperCase()}
           </p>
 
           {practiceKind === 'reveal' && (
             <>
               <p className={`memory-text ${revealed ? '' : 'hidden-text'}`}>
-                {revealed ? active.text : 'Say it aloud, then reveal.'}
+                {revealed ? active.text : 'Say it aloud, then reveal and grade honestly.'}
               </p>
               {!revealed ? (
                 <button className="btn primary" onClick={() => setRevealed(true)}>
@@ -479,16 +662,16 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
                 </button>
               ) : (
                 <div className="grade-row">
-                  <button className="btn grade again" onClick={() => grade('again')}>
+                  <button className="btn grade again" onClick={() => grade('again', 'practice')}>
                     Again
                   </button>
-                  <button className="btn grade hard" onClick={() => grade('hard')}>
+                  <button className="btn grade hard" onClick={() => grade('hard', 'practice')}>
                     Hard
                   </button>
-                  <button className="btn grade good" onClick={() => grade('good')}>
+                  <button className="btn grade good" onClick={() => grade('good', 'practice')}>
                     Good
                   </button>
-                  <button className="btn grade easy" onClick={() => grade('easy')}>
+                  <button className="btn grade easy" onClick={() => grade('easy', 'practice')}>
                     Easy
                   </button>
                 </div>
@@ -513,7 +696,9 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
                 <button
                   className="btn primary"
                   disabled={!typeOk && !revealed}
-                  onClick={() => grade(typeOk ? 'good' : 'hard')}
+                  onClick={() =>
+                    grade(typeOk ? 'good' : revealed ? 'again' : 'hard', 'type')
+                  }
                 >
                   Grade
                 </button>
@@ -524,7 +709,7 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
           {practiceKind === 'blanks' && (
             <BlankPractice
               verse={active}
-              onGrade={(ok) => grade(ok ? 'good' : 'hard')}
+              onGrade={(ok) => grade(ok ? 'good' : 'again', 'blanks')}
             />
           )}
 

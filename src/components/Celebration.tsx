@@ -1,13 +1,17 @@
 import { useEffect, useState, type CSSProperties } from 'react'
-import { ACHIEVEMENTS, titleForLevel, type AchievementId } from '../lib/types'
+import { ACHIEVEMENTS, titleForLevel, type AchievementId, type UserState } from '../lib/types'
+import { mascotLineFor } from '../lib/mascot'
+import { MascotBanner } from './MascotBanner'
 
 type Props = {
   earnedXp: number
+  gemsAwarded?: number
   streak: number
   leveledUp: boolean
   level: number
   newAchievements: AchievementId[]
   goalMet: boolean
+  user: UserState
   onContinue: () => void
 }
 
@@ -32,16 +36,23 @@ function useCountUp(target: number, active: boolean, ms = 700) {
 
 export function Celebration({
   earnedXp,
+  gemsAwarded = 0,
   streak,
   leveledUp,
   level,
   newAchievements,
   goalMet,
+  user,
   onContinue,
 }: Props) {
   const [show, setShow] = useState(false)
   const [stage, setStage] = useState(0)
   const xpShown = useCountUp(earnedXp, show)
+  const ari = mascotLineFor('celebrate', user, {
+    leveledUp,
+    newAchievements: newAchievements.length,
+    earnedXp,
+  })
 
   useEffect(() => {
     const t = requestAnimationFrame(() => setShow(true))
@@ -74,7 +85,10 @@ export function Celebration({
       <h1 className={`cele-title ${stage >= 0 ? 'in' : ''}`}>
         {leveledUp ? 'Level up!' : goalMet ? 'Daily goal!' : 'Lesson complete'}
       </h1>
-      <div className={`xp-pop ${stage >= 1 ? 'in' : ''}`}>+{xpShown} XP</div>
+      <div className={`xp-pop ${stage >= 1 ? 'in' : ''}`}>
+        +{xpShown} XP
+        {gemsAwarded > 0 ? ` · +${gemsAwarded} gems` : ''}
+      </div>
       <div className={`cele-stats ${stage >= 2 ? 'in' : ''}`}>
         <div className="cele-stat streak-stat">
           <span>Streak</span>
@@ -111,6 +125,7 @@ export function Celebration({
           ))}
         </div>
       )}
+      {stage >= 2 && <MascotBanner line={ari} compact />}
       <button className="btn primary cele-cta" onClick={onContinue}>
         Keep going
       </button>

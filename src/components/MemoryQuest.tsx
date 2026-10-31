@@ -227,7 +227,7 @@ export function MemoryQuest({
                   disabled={checked}
                   onClick={() => setPick(i)}
                 >
-                  {c.length > 180 ? `${c.slice(0, 180)}…` : c}
+                  {c}
                 </button>
               )
             })}

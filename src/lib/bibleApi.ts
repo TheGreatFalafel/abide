@@ -1,6 +1,7 @@
 import type { PassageRef } from '../data/bible'
 import { apiQuery, verseQuery } from '../data/bible'
 import type { TranslationId } from '../data/translations'
+import { clearStoredPassages, readStoredPassage, writeStoredPassage } from './passageStore'
 import { applySectionHeadings } from './sectionHeadings'
 
 export type Verse = {
@@ -19,6 +20,8 @@ export type PassageContent = {
   hasMoreInChapter?: boolean
   /** Full chapter verses for "Keep reading". */
   fullChapterVerses?: Verse[]
+  /** Set when served from IndexedDB because the network was unavailable. */
+  fromOfflineCache?: boolean
 }
 
 type BibleApiResponse = {
@@ -40,13 +43,18 @@ const cache = new Map<string, PassageContent>()
 
 export function clearPassageCache(): void {
   cache.clear()
+  void clearStoredPassages()
 }
 
 function cacheKey(translation: TranslationId, query: string): string {
   return `${translation}:${query}`
 }
 
-function parseEsvPassage(raw: string, fallbackRef: string): PassageContent {
+/** Parse ESV plain-text API output into numbered verses.
+ * Poetry often continues on following lines without a new `[N]` marker —
+ * those lines must append to the open verse, not be treated as headings.
+ */
+export function parseEsvPassage(raw: string, fallbackRef: string): PassageContent {
   const lines = raw.replace(/\r/g, '').split('\n')
   let reference = fallbackRef
   const verses: Verse[] = []
@@ -54,8 +62,8 @@ function parseEsvPassage(raw: string, fallbackRef: string): PassageContent {
   let pendingHeading: string | undefined
 
   for (const line of lines) {
-    const trimmed = line.trim()
-    if (!trimmed || trimmed === '(ESV)') continue
+    const trimmed = line.trim().replace(/\s*\(ESV\)\s*$/, '').trim()
+    if (!trimmed) continue
     if (firstContent && !/\[\d+\]/.test(trimmed)) {
       reference = trimmed
       firstContent = false
@@ -65,8 +73,14 @@ function parseEsvPassage(raw: string, fallbackRef: string): PassageContent {
 
     const matches = [...trimmed.matchAll(/\[(\d+)\]\s*/g)]
     if (!matches.length) {
-      // Section heading (or other non-verse line)
-      pendingHeading = trimmed
+      // Continuation of the previous verse (poetry / wrapped lines).
+      // With include-headings off, non-marker lines are verse text only.
+      if (verses.length) {
+        const last = verses[verses.length - 1]
+        last.text = `${last.text} ${trimmed}`.replace(/\s+/g, ' ').trim()
+      } else {
+        pendingHeading = trimmed
+      }
       continue
     }
 
@@ -80,36 +94,72 @@ function parseEsvPassage(raw: string, fallbackRef: string): PassageContent {
         .replace(/\(ESV\)\s*$/, '')
         .replace(/\s+/g, ' ')
         .trim()
-      if (text) {
-        verses.push({
-          number: num,
-          text,
-          heading: i === 0 ? pendingHeading : undefined,
-        })
-        if (i === 0) pendingHeading = undefined
-      }
+      // Always open the verse — text may arrive on following poetry lines.
+      verses.push({
+        number: num,
+        text,
+        heading: i === 0 ? pendingHeading : undefined,
+      })
+      if (i === 0) pendingHeading = undefined
     }
   }
 
-  if (!verses.length) {
+  const nonempty = verses.filter((v) => v.text)
+  if (!nonempty.length) {
     const cleaned = raw
       .replace(/^\s*[^\n]+\n+/, '')
       .replace(/\(ESV\)/g, '')
       .replace(/\[\d+\]/g, '')
       .replace(/\s+/g, ' ')
       .trim()
-    verses.push({ number: 1, text: cleaned || raw.trim() })
+    nonempty.push({ number: 1, text: cleaned || raw.trim() })
   }
 
   return {
     reference,
-    verses,
+    verses: nonempty,
     translation: 'English Standard Version (ESV)',
     translationId: 'esv',
   }
 }
 
-async function fetchEsv(query: string, apiKey: string): Promise<PassageContent> {
+function canUseEsvProxy(): boolean {
+  // Prefer same-origin Next proxy when available (never logs/stores the key).
+  return typeof window !== 'undefined' && !window.location.port.includes('5173')
+}
+
+async function fetchEsvViaProxy(query: string, apiKey: string): Promise<PassageContent> {
+  const res = await fetch('/api/bible/esv', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-ESV-API-Key': apiKey,
+    },
+    body: JSON.stringify({ query }),
+  })
+  if (res.status === 401 || res.status === 403) {
+    throw new Error('ESV API key was rejected. Re-paste it in Settings (no extra spaces).')
+  }
+  if (!res.ok) {
+    let message = `Could not load ESV passage (${res.status})`
+    try {
+      const errBody = (await res.json()) as { error?: string }
+      if (errBody.error) message = errBody.error
+    } catch {
+      /* ignore */
+    }
+    throw new Error(message)
+  }
+  const data = (await res.json()) as PassageContent
+  return {
+    reference: data.reference,
+    verses: data.verses,
+    translation: data.translation || 'English Standard Version (ESV)',
+    translationId: 'esv',
+  }
+}
+
+async function fetchEsvDirect(query: string, apiKey: string): Promise<PassageContent> {
   const params = new URLSearchParams({
     q: query,
     'include-passage-references': 'true',
@@ -117,13 +167,12 @@ async function fetchEsv(query: string, apiKey: string): Promise<PassageContent> 
     'include-first-verse-numbers': 'true',
     'include-footnotes': 'false',
     'include-footnote-body': 'false',
-    'include-headings': 'true',
+    'include-headings': 'false',
+    'indent-poetry': 'false',
     'include-short-copyright': 'true',
     'include-selahs': 'false',
   })
 
-  // Call Crossway directly — their API allows browser CORS with Authorization.
-  // Avoids the local Vite proxy, which was failing with "Failed to fetch" / 502.
   let res: Response
   try {
     res = await fetch(`https://api.esv.org/v3/passage/text/?${params.toString()}`, {
@@ -142,14 +191,7 @@ async function fetchEsv(query: string, apiKey: string): Promise<PassageContent> 
     throw new Error('ESV API key was rejected. Re-paste it in Settings (no extra spaces).')
   }
   if (!res.ok) {
-    let detail = ''
-    try {
-      const errBody = (await res.json()) as { detail?: string }
-      detail = errBody.detail ? `: ${errBody.detail}` : ''
-    } catch {
-      /* ignore */
-    }
-    throw new Error(`Could not load ESV passage (${res.status})${detail}`)
+    throw new Error(`Could not load ESV passage (${res.status})`)
   }
 
   const data = (await res.json()) as EsvResponse
@@ -158,6 +200,18 @@ async function fetchEsv(query: string, apiKey: string): Promise<PassageContent> 
     throw new Error(data.detail || 'ESV passage not found')
   }
   return parseEsvPassage(passage, data.canonical || query)
+}
+
+async function fetchEsv(query: string, apiKey: string): Promise<PassageContent> {
+  if (canUseEsvProxy()) {
+    try {
+      return await fetchEsvViaProxy(query, apiKey)
+    } catch (err) {
+      // Fall back to direct Crossway call (Vite / proxy unavailable)
+      if (err instanceof Error && /rejected/i.test(err.message)) throw err
+    }
+  }
+  return fetchEsvDirect(query, apiKey)
 }
 
 async function fetchBibleApi(
@@ -277,32 +331,74 @@ export async function fetchQuery(
   const hit = cache.get(key)
   if (hit) return hit
 
-  let content: PassageContent
-  if (opts.translation === 'esv') {
-    if (!opts.esvApiKey?.trim()) {
-      throw new Error(
-        'ESV needs a free API key from api.esv.org — add it in Settings, or switch to WEB/KJV.',
-      )
+  const stored = await readStoredPassage(key)
+  if (stored) {
+    cache.set(key, stored)
+    // Prefer network refresh when online; fall through on failure
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      return { ...stored, fromOfflineCache: true }
     }
-    content = await fetchEsv(query, opts.esvApiKey.trim())
-  } else {
-    content = await fetchBibleApi(query, opts.translation)
   }
 
-  cache.set(key, content)
-  return content
+  try {
+    let content: PassageContent
+    if (opts.translation === 'esv') {
+      if (!opts.esvApiKey?.trim()) {
+        throw new Error(
+          'ESV needs a free API key from api.esv.org — add it in Settings, or switch to WEB/KJV.',
+        )
+      }
+      content = await fetchEsv(query, opts.esvApiKey.trim())
+    } else {
+      content = await fetchBibleApi(query, opts.translation)
+    }
+
+    cache.set(key, content)
+    void writeStoredPassage(key, content)
+    return content
+  } catch (err) {
+    if (stored) {
+      return { ...stored, fromOfflineCache: true }
+    }
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      throw new Error(
+        'You are offline and this passage is not saved on this device yet. Open it once while online to read offline later.',
+      )
+    }
+    throw err
+  }
 }
 
 export function testEsvConnection(apiKey: string): Promise<{ ok: boolean; message: string }> {
   const key = apiKey.trim()
   if (!key) return Promise.resolve({ ok: false, message: 'Paste your API key first.' })
-  return fetch('https://api.esv.org/v3/passage/text/?q=John+3:16&include-footnotes=false', {
-    headers: {
-      Authorization: `Token ${key}`,
-      Accept: 'application/json',
-    },
-  })
-    .then(async (res) => {
+
+  const viaProxy = canUseEsvProxy()
+    ? fetch('/api/bible/esv', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-ESV-API-Key': key,
+        },
+        body: JSON.stringify({ query: 'John 3:16' }),
+      }).then(async (res) => {
+        if (res.status === 401 || res.status === 403) {
+          return { ok: false, message: 'Key rejected by Crossway. Double-check the token.' }
+        }
+        if (!res.ok) {
+          return { ok: false, message: `ESV proxy returned ${res.status}.` }
+        }
+        return { ok: true, message: 'Connected — John 3:16 loaded from ESV (proxied).' }
+      })
+    : null
+
+  const direct = () =>
+    fetch('https://api.esv.org/v3/passage/text/?q=John+3:16&include-footnotes=false', {
+      headers: {
+        Authorization: `Token ${key}`,
+        Accept: 'application/json',
+      },
+    }).then(async (res) => {
       if (res.status === 401 || res.status === 403) {
         return { ok: false, message: 'Key rejected by Crossway. Double-check the token.' }
       }
@@ -315,9 +411,12 @@ export function testEsvConnection(apiKey: string): Promise<{ ok: boolean; messag
       }
       return { ok: true, message: 'Connected — John 3:16 loaded from ESV.' }
     })
+
+  return (viaProxy ?? direct())
+    .catch(() => direct())
     .catch(() => ({
       ok: false,
-      message: 'Could not reach api.esv.org from this browser.',
+      message: 'Could not reach the ESV API from this browser.',
     }))
 }
 

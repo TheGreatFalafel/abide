@@ -9,10 +9,10 @@ import {
   type MemoryChallenge,
 } from '../lib/cloud'
 import { fetchVerseRange, passageToPlainText } from '../lib/bibleApi'
+import { memoryIdForChallengeVerse, sameScriptureRef } from '../lib/memoryIds'
 import {
   addMemoryVerse,
-  makeMemoryId,
-  scoreMemoryQuiz,
+  scoreMemoryQuizChallenge,
 } from '../lib/progress'
 import type { MemoryVerse, UserState } from '../lib/types'
 
@@ -22,10 +22,11 @@ type Props = {
   myUserId?: string | null
 }
 
+/** Challenge refs are translation-agnostic (shared across the circle). */
 function tmsToChallengeVerse(seed: TmsVerse): ChallengeVerse {
   const end = seed.verseEnd ?? seed.verseStart
   return {
-    id: makeMemoryId(seed.bookId, seed.chapter, seed.verseStart, end),
+    id: `${seed.bookId}-${seed.chapter}-${seed.verseStart}-${end}`,
     reference: tmsRefLabel(seed),
     bookId: seed.bookId,
     bookName: seed.bookName,
@@ -33,6 +34,19 @@ function tmsToChallengeVerse(seed: TmsVerse): ChallengeVerse {
     verseStart: seed.verseStart,
     verseEnd: end,
   }
+}
+
+function findBankCard(
+  state: UserState,
+  cv: ChallengeVerse,
+): MemoryVerse | undefined {
+  const id = memoryIdForChallengeVerse(cv, state.translationId)
+  return (
+    state.memoryVerses.find((v) => v.id === id) ??
+    state.memoryVerses.find(
+      (v) => sameScriptureRef(v, cv) && v.translationId === state.translationId,
+    )
+  )
 }
 
 function endsLabel(iso: string): string {
@@ -126,9 +140,7 @@ export function MemoryChallengePanel({ user, onUserChange, myUserId }: Props) {
 
   async function ensureVersesInBank(challenge: MemoryChallenge): Promise<UserState> {
     let state = user
-    const missing = challenge.verses.filter(
-      (cv) => !state.memoryVerses.some((v) => v.id === cv.id),
-    )
+    const missing = challenge.verses.filter((cv) => !findBankCard(state, cv))
     for (const cv of missing) {
       const content = await fetchVerseRange(
         cv.bookName,
@@ -139,7 +151,7 @@ export function MemoryChallengePanel({ user, onUserChange, myUserId }: Props) {
       )
       const text = passageToPlainText(content)
       const result = addMemoryVerse(state, {
-        id: cv.id,
+        id: memoryIdForChallengeVerse(cv, state.translationId),
         reference: cv.reference || content.reference,
         text,
         bookName: cv.bookName,
@@ -181,7 +193,7 @@ export function MemoryChallengePanel({ user, onUserChange, myUserId }: Props) {
     try {
       const state = await ensureVersesInBank(challenge)
       const pool = challenge.verses
-        .map((cv) => state.memoryVerses.find((v) => v.id === cv.id))
+        .map((cv) => findBankCard(state, cv))
         .filter((v): v is MemoryVerse => Boolean(v && v.text?.trim()))
         .sort(() => Math.random() - 0.5)
 
@@ -206,20 +218,37 @@ export function MemoryChallengePanel({ user, onUserChange, myUserId }: Props) {
   async function submitAnswer() {
     if (pick === null || !active || !quizPool[qIndex]) return
     const answer = quizPool[qIndex]
-    const ok = choices[pick] === answer.text
+    const selectedText = choices[pick]
     setRoundAsked((n) => n + 1)
-    if (ok) setRoundCorrect((n) => n + 1)
 
-    const xp = scoreMemoryQuiz(user, ok)
+    // Server grades the answer — never trust a client `correct` flag for the board.
+    // Local optimistic XP is reconciled when CloudBridge flushes challenge_correct events.
+    const posted = await challengeAction(
+      {
+        action: 'submit',
+        challengeId: active.id,
+        submissionId: crypto.randomUUID(),
+        verseId: active.verses.find(
+          (v) =>
+            v.bookId === answer.bookId &&
+            v.chapter === answer.chapter &&
+            v.verseStart === answer.verseStart &&
+            v.verseEnd === answer.verseEnd,
+        )?.id ?? answer.id.replace(/:[^:]+$/, ''),
+        selectedText,
+        translationId: user.translationId,
+      },
+      { esvApiKey: user.translationId === 'esv' ? user.esvApiKey : undefined },
+    )
+
+    const ok = posted.correct === true
+    if (ok) setRoundCorrect((n) => n + 1)
+    // Local XP for responsiveness; FSRS untouched. Server ledger gets challenge_correct.
+    const xp = scoreMemoryQuizChallenge(user, ok)
     onUserChange(xp.state)
 
-    const posted = await challengeAction({
-      action: 'submit',
-      challengeId: active.id,
-      correct: ok,
-    })
     if (posted.error) {
-      setResult(ok ? `Correct! (board sync failed: ${posted.error})` : `Not quite — ${answer.reference}`)
+      setResult(`Could not score: ${posted.error}`)
     } else {
       setResult(
         ok
@@ -264,7 +293,7 @@ export function MemoryChallengePanel({ user, onUserChange, myUserId }: Props) {
               disabled={result !== null}
               onClick={() => setPick(i)}
             >
-              {c.length > 160 ? `${c.slice(0, 160)}…` : c}
+              {c}
             </button>
           ))}
         </div>

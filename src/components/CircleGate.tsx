@@ -1,7 +1,8 @@
 'use client'
 
-import { CirclePanel } from './CirclePanel'
+import { isClerkConfigured } from '../lib/clerk'
 import type { UserState } from '../lib/types'
+import { CirclePanel } from './CirclePanel'
 
 type Props = {
   user: UserState
@@ -9,8 +10,7 @@ type Props = {
 }
 
 export function CircleGate({ user, onUserChange }: Props) {
-  const hasClerk = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY)
-  if (!hasClerk) {
+  if (!isClerkConfigured()) {
     return (
       <div className="settings-block">
         <h3>Friend circle</h3>

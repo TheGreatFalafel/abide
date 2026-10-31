@@ -5,10 +5,16 @@ import { ReadingSession } from './components/ReadingSession'
 import { Celebration } from './components/Celebration'
 import { SectionQuizSession } from './components/SectionQuiz'
 import { MemoryQuest } from './components/MemoryQuest'
+import { CurriculumLessonSession } from './components/CurriculumLesson'
+import { LanguageLessonSession } from './components/languages/LanguageLessonSession'
+import { GameSession } from './components/games/GameSession'
+import type { LanguageTrackId } from './data/languages'
 import { CloudBridge } from './components/CloudBridge'
+import { PwaRegister } from './components/PwaRegister'
 import { getPlanById, type PassageRef } from './data/bible'
 import {
   clearState,
+  completeBibleGame,
   completeLesson,
   completeSectionQuiz,
   loadState,
@@ -19,13 +25,18 @@ import {
   type MemoryGrade,
   type LessonResult,
 } from './lib/progress'
+import { isClerkConfigured } from './lib/clerk'
 import { levelFromXp, type UserState } from './lib/types'
+import type { GameDifficulty, GameId } from './games/types'
 
 type Screen =
   | { name: 'onboarding' }
   | { name: 'home' }
   | { name: 'lesson'; day: number }
+  | { name: 'curriculumLesson'; lessonId: string }
+  | { name: 'languageLesson'; track: LanguageTrackId; lessonId: string }
   | { name: 'memoryQuest' }
+  | { name: 'bibleGame'; gameId: GameId; difficulty: GameDifficulty }
   | {
       name: 'chapterQuiz'
       quizId: string
@@ -33,9 +44,9 @@ type Screen =
       coverage: string
       readingResult: LessonResult
     }
-  | { name: 'celebrate'; result: LessonResult }
+  | { name: 'celebrate'; result: LessonResult & { gemsAwarded?: number } }
 
-const HAS_CLERK = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY)
+const HAS_CLERK = isClerkConfigured()
 const CHAPTER_QUIZ_EVERY = 7
 
 function boot(): { user: UserState | null; screen: Screen } {
@@ -50,7 +61,22 @@ export default function App() {
   const initial = useMemo(() => boot(), [])
   const [user, setUser] = useState<UserState | null>(initial.user)
   const [screen, setScreen] = useState<Screen>(initial.screen)
-  const [view, setView] = useState<HomeView>('path')
+  const [view, setView] = useState<HomeView>(() => {
+    if (typeof window === 'undefined') return 'read'
+    const q = new URLSearchParams(window.location.search).get('view')
+    const allowed: HomeView[] = [
+      'path',
+      'read',
+      'memory',
+      'learn',
+      'circle',
+      'badges',
+      'shop',
+      'games',
+      'settings',
+    ]
+    return allowed.includes(q as HomeView) ? (q as HomeView) : 'read'
+  })
 
   const plan = getPlanById(user?.planId ?? 'year', user?.customPlans ?? [])
   const days = useMemo(() => plan.generate(), [plan.id, user?.customPlans])
@@ -133,9 +159,13 @@ export default function App() {
     setScreen({ name: 'celebrate', result })
   }
 
-  function handleMemoryReview(verseId: string, grade: MemoryGrade) {
+  function handleMemoryReview(
+    verseId: string,
+    grade: MemoryGrade,
+    opts?: { applySchedule?: boolean; source?: 'practice' | 'type' | 'blanks' },
+  ) {
     if (!user) return
-    const result = reviewMemoryVerse(user, verseId, grade)
+    const result = reviewMemoryVerse(user, verseId, grade, opts)
     setUser(result.state)
   }
 
@@ -160,9 +190,12 @@ export default function App() {
       />
     ) : null
 
+  const pwa = <PwaRegister user={user} />
+
   if (screen.name === 'onboarding' || !user) {
     return (
       <>
+        {pwa}
         {bridge}
         <Onboarding onStart={handleStart} />
       </>
@@ -172,6 +205,7 @@ export default function App() {
   if (screen.name === 'chapterQuiz') {
     return (
       <>
+        {pwa}
         {bridge}
         <SectionQuizSession
           planId={user.planId}
@@ -204,6 +238,7 @@ export default function App() {
           : day.sectionLabel || 'From the start of your path'
       return (
         <>
+          {pwa}
           {bridge}
           <SectionQuizSession
             planId={user.planId}
@@ -222,6 +257,7 @@ export default function App() {
     }
     return (
       <>
+        {pwa}
         {bridge}
         <ReadingSession
           day={day}
@@ -234,9 +270,55 @@ export default function App() {
     )
   }
 
+  if (screen.name === 'curriculumLesson') {
+    return (
+      <>
+        {pwa}
+        {bridge}
+        <CurriculumLessonSession
+          lessonId={screen.lessonId}
+          user={user}
+          onUserChange={handleUserChange}
+          onBack={() => {
+            setView('learn')
+            setScreen({ name: 'home' })
+          }}
+          onComplete={(result) => {
+            setView('learn')
+            setScreen({ name: 'celebrate', result })
+          }}
+        />
+      </>
+    )
+  }
+
+  if (screen.name === 'languageLesson') {
+    return (
+      <>
+        {pwa}
+        {bridge}
+        <LanguageLessonSession
+          track={screen.track}
+          lessonId={screen.lessonId}
+          user={user}
+          onUserChange={handleUserChange}
+          onBack={() => {
+            setView('learn')
+            setScreen({ name: 'home' })
+          }}
+          onComplete={(result) => {
+            setView('learn')
+            setScreen({ name: 'celebrate', result })
+          }}
+        />
+      </>
+    )
+  }
+
   if (screen.name === 'memoryQuest') {
     return (
       <>
+        {pwa}
         {bridge}
         <MemoryQuest
           user={user}
@@ -252,19 +334,46 @@ export default function App() {
     )
   }
 
+  if (screen.name === 'bibleGame') {
+    return (
+      <>
+        {pwa}
+        {bridge}
+        <GameSession
+          gameId={screen.gameId}
+          difficulty={screen.difficulty}
+          user={user}
+          onBack={() => {
+            setView('games')
+            setScreen({ name: 'home' })
+          }}
+          onComplete={(play) => {
+            const result = completeBibleGame(user, play)
+            setUser(result.state)
+            setView('games')
+            setScreen({ name: 'celebrate', result })
+          }}
+        />
+      </>
+    )
+  }
+
   if (screen.name === 'celebrate') {
     const { result } = screen
     const level = levelFromXp(result.state.xp).level
     return (
       <>
+        {pwa}
         {bridge}
         <Celebration
           earnedXp={result.earnedXp}
+          gemsAwarded={'gemsAwarded' in result ? result.gemsAwarded : undefined}
           streak={result.state.streak}
           leveledUp={result.leveledUp}
           level={level}
           newAchievements={result.newAchievements}
           goalMet={result.state.todayXp >= result.state.dailyGoalXp}
+          user={result.state}
           onContinue={() => setScreen({ name: 'home' })}
         />
       </>
@@ -273,6 +382,7 @@ export default function App() {
 
   return (
     <>
+      {pwa}
       {bridge}
       <Home
         user={user}
@@ -280,7 +390,16 @@ export default function App() {
         view={view}
         setView={setView}
         onOpenLesson={(day) => setScreen({ name: 'lesson', day })}
+        onOpenCurriculumLesson={(lessonId) =>
+          setScreen({ name: 'curriculumLesson', lessonId })
+        }
+        onOpenLanguageLesson={(track, lessonId) =>
+          setScreen({ name: 'languageLesson', track, lessonId })
+        }
         onStartMemoryQuest={() => setScreen({ name: 'memoryQuest' })}
+        onStartGame={(gameId, difficulty) =>
+          setScreen({ name: 'bibleGame', gameId, difficulty })
+        }
         onReset={handleReset}
         onUserChange={handleUserChange}
         onMemoryReview={handleMemoryReview}

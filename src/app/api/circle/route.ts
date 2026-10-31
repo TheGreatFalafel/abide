@@ -178,12 +178,37 @@ export async function POST(req: Request) {
     if (!membership[0] || !body.toUserId) {
       return NextResponse.json({ error: 'Cannot nudge' }, { status: 400 })
     }
+    if (body.toUserId === userId) {
+      return NextResponse.json({ error: 'Cannot nudge yourself' }, { status: 400 })
+    }
+    const target = await db
+      .select()
+      .from(circleMembers)
+      .where(
+        and(
+          eq(circleMembers.circleId, membership[0].circleId),
+          eq(circleMembers.userId, body.toUserId),
+        ),
+      )
+      .limit(1)
+    if (!target[0]) {
+      return NextResponse.json({ error: 'Recipient is not in your circle' }, { status: 403 })
+    }
+    const { assertNudgeRateLimit } = await import('@/lib/rateLimit')
+    const rateError = await assertNudgeRateLimit(db, userId)
+    if (rateError) {
+      return NextResponse.json({ error: rateError }, { status: 429 })
+    }
+    const message = (body.message?.trim() || 'Keep the streak going — praying for you!').slice(
+      0,
+      280,
+    )
     await db.insert(nudges).values({
       id: crypto.randomUUID(),
       circleId: membership[0].circleId,
       fromUserId: userId,
       toUserId: body.toUserId,
-      message: body.message?.trim() || 'Keep the streak going — praying for you!',
+      message,
     })
     return NextResponse.json({ ok: true })
   }

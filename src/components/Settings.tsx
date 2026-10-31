@@ -4,6 +4,8 @@ import { useAuth } from '@clerk/nextjs'
 import { useEffect, useState } from 'react'
 import { TRANSLATIONS, type TranslationId } from '../data/translations'
 import { PLANS } from '../data/bible'
+import { isClerkConfigured } from '../lib/clerk'
+import { esvKeyStorageMessage } from '../lib/privacy'
 import { updateSettings } from '../lib/progress'
 import { saveCloudProgress } from '../lib/cloud'
 import type { CustomPlan, UserState } from '../lib/types'
@@ -11,6 +13,12 @@ import { DAILY_GOAL_OPTIONS } from '../lib/types'
 import { EsvAttribution } from './EsvAttribution'
 import { CustomPlanBuilder } from './CustomPlanBuilder'
 import { testEsvConnection } from '../lib/bibleApi'
+import {
+  isStandaloneDisplay,
+  migrateNotificationPrefs,
+  notificationPermission,
+  requestNotificationPermission,
+} from '../lib/notifications'
 
 type Props = {
   user: UserState
@@ -18,13 +26,39 @@ type Props = {
   onReset: () => void
 }
 
-type SectionId = 'bible' | 'plan' | 'about'
+type SectionId = 'bible' | 'reminders' | 'plan' | 'about'
 
-const HAS_CLERK = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY)
+type SettingsViewProps = Props & {
+  /** From Clerk when configured; always false when Clerk is off. */
+  isSignedIn: boolean
+  hasClerk: boolean
+}
 
-export function Settings({ user, onUserChange, onReset }: Props) {
+/**
+ * Settings entry: never call useAuth unless Clerk is configured
+ * (layout omits ClerkProvider when keys are missing).
+ */
+export function Settings(props: Props) {
+  const hasClerk = isClerkConfigured()
+  if (!hasClerk) {
+    return <SettingsView {...props} hasClerk={false} isSignedIn={false} />
+  }
+  return <SettingsWithClerk {...props} />
+}
+
+function SettingsWithClerk(props: Props) {
   const { isSignedIn } = useAuth()
-  const customPlans = user.customPlans ?? []
+  return <SettingsView {...props} hasClerk isSignedIn={Boolean(isSignedIn)} />
+}
+
+/** Exported for tests — pure UI with auth flags injected. */
+export function SettingsView({
+  user,
+  onUserChange,
+  onReset,
+  isSignedIn,
+  hasClerk,
+}: SettingsViewProps) {
   const esvKey = user.esvApiKey ?? ''
   const [keyDraft, setKeyDraft] = useState(esvKey)
   const [saved, setSaved] = useState(false)
@@ -37,14 +71,37 @@ export function Settings({ user, onUserChange, onReset }: Props) {
   const [editing, setEditing] = useState<CustomPlan | null>(null)
   const [showBuilder, setShowBuilder] = useState(false)
   const keyReady = Boolean(esvKey.trim())
-  const accountSync = HAS_CLERK && isSignedIn
+  const accountSync = hasClerk && isSignedIn
+  const customPlans = user.customPlans ?? []
+  const keyCopy = esvKeyStorageMessage({ hasClerk, isSignedIn, keyReady })
+  const notif = migrateNotificationPrefs(user.notifications)
+  const [perm, setPerm] = useState(notificationPermission)
+  const standalone = typeof window !== 'undefined' && isStandaloneDisplay()
 
   useEffect(() => {
     setKeyDraft(esvKey)
   }, [esvKey])
 
+  useEffect(() => {
+    setPerm(notificationPermission())
+  }, [open])
+
   function toggle(id: SectionId) {
     setOpen((prev) => (prev === id ? prev : id))
+  }
+
+  function patchNotifications(patch: Partial<typeof notif>) {
+    const next = migrateNotificationPrefs({ ...notif, ...patch })
+    onUserChange(updateSettings(user, { notifications: next }))
+  }
+
+  async function enableReminders() {
+    const result = await requestNotificationPermission()
+    setPerm(result)
+    patchNotifications({
+      permissionAsked: true,
+      enabled: result === 'granted',
+    })
   }
 
   function setTranslation(id: TranslationId) {
@@ -73,17 +130,22 @@ export function Settings({ user, onUserChange, onReset }: Props) {
         const savedState = await saveCloudProgress(next)
         if (savedState) {
           onUserChange(savedState)
-          setTestMsg('ESV key saved to your account — available whenever you sign in.')
+          setTestMsg(
+            'ESV key saved on this device. Progress synced — the key was not uploaded.',
+          )
           setTestOk(true)
         } else {
-          setTestMsg('Saved on this device. Sign in to keep the key on your account.')
-          setTestOk(false)
+          setTestMsg('ESV key saved on this device.')
+          setTestOk(true)
         }
       } catch {
-        setTestMsg('Saved on this device, but account sync failed. Try again while signed in.')
+        setTestMsg('Key saved on this device, but progress sync failed. Try again while signed in.')
         setTestOk(false)
       }
       setSavingAccount(false)
+    } else {
+      setTestMsg('ESV key saved on this device.')
+      setTestOk(true)
     }
 
     window.setTimeout(() => setSaved(false), 1600)
@@ -125,7 +187,6 @@ export function Settings({ user, onUserChange, onReset }: Props) {
       ...user,
       customPlans: nextPlans,
       planId: plan.id,
-      // Keep progress only when editing the active plan without changing length/books drastically
       completedDays:
         exists && user.planId === plan.id && plan.days === user.customPlans.find((p) => p.id === plan.id)?.days
           ? user.completedDays.filter((d) => d <= plan.days)
@@ -139,11 +200,7 @@ export function Settings({ user, onUserChange, onReset }: Props) {
   }
 
   function deleteCustomPlan(plan: CustomPlan) {
-    if (
-      !confirm(
-        `Delete custom plan “${plan.name}”? This cannot be undone.`,
-      )
-    ) {
+    if (!confirm(`Delete custom plan “${plan.name}”? This cannot be undone.`)) {
       return
     }
     const nextPlans = customPlans.filter((p) => p.id !== plan.id)
@@ -189,19 +246,9 @@ export function Settings({ user, onUserChange, onReset }: Props) {
                   api.esv.org
                 </a>
                 . WEB and KJV need no key.
-                {accountSync
-                  ? ' When signed in, your key is stored on your Abide account.'
-                  : HAS_CLERK
-                    ? ' Sign in so the key is saved to your account, not only this browser.'
-                    : ''}
+                {keyCopy.blurb}
               </p>
-              <p className={`nudge ${keyReady ? 'good' : 'risk'}`}>
-                {keyReady
-                  ? accountSync
-                    ? 'ESV key is on your account — ESV stays available when you sign in.'
-                    : 'ESV key saved on this device.'
-                  : 'No key yet — ESV readings will not load until you save one.'}
-              </p>
+              <p className={`nudge ${keyReady ? 'good' : 'risk'}`}>{keyCopy.status}</p>
               <label className="field-label">
                 ESV API key
                 <div className="key-row">
@@ -228,15 +275,7 @@ export function Settings({ user, onUserChange, onReset }: Props) {
                   onClick={() => void saveKey()}
                   disabled={!keyDraft.trim() || savingAccount}
                 >
-                  {savingAccount
-                    ? 'Saving to account…'
-                    : saved
-                      ? accountSync
-                        ? 'Saved to account ✓'
-                        : 'Saved ✓'
-                      : accountSync
-                        ? 'Save to account'
-                        : 'Save key'}
+                  {savingAccount ? 'Saving…' : saved ? 'Saved ✓' : 'Save key'}
                 </button>
                 <button
                   className="btn ghost-outline"
@@ -288,6 +327,104 @@ export function Settings({ user, onUserChange, onReset }: Props) {
                   </button>
                 ))}
               </div>
+            </section>
+          </div>
+        )}
+
+        <button
+          type="button"
+          className={`settings-acc-head ${open === 'reminders' ? 'open' : ''}`}
+          onClick={() => toggle('reminders')}
+        >
+          Reminders
+          <span aria-hidden>{open === 'reminders' ? '−' : '+'}</span>
+        </button>
+        {open === 'reminders' && (
+          <div className="settings-acc-body">
+            <section className="settings-block tight">
+              <h3>Daily reminders</h3>
+              <p className="muted">
+                Optional local reminders for reading, memory reviews, and daily XP goals. Abide
+                never asks for notification permission on first launch — only when you enable them
+                here.
+              </p>
+              {perm === 'unsupported' && (
+                <p className="nudge risk">This browser does not support web notifications.</p>
+              )}
+              {perm === 'denied' && (
+                <p className="nudge risk">
+                  Notifications are blocked in browser settings. Re-enable them for this site to use
+                  reminders.
+                </p>
+              )}
+              {!standalone && perm !== 'unsupported' && (
+                <p className="muted">
+                  On iPhone, add Abide to your Home Screen (Share → Add to Home Screen) for the most
+                  reliable reminder support.
+                </p>
+              )}
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={notif.enabled && perm === 'granted'}
+                  disabled={perm === 'unsupported' || perm === 'denied'}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      void enableReminders()
+                    } else {
+                      patchNotifications({ enabled: false })
+                    }
+                  }}
+                />
+                <span>Enable reminders</span>
+              </label>
+              <fieldset className="reminder-options" disabled={!notif.enabled || perm !== 'granted'}>
+                <legend className="field-label">Remind me about</legend>
+                <label className="check-row">
+                  <input
+                    type="checkbox"
+                    checked={notif.readingReminder}
+                    onChange={(e) => patchNotifications({ readingReminder: e.target.checked })}
+                  />
+                  <span>Daily reading</span>
+                </label>
+                <label className="check-row">
+                  <input
+                    type="checkbox"
+                    checked={notif.memoryReminder}
+                    onChange={(e) => patchNotifications({ memoryReminder: e.target.checked })}
+                  />
+                  <span>Due memory reviews</span>
+                </label>
+                <label className="check-row">
+                  <input
+                    type="checkbox"
+                    checked={notif.goalReminder}
+                    onChange={(e) => patchNotifications({ goalReminder: e.target.checked })}
+                  />
+                  <span>Daily XP goal</span>
+                </label>
+                <label className="field-label">
+                  Preferred hour
+                  <select
+                    className="field"
+                    value={notif.reminderHour}
+                    onChange={(e) =>
+                      patchNotifications({ reminderHour: Number(e.target.value) })
+                    }
+                  >
+                    {Array.from({ length: 24 }, (_, h) => (
+                      <option key={h} value={h}>
+                        {h === 0 ? '12:00 AM' : h < 12 ? `${h}:00 AM` : h === 12 ? '12:00 PM' : `${h - 12}:00 PM`}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </fieldset>
+              <p className="muted">
+                Reminders use on-device notifications (no third-party push service). They appear when
+                Abide is open or installed as an app; background delivery varies by browser.
+              </p>
             </section>
           </div>
         )}

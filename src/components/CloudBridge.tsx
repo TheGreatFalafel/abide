@@ -2,8 +2,14 @@
 
 import { useAuth } from '@clerk/nextjs'
 import { useEffect, useRef, useState } from 'react'
-import { fetchCloudProgress, saveCloudProgress } from '../lib/cloud'
+import {
+  fetchCloudProgress,
+  saveCloudProgress,
+  syncGemEvents,
+  syncProgressEvents,
+} from '../lib/cloud'
 import { mergeUserStates } from '../lib/mergeState'
+import { withLocalEsvKey } from '../lib/privacy'
 import { loadState, migrateUserState, saveState } from '../lib/progress'
 import type { UserState } from '../lib/types'
 
@@ -20,15 +26,23 @@ function fingerprint(state: UserState): string {
     planId: state.planId,
     completedDays: state.completedDays,
     completedQuizzes: state.completedQuizzes,
+    curriculum: {
+      completedLessonIds: state.curriculum?.completedLessonIds ?? [],
+      lastLessonId: state.curriculum?.lastLessonId ?? null,
+      catalogVersion: state.curriculum?.catalogVersion ?? 0,
+    },
+    notifications: state.notifications,
+    gems: state.gems,
+    cosmetics: state.cosmetics,
     memory: state.memoryVerses.map(
-      (v) => `${v.id}:${v.repetitions}:${v.status}:${v.intervalDays}`,
+      (v) =>
+        `${v.id}:${v.repetitions}:${v.status}:${v.intervalDays}:${v.textVersion ?? 0}:${v.text}`,
     ),
     achievements: state.achievements,
     translationId: state.translationId,
-    esvApiKey: state.esvApiKey,
-      customPlans: state.customPlans.map(
-        (p) => `${p.id}:${p.days}:${p.pace}:${p.versesPerDay ?? ''}`,
-      ),
+    customPlans: state.customPlans.map(
+      (p) => `${p.id}:${p.days}:${p.pace}:${p.versesPerDay ?? ''}`,
+    ),
     name: state.name,
     lastReadDate: state.lastReadDate,
     todayXp: state.todayXp,
@@ -39,21 +53,61 @@ function fingerprint(state: UserState): string {
   })
 }
 
-function applyMerged(merged: UserState, onCloudState: (s: UserState) => void) {
-  const next = migrateUserState(merged)
+function applyMerged(
+  merged: UserState,
+  localKey: string | undefined,
+  onCloudState: (s: UserState) => void,
+) {
+  const next = migrateUserState(withLocalEsvKey(merged, localKey))
   saveState(next)
   onCloudState(next)
   return next
 }
 
-/** Syncs local progress to Neon when signed in with Clerk. */
+async function flushEvents(
+  seedXp: number,
+  seedGems: number,
+  localKey: string | undefined,
+  onCloudState: (s: UserState) => void,
+) {
+  const result = await syncProgressEvents(seedXp)
+  if (result?.state) {
+    applyMerged(result.state, localKey, onCloudState)
+  } else if (result) {
+    const local = loadState()
+    if (local) {
+      applyMerged(
+        {
+          ...local,
+          xp: result.serverXp,
+          streak: result.streak,
+          longestStreak: Math.max(local.longestStreak, result.longestStreak),
+          lastReadDate: result.lastReadDate ?? local.lastReadDate,
+        },
+        localKey,
+        onCloudState,
+      )
+    }
+  }
+
+  const gems = await syncGemEvents(seedGems)
+  if (gems?.state) {
+    applyMerged(gems.state, localKey, onCloudState)
+  } else if (gems) {
+    const local = loadState()
+    if (local) {
+      applyMerged({ ...local, gems: gems.serverGems }, localKey, onCloudState)
+    }
+  }
+}
+
+/** Syncs local progress + event ledger to Neon when signed in with Clerk. */
 export function CloudBridge({ state, onCloudState }: Props) {
   const { isSignedIn, isLoaded } = useAuth()
   const lastSaved = useRef('')
   const hydrated = useRef(false)
   const [syncNote, setSyncNote] = useState<string | null>(null)
 
-  // Re-hydrate after sign-out (fresh sign-in should pull account ESV key again)
   useEffect(() => {
     if (!isSignedIn) hydrated.current = false
   }, [isSignedIn])
@@ -62,37 +116,36 @@ export function CloudBridge({ state, onCloudState }: Props) {
     if (!isLoaded || !isSignedIn || hydrated.current) return
     hydrated.current = true
     const local = loadState()
+    const localKey = local?.esvApiKey
     fetchCloudProgress()
-      .then((cloud) => {
+      .then(async (cloud) => {
         if (!cloud && !local) return
         if (!cloud && local) {
-          void saveCloudProgress(local).then((saved) => {
-            if (saved) lastSaved.current = fingerprint(saved)
-          })
+          await flushEvents(local.xp, local.gems ?? 0, localKey, onCloudState)
+          const saved = await saveCloudProgress(loadState() ?? local)
+          if (saved) lastSaved.current = fingerprint(saved)
           return
         }
         if (cloud && !local) {
-          const next = applyMerged(cloud, onCloudState)
+          const next = applyMerged(cloud, localKey, onCloudState)
           lastSaved.current = fingerprint(next)
+          await flushEvents(next.xp, next.gems ?? 0, localKey, onCloudState)
           setSyncNote('Progress restored from your account')
           window.setTimeout(() => setSyncNote(null), 2500)
           return
         }
         if (cloud && local) {
           const merged = mergeUserStates(local, cloud)
-          const next = applyMerged(merged, onCloudState)
-          void saveCloudProgress(next).then((saved) => {
-            if (!saved) return
-            lastSaved.current = fingerprint(saved)
-            // Server may have preserved an ESV key local was missing
-            if (saved.esvApiKey?.trim() && saved.esvApiKey !== next.esvApiKey) {
-              applyMerged(saved, onCloudState)
-            }
-          })
-          const note = next.esvApiKey?.trim()
-            ? 'Account synced — ESV key restored'
-            : 'Progress synced to your account'
-          setSyncNote(note)
+          const next = applyMerged(merged, local.esvApiKey, onCloudState)
+          await flushEvents(
+            Math.max(local.xp, cloud.xp, next.xp),
+            Math.max(local.gems ?? 0, cloud.gems ?? 0, next.gems ?? 0),
+            local.esvApiKey,
+            onCloudState,
+          )
+          const saved = await saveCloudProgress(loadState() ?? next)
+          if (saved) lastSaved.current = fingerprint(saved)
+          setSyncNote('Progress synced to your account')
           window.setTimeout(() => setSyncNote(null), 2500)
         }
       })
@@ -107,32 +160,26 @@ export function CloudBridge({ state, onCloudState }: Props) {
     const fp = fingerprint(state)
     if (fp === lastSaved.current) return
     const timer = window.setTimeout(() => {
-      saveCloudProgress(state)
+      void flushEvents(state.xp, state.gems ?? 0, state.esvApiKey, onCloudState)
+        .then(() => saveCloudProgress(loadState() ?? state))
         .then((saved) => {
           if (!saved) return
           lastSaved.current = fingerprint(saved)
-          if (
-            saved.esvApiKey?.trim() &&
-            !state.esvApiKey?.trim() &&
-            saved.esvApiKey !== state.esvApiKey
-          ) {
-            applyMerged(saved, onCloudState)
-          }
         })
         .catch(() => {})
     }, 500)
     return () => window.clearTimeout(timer)
   }, [state, isSignedIn, onCloudState])
 
-  // Flush pending progress when leaving the tab
   useEffect(() => {
     if (!isSignedIn || !state) return
     const flush = () => {
-      const fp = fingerprint(state)
-      if (fp === lastSaved.current) return
-      void saveCloudProgress(state).then((saved) => {
-        if (saved) lastSaved.current = fingerprint(saved)
-      })
+      void flushEvents(state.xp, state.gems ?? 0, state.esvApiKey, onCloudState)
+        .then(() => saveCloudProgress(loadState() ?? state))
+        .then((saved) => {
+          if (saved) lastSaved.current = fingerprint(saved)
+        })
+        .catch(() => {})
     }
     const onVis = () => {
       if (document.visibilityState === 'hidden') flush()
@@ -143,7 +190,7 @@ export function CloudBridge({ state, onCloudState }: Props) {
       window.removeEventListener('pagehide', flush)
       document.removeEventListener('visibilitychange', onVis)
     }
-  }, [state, isSignedIn])
+  }, [state, isSignedIn, onCloudState])
 
   if (!syncNote) return null
   return <p className="sync-toast">{syncNote}</p>

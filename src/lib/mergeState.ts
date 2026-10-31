@@ -1,3 +1,7 @@
+import { mergeCurriculumProgress, migrateCurriculumProgress } from '../data/curriculum/access'
+import { mergeLanguageProgress, migrateLanguageProgress } from '../data/languages/access'
+import { mergeCosmeticsState, migrateCosmeticsState } from './cosmetics'
+import { migrateNotificationPrefs } from './notifications'
 import type { UserState, MemoryVerse } from './types'
 
 function memoryKey(v: MemoryVerse): string {
@@ -15,8 +19,23 @@ function mergeMemories(a: MemoryVerse[], b: MemoryVerse[]): MemoryVerse[] {
     }
     // Keep the more practiced / further along copy
     const score = (x: MemoryVerse) =>
-      (x.status === 'memorized' ? 1000 : 0) + x.repetitions * 10 + x.intervalDays
-    map.set(key, score(v) >= score(prev) ? { ...prev, ...v } : prev)
+      (x.status === 'memorized' ? 1000 : 0) +
+      (x.fsrs?.reps ?? x.repetitions) * 10 +
+      (x.fsrs?.stability ?? x.intervalDays)
+    const progressed = score(v) >= score(prev) ? { ...prev, ...v } : prev
+    const newerText =
+      (v.textVersion ?? 0) > (prev.textVersion ?? 0)
+        ? v
+        : (prev.textVersion ?? 0) > (v.textVersion ?? 0)
+          ? prev
+          : progressed
+    map.set(key, {
+      ...progressed,
+      text: newerText.text,
+      reference: newerText.reference,
+      translationId: newerText.translationId,
+      textVersion: newerText.textVersion,
+    })
   }
   return [...map.values()]
 }
@@ -71,15 +90,9 @@ export function mergeUserStates(local: UserState, cloud: UserState): UserState {
     return a >= b ? a : b
   })()
 
-  const localKey = local.esvApiKey?.trim() || ''
-  const cloudKey = cloud.esvApiKey?.trim() || ''
-  // Never let an empty key wipe a saved Crossway token on the account
-  const esvApiKey = localKey || cloudKey
-  const translationId = localKey
-    ? local.translationId
-    : cloudKey
-      ? cloud.translationId || local.translationId
-      : local.translationId || cloud.translationId
+  // ESV keys are device-local only — never adopt a key from cloud state_json
+  const esvApiKey = local.esvApiKey?.trim() || ''
+  const translationId = local.translationId || cloud.translationId
 
   return {
     ...cloud,
@@ -96,6 +109,58 @@ export function mergeUserStates(local: UserState, cloud: UserState): UserState {
     completedQuizzes,
     memoryVerses: mergeMemories(local.memoryVerses, cloud.memoryVerses),
     customPlans,
+    curriculum: mergeCurriculumProgress(
+      migrateCurriculumProgress(local.curriculum),
+      migrateCurriculumProgress(cloud.curriculum),
+    ),
+    languages: mergeLanguageProgress(
+      migrateLanguageProgress(local.languages),
+      migrateLanguageProgress(cloud.languages),
+    ),
+    // Prefer local notification prefs (device permission is local)
+    notifications: migrateNotificationPrefs(
+      local.notifications?.permissionAsked || local.notifications?.enabled
+        ? local.notifications
+        : cloud.notifications ?? local.notifications,
+    ),
+    // Gems: take max until server ledger reconciles (never prefer a lower cloud wipe)
+    gems: Math.max(local.gems ?? 0, cloud.gems ?? 0),
+    gemsEarnedTotal: Math.max(local.gemsEarnedTotal ?? 0, cloud.gemsEarnedTotal ?? 0),
+    todayGems:
+      local.todayGemsDate === cloud.todayGemsDate
+        ? Math.max(local.todayGems ?? 0, cloud.todayGems ?? 0)
+        : (local.todayGemsDate ?? '') >= (cloud.todayGemsDate ?? '')
+          ? local.todayGems ?? 0
+          : cloud.todayGems ?? 0,
+    todayGemsDate:
+      (local.todayGemsDate ?? '') >= (cloud.todayGemsDate ?? '')
+        ? local.todayGemsDate
+        : cloud.todayGemsDate,
+    memoryQuestsCompleted: Math.max(
+      local.memoryQuestsCompleted ?? 0,
+      cloud.memoryQuestsCompleted ?? 0,
+    ),
+    cosmetics: mergeCosmeticsState(
+      migrateCosmeticsState(local.cosmetics),
+      migrateCosmeticsState(cloud.cosmetics),
+    ),
+    gameStats: {
+      completedGameIds: [
+        ...new Set([
+          ...(local.gameStats?.completedGameIds ?? []),
+          ...(cloud.gameStats?.completedGameIds ?? []),
+        ]),
+      ],
+      gamesPlayed: Math.max(local.gameStats?.gamesPlayed ?? 0, cloud.gameStats?.gamesPlayed ?? 0),
+      perfectGames: Math.max(
+        local.gameStats?.perfectGames ?? 0,
+        cloud.gameStats?.perfectGames ?? 0,
+      ),
+      lastRewardDateByGame: {
+        ...(cloud.gameStats?.lastRewardDateByGame ?? {}),
+        ...(local.gameStats?.lastRewardDateByGame ?? {}),
+      },
+    },
     esvApiKey,
     translationId,
     dailyGoalXp: local.dailyGoalXp || cloud.dailyGoalXp,

@@ -1,3 +1,4 @@
+import type { LanguageProgress } from '../data/languages/types'
 import type { TranslationId } from '../data/translations'
 
 export type AchievementId =
@@ -16,6 +17,19 @@ export type AchievementId =
   | 'memory_first'
   | 'memory_5'
   | 'memory_master'
+  | 'memory_25'
+  | 'memory_quest_3'
+  | 'curriculum_first'
+  | 'curriculum_topic'
+  | 'greek_first'
+  | 'hebrew_first'
+  | 'greek_track'
+  | 'hebrew_track'
+  | 'gem_collector'
+  | 'streak_14'
+  | 'game_first'
+  | 'game_trio'
+  | 'game_perfect'
 
 export type Achievement = {
   id: AchievementId
@@ -115,29 +129,152 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: 'Mark a verse as memorized.',
     icon: '👑',
   },
+  {
+    id: 'memory_25',
+    title: 'Storehouse',
+    description: 'Keep 25 verses in your memory bank.',
+    icon: '📚',
+  },
+  {
+    id: 'memory_quest_3',
+    title: 'Quick Quests',
+    description: 'Finish 3 Memory Quests (lifetime).',
+    icon: '⏱',
+  },
+  {
+    id: 'curriculum_first',
+    title: 'Doctrine Beginnings',
+    description: 'Complete your first theology lesson.',
+    icon: '📖',
+  },
+  {
+    id: 'curriculum_topic',
+    title: 'Nature of Man',
+    description: 'Finish every lesson in any theology topic (including The Nature of Man).',
+    icon: '🧭',
+  },
+  {
+    id: 'greek_first',
+    title: 'First Greek',
+    description: 'Complete your first Biblical Greek lesson.',
+    icon: 'α',
+  },
+  {
+    id: 'hebrew_first',
+    title: 'First Hebrew',
+    description: 'Complete your first Biblical Hebrew lesson.',
+    icon: 'א',
+  },
+  {
+    id: 'greek_track',
+    title: 'Koine Reader',
+    description: 'Finish the Biblical Greek course.',
+    icon: 'Ω',
+  },
+  {
+    id: 'hebrew_track',
+    title: 'Hebrew Reader',
+    description: 'Finish the Biblical Hebrew course.',
+    icon: 'ת',
+  },
+  {
+    id: 'gem_collector',
+    title: 'Quiet Treasure',
+    description: 'Earn 100 gems from faithful study.',
+    icon: '💠',
+  },
+  {
+    id: 'streak_14',
+    title: 'Fortnight Faithful',
+    description: 'Keep a 14-day streak.',
+    icon: '📆',
+  },
+  {
+    id: 'game_first',
+    title: 'First Match',
+    description: 'Finish any Bible game once.',
+    icon: '🎯',
+  },
+  {
+    id: 'game_trio',
+    title: 'Three Courts',
+    description: 'Complete three different Bible games.',
+    icon: '🦁',
+  },
+  {
+    id: 'game_perfect',
+    title: 'Clean Sweep',
+    description: 'Score 100% on a Bible game round.',
+    icon: '✨',
+  },
 ]
+
+export type MemoryGrade = 'again' | 'hard' | 'good' | 'easy'
+
+export type MemoryReviewSource = 'practice' | 'type' | 'blanks' | 'quest' | 'quiz' | 'mark'
+
+export type MemoryReviewLogEntry = {
+  /** FSRS Rating: 1 Again, 2 Hard, 3 Good, 4 Easy */
+  rating: 1 | 2 | 3 | 4
+  reviewedAt: string
+  stateBefore: number
+  scheduledDays: number
+  source: MemoryReviewSource
+  /** When false, this was extra practice and did not change the schedule. */
+  appliedSchedule: boolean
+}
+
+export type FsrsCardState = {
+  due: string
+  stability: number
+  difficulty: number
+  scheduled_days: number
+  learning_steps: number
+  reps: number
+  lapses: number
+  state: number
+  last_review: string | null
+}
 
 export type MemoryVerse = {
   id: string
   reference: string
   text: string
+  /** Parser/content revision used when this saved text was fetched. */
+  textVersion?: number
   bookName: string
   bookId: string
   chapter: number
   verseStart: number
   verseEnd: number
   translationId: TranslationId
+  /**
+   * False when legacy data had no reliable translation and the id was left unchanged.
+   * New cards are always confident.
+   */
+  translationConfident?: boolean
   addedAt: string
+  /** Calendar due date (YYYY-MM-DD) derived from FSRS `due` for UI. */
   nextReview: string
+  /** Rounded FSRS scheduled_days — kept for blanks difficulty + legacy UI. */
   intervalDays: number
+  /** Legacy ease mirror; scheduling uses `fsrs.difficulty`. */
   ease: number
   repetitions: number
   lapses: number
-  /** learning = still acquiring; memorized = retention cycle */
+  /** learning = still acquiring; memorized = user-marked / graduated retention */
   status: 'learning' | 'memorized'
   topic?: string
   seriesId?: string
   seriesName?: string
+  /** FSRS-6 card snapshot (ts-fsrs). */
+  fsrs: FsrsCardState
+  reviewHistory: MemoryReviewLogEntry[]
+  successfulReviews: number
+  failedReviews: number
+  scheduler?: 'fsrs-6' | 'legacy'
+  /** Date key of last schedule-applying review (duplicate prevention). */
+  scheduledReviewDate?: string
 }
 
 export type CustomPlan = {
@@ -150,6 +287,27 @@ export type CustomPlan = {
   /** Used when pace is "verses" — how many verses make one reading unit. */
   versesPerDay?: number
   createdAt: string
+}
+
+/** Local/cloud progress for theology curriculum (separate from Path days & FSRS). */
+export type CurriculumProgressState = {
+  catalogVersion: number
+  completedLessonIds: string[]
+  lastLessonId: string | null
+  lessonScores: Record<
+    string,
+    { correctMc: number; totalMc: number; completedAt: string }
+  >
+}
+
+/** Opt-in local reminder prefs — never requested on first launch. */
+export type NotificationPrefsState = {
+  enabled: boolean
+  readingReminder: boolean
+  memoryReminder: boolean
+  goalReminder: boolean
+  reminderHour: number
+  permissionAsked: boolean
 }
 
 export type UserState = {
@@ -176,6 +334,44 @@ export type UserState = {
   memoryReviewsToday: number
   completedQuizzes: string[]
   customPlans: CustomPlan[]
+  /** Theology curriculum progress — never mixed into completedDays. */
+  curriculum: CurriculumProgressState
+  /**
+   * Biblical Greek / Hebrew course progress + language vocab FSRS decks.
+   * Never mixed with theology curriculum or Scripture memoryVerses.
+   */
+  languages: LanguageProgress
+  /** Local reminder preferences (device permission is separate). */
+  notifications: NotificationPrefsState
+  /**
+   * Gem balance — local optimistic; cloud/server ledger is authoritative when signed in.
+   * Never trust a client-submitted gems field on the server.
+   */
+  gems: number
+  /** Gems earned today (local daily-cap tracking). */
+  todayGems: number
+  todayGemsDate: string
+  /** Lifetime gems earned (for achievements; not reduced by spending). */
+  gemsEarnedTotal: number
+  /** Lifetime Memory Quests finished (achievement tracking). */
+  memoryQuestsCompleted: number
+  cosmetics: {
+    ownedIds: string[]
+    equipped: {
+      base: string
+      color: string
+      accessory: string | null
+      frame: string
+    }
+  }
+  /** Bible Game Center progress (rewards keyed separately via event activity keys). */
+  gameStats: {
+    completedGameIds: string[]
+    gamesPlayed: number
+    perfectGames: number
+    /** gameId → YYYY-MM-DD of last rewarded completion */
+    lastRewardDateByGame: Record<string, string>
+  }
 }
 
 export const DAILY_GOAL_OPTIONS = [
@@ -190,14 +386,37 @@ export const XP = {
   reflection: 10,
   streakBonus: 5,
   perfectDay: 15,
-  memoryEasy: 8,
-  memoryGood: 12,
-  memoryHard: 6,
+  /** Easy pays less than Good so “easy farming” is not optimal. */
+  memoryEasy: 5,
+  memoryGood: 8,
+  memoryHard: 4,
   sectionQuiz: 25,
-  memoryQuiz: 10,
+  memoryQuiz: 2,
+  /** Wrong quiz answers no longer grant XP (streak may still update). */
+  memoryQuizWrong: 0,
+  /** Per-correct-answer reward inside a short memory quest. */
+  memoryQuestCorrect: 2,
   /** Flat bonus for finishing a 2-min memory quest */
-  memoryQuest: 15,
+  memoryQuest: 5,
+  /** Extra practice on non-due cards (no schedule change). */
+  memoryExtraPractice: 0,
+  /** Theology curriculum: awarded only after quiz + reflection, not on open. */
+  curriculumLesson: 20,
+  curriculumReflection: 8,
+  /** Max bonus from MC accuracy on a curriculum lesson. */
+  curriculumQuizBonus: 10,
+  /** Bible game completion base XP (accuracy bonus layered in computeEventXp). */
+  bibleGame: 12,
+  bibleGameAccuracy: 8,
+  /** Original-language lesson (quiz + reflection). */
+  languageLesson: 18,
+  languageLessonQuizBonus: 8,
+  /** Scheduled language-vocab FSRS review (separate from Scripture memory). */
+  languageVocabReview: 2,
 } as const
+
+/** Increment when saved memory text needs to be re-fetched after a parser fix. */
+export const CURRENT_MEMORY_TEXT_VERSION = 1
 
 export function levelFromXp(xp: number): { level: number; into: number; need: number } {
   let level = 1
@@ -284,9 +503,63 @@ export function createInitialState(name: string, planId: string): UserState {
     memoryReviewsToday: 0,
     completedQuizzes: [],
     customPlans: [],
+    curriculum: {
+      catalogVersion: 1,
+      completedLessonIds: [],
+      lastLessonId: null,
+      lessonScores: {},
+    },
+    languages: {
+      catalogVersion: 1,
+      greek: {
+        completedLessonIds: [],
+        lastLessonId: null,
+        lessonScores: {},
+        vocabCards: [],
+        alphabetMastered: false,
+      },
+      hebrew: {
+        completedLessonIds: [],
+        lastLessonId: null,
+        lessonScores: {},
+        vocabCards: [],
+        alphabetMastered: false,
+      },
+    },
+    notifications: {
+      enabled: false,
+      readingReminder: true,
+      memoryReminder: true,
+      goalReminder: true,
+      reminderHour: 8,
+      permissionAsked: false,
+    },
+    gems: 0,
+    todayGems: 0,
+    todayGemsDate: today,
+    gemsEarnedTotal: 0,
+    memoryQuestsCompleted: 0,
+    cosmetics: {
+      ownedIds: ['base-seeker', 'color-deep', 'frame-simple'],
+      equipped: {
+        base: 'base-seeker',
+        color: 'color-deep',
+        accessory: null,
+        frame: 'frame-simple',
+      },
+    },
+    gameStats: {
+      completedGameIds: [],
+      gamesPlayed: 0,
+      perfectGames: 0,
+      lastRewardDateByGame: {},
+    },
   }
 }
 
 export function isMastered(verse: MemoryVerse): boolean {
-  return verse.status === 'memorized' || (verse.intervalDays >= 21 && verse.repetitions >= 4)
+  if (verse.status === 'memorized') return true
+  const fsrs = verse.fsrs
+  if (!fsrs) return verse.intervalDays >= 21 && verse.repetitions >= 4
+  return fsrs.state === 2 && fsrs.stability >= 21 && fsrs.reps >= 4
 }

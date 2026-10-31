@@ -7,6 +7,7 @@ import { reflectionForPassages } from '../lib/reflections'
 import type { TranslationId } from '../data/translations'
 import { addMemoryVerse } from '../lib/progress'
 import type { UserState } from '../lib/types'
+import { ConnectivityBanner } from './ConnectivityBanner'
 import { EsvAttribution } from './EsvAttribution'
 import { ESV_SITE } from '../data/esvCopyright'
 import { CommentaryPanel } from './CommentaryPanel'
@@ -176,6 +177,13 @@ export function ReadingSession({ day, user, onUserChange, onComplete, onBack }: 
 
       {phase === 'read' && (
         <div className="reader enter" ref={readerTopRef}>
+          <ConnectivityBanner
+            detail={
+              passages.some((p) => p.fromOfflineCache)
+                ? 'Showing a saved offline copy of this passage.'
+                : null
+            }
+          />
           {loading && <p className="muted center">Gathering the passage…</p>}
           {error && (
             <div className="error-box">

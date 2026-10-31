@@ -1,0 +1,366 @@
+import type { LanguageVocabEntry } from '../types'
+
+/**
+ * Core Biblical Hebrew vocabulary — high-frequency lemmas drawn from the opening
+ * chapters of Genesis and the most common nouns, verbs, and particles a beginning
+ * reader needs. Glosses are intentionally short; `senseNote` carries the nuance,
+ * range of meaning, or interpretive caution that a one-word gloss would flatten.
+ *
+ * Example phrases are only included where the quoted Hebrew is a well-established,
+ * easily verified short phrase (mostly Genesis 1 and a few other very well-known
+ * verses). Where a safe, precise short quotation wasn't available, the example
+ * fields are simply omitted rather than risk an inaccurate citation.
+ */
+export const HEBREW_VOCABULARY: LanguageVocabEntry[] = [
+  {
+    id: 'hv-elohim',
+    track: 'hebrew',
+    lemma: 'אֱלֹהִים',
+    transliteration: 'ʾelohim',
+    gloss: 'God; gods',
+    senseNote:
+      'Grammatically plural in form, but used with a singular verb when referring to the one God of Israel (a "plural of majesty/intensity," not a claim of multiple deities). The same word, with plural agreement, can also mean "gods" (plural, pagan deities) or occasionally "judges/mighty ones" — context decides.',
+    exampleRef: 'Genesis 1:1',
+    examplePhrase: 'בְּרֵאשִׁית בָּרָא אֱלֹהִים אֵת הַשָּׁמַיִם וְאֵת הָאָרֶץ',
+    exampleTranslation: 'In the beginning God created the heavens and the earth.',
+    tags: ['noun', 'theology'],
+  },
+  {
+    id: 'hv-yhwh',
+    track: 'hebrew',
+    lemma: 'יְהוָה',
+    transliteration: 'YHWH',
+    gloss: 'the LORD (the divine name)',
+    senseNote:
+      'The personal, covenant name of the God of Israel — the "Tetragrammaton" (four letters: yod-he-vav-he). Out of reverence, Jewish tradition does not pronounce this name aloud; readers substitute "Adonai" ("my Lord") or, in some contexts, "HaShem" ("the Name"). Most English Bibles follow this by printing "LORD" in small capitals wherever יְהוָה occurs. Teach and treat this name with care: this course does not attempt to "sound it out" casually, and avoids reconstructed pronunciations some use.',
+    exampleRef: 'Genesis 2:4',
+    examplePhrase: 'בְּיוֹם עֲשׂוֹת יְהוָה אֱלֹהִים אֶרֶץ וְשָׁמָיִם',
+    exampleTranslation: 'in the day that the LORD God made the earth and the heavens',
+    tags: ['noun', 'divine-name', 'theology'],
+  },
+  {
+    id: 'hv-amar',
+    track: 'hebrew',
+    lemma: 'אָמַר',
+    transliteration: 'ʾamar',
+    gloss: 'to say, speak',
+    senseNote:
+      'Lemma form shown here is the Qal perfect, 3rd masculine singular ("he said"). Extremely common in narrative, especially in the vav-consecutive form וַיֹּאמֶר ("and he said"), which drives Hebrew storytelling forward one clause at a time.',
+    exampleRef: 'Genesis 1:3',
+    examplePhrase: 'וַיֹּאמֶר אֱלֹהִים יְהִי אוֹר',
+    exampleTranslation: "And God said, 'Let there be light.'",
+    tags: ['verb'],
+  },
+  {
+    id: 'hv-hayah',
+    track: 'hebrew',
+    lemma: 'הָיָה',
+    transliteration: 'hayah',
+    gloss: 'to be, become, happen',
+    senseNote:
+      'One of the most common verbs in the Bible. It is not a simple English "is/am/are" — Hebrew usually omits a "to be" verb for a plain present-tense statement ("the man [is] good" needs no verb at all). הָיָה instead marks becoming, occurring, or existing: "there was/came to be," "it happened that."',
+    exampleRef: 'Genesis 1:3',
+    examplePhrase: 'וַיְהִי־אוֹר',
+    exampleTranslation: 'and there was light',
+    tags: ['verb'],
+  },
+  {
+    id: 'hv-erets',
+    track: 'hebrew',
+    lemma: 'אֶרֶץ',
+    transliteration: 'ʾerets',
+    gloss: 'land, earth, ground, country',
+    senseNote:
+      'The same word ranges in scope from the whole planet ("the earth") down to a specific territory ("the land of Egypt") or even the ground underfoot. Scope must be judged from context, not assumed from the gloss.',
+    exampleRef: 'Genesis 1:1',
+    examplePhrase: 'וְאֵת הָאָרֶץ',
+    exampleTranslation: 'and the earth',
+    tags: ['noun'],
+  },
+  {
+    id: 'hv-shamayim',
+    track: 'hebrew',
+    lemma: 'שָׁמַיִם',
+    transliteration: 'shamayim',
+    gloss: 'heaven(s), sky',
+    senseNote:
+      'Occurs only in plural/dual form — there is no Hebrew singular "heaven." It can refer to the visible sky, the cosmic "heavens" above the earth, or (rarely, by extension) the dwelling of God, depending on context.',
+    exampleRef: 'Genesis 1:1',
+    examplePhrase: 'אֵת הַשָּׁמַיִם',
+    exampleTranslation: 'the heavens',
+    tags: ['noun'],
+  },
+  {
+    id: 'hv-yom',
+    track: 'hebrew',
+    lemma: 'יוֹם',
+    transliteration: 'yom',
+    gloss: 'day',
+    senseNote:
+      'Can mean a literal daylight period, a full 24-hour day, or a longer indefinite stretch of time ("in that day," "the day of the LORD"). The word alone does not settle this — it is a well-known point of exegetical discussion (e.g., the "days" of Genesis 1), and this course flags it as a caution rather than resolving it for you.',
+    exampleRef: 'Genesis 1:5',
+    examplePhrase: 'יוֹם אֶחָד',
+    exampleTranslation: 'one day / day one',
+    tags: ['noun', 'time'],
+  },
+  {
+    id: 'hv-ish',
+    track: 'hebrew',
+    lemma: 'אִישׁ',
+    transliteration: 'ʾish',
+    gloss: 'man, husband, each one',
+    senseNote:
+      'Can denote an individual man, a husband (in relation to a wife), or function idiomatically as "each/each one" in distributive expressions. Related to, but not identical in root to, אִשָּׁה ("woman, wife").',
+    exampleRef: 'Genesis 2:24',
+    examplePhrase: 'יַעֲזֹב־אִישׁ אֶת־אָבִיו וְאֶת־אִמּוֹ',
+    exampleTranslation: 'a man shall leave his father and his mother',
+    tags: ['noun'],
+  },
+  {
+    id: 'hv-ben',
+    track: 'hebrew',
+    lemma: 'בֵּן',
+    transliteration: 'ben',
+    gloss: 'son, child',
+    senseNote:
+      'Beyond literal sonship, "son of ___" is a common Hebrew idiom for category or quality (e.g., a "son of valor" is a valiant man) — do not assume every "son of" phrase is about biological descent.',
+    tags: ['noun', 'family'],
+  },
+  {
+    id: 'hv-melek',
+    track: 'hebrew',
+    lemma: 'מֶלֶךְ',
+    transliteration: 'melek',
+    gloss: 'king',
+    senseNote:
+      'Used of human kings throughout the Old Testament; occasionally applied figuratively to God as sovereign. Related abstract noun מַלְכוּת means "kingdom, reign, sovereignty."',
+    tags: ['noun'],
+  },
+  {
+    id: 'hv-torah',
+    track: 'hebrew',
+    lemma: 'תּוֹרָה',
+    transliteration: 'torah',
+    gloss: 'instruction, teaching, law',
+    senseNote:
+      'Often translated "law," but the root sense is closer to "instruction/teaching." It can refer to a single instruction, a body of law, the Pentateuch as a whole ("the Torah"), or God\'s guidance in general. Flattening every occurrence to "legal code" misses this range.',
+    tags: ['noun', 'theology'],
+  },
+  {
+    id: 'hv-navi',
+    track: 'hebrew',
+    lemma: 'נָבִיא',
+    transliteration: 'navi',
+    gloss: 'prophet',
+    senseNote:
+      'A spokesperson who speaks on behalf of God to a human audience — fundamentally a messenger role, not primarily a predictor of the future (though prediction can be part of the message).',
+    tags: ['noun', 'theology'],
+  },
+  {
+    id: 'hv-am',
+    track: 'hebrew',
+    lemma: 'עַם',
+    transliteration: 'ʿam',
+    gloss: 'people, nation',
+    senseNote:
+      'Denotes a people-group bound by kinship, covenant, or nationhood. Often appears with a possessive suffix ("my people," עַמִּי) describing a covenant relationship, especially between God and Israel.',
+    tags: ['noun'],
+  },
+  {
+    id: 'hv-bayit',
+    track: 'hebrew',
+    lemma: 'בַּיִת',
+    transliteration: 'bayit',
+    gloss: 'house, household, family, temple',
+    senseNote:
+      'Ranges from a literal building to a "household" (family, dynasty — "the house of David") to, in later usage, "the house of the LORD" (the Temple). Which sense is meant depends entirely on context.',
+    tags: ['noun'],
+  },
+  {
+    id: 'hv-yad',
+    track: 'hebrew',
+    lemma: 'יָד',
+    transliteration: 'yad',
+    gloss: 'hand, power',
+    senseNote:
+      'Literally "hand," but idiomatically extends to mean power, agency, or control ("by the hand of," "his hand was heavy upon them"), and in some place names/idioms, "side" of something.',
+    tags: ['noun', 'body'],
+  },
+  {
+    id: 'hv-lev',
+    track: 'hebrew',
+    lemma: 'לֵב',
+    transliteration: 'lev',
+    gloss: 'heart, mind, will',
+    senseNote:
+      'In Hebrew thought the "heart" is primarily the seat of thinking, deciding, and willing — closer to "mind" or "inner self" than to English "heart" as the seat of feeling. Reading every לֵב as purely emotional misreads the idiom.',
+    tags: ['noun', 'body', 'theology'],
+  },
+  {
+    id: 'hv-shama',
+    track: 'hebrew',
+    lemma: 'שָׁמַע',
+    transliteration: 'shamaʿ',
+    gloss: 'to hear, listen, obey',
+    senseNote:
+      'Often carries the sense of "hear and respond" — in many contexts "to obey" is as accurate a gloss as "to hear," since in Hebrew idiom truly hearing implies acting on what is heard.',
+    exampleRef: 'Deuteronomy 6:4',
+    examplePhrase: 'שְׁמַע יִשְׂרָאֵל יְהוָה אֱלֹהֵינוּ יְהוָה אֶחָד',
+    exampleTranslation: 'Hear, O Israel: the LORD our God, the LORD is one.',
+    tags: ['verb'],
+  },
+  {
+    id: 'hv-raah',
+    track: 'hebrew',
+    lemma: 'רָאָה',
+    transliteration: 'raʾah',
+    gloss: 'to see, perceive, understand',
+    senseNote:
+      'Beyond physical sight, often means to perceive, consider, or understand ("see that it is good" = evaluate/recognize as good), and in prophetic contexts can mean "to see [a vision]."',
+    exampleRef: 'Genesis 1:4',
+    examplePhrase: 'וַיַּרְא אֱלֹהִים אֶת־הָאוֹר כִּי־טוֹב',
+    exampleTranslation: 'And God saw the light, that it was good.',
+    tags: ['verb'],
+  },
+  {
+    id: 'hv-natan',
+    track: 'hebrew',
+    lemma: 'נָתַן',
+    transliteration: 'natan',
+    gloss: 'to give, put, set',
+    senseNote:
+      'A very common verb covering "give" (a gift), "put/place" (an object somewhere), and "appoint/grant" (a role or status) — the English translation shifts with the direct object and context.',
+    exampleRef: 'Genesis 1:29',
+    examplePhrase: 'הִנֵּה נָתַתִּי לָכֶם',
+    exampleTranslation: 'Behold, I have given to you',
+    tags: ['verb'],
+  },
+  {
+    id: 'hv-bo',
+    track: 'hebrew',
+    lemma: 'בּוֹא',
+    transliteration: 'bo',
+    gloss: 'to come, enter, go in',
+    senseNote:
+      'A hollow (II-vav) verb whose forms look quite different from a regular triliteral verb — introduced here by lemma/gloss only; its irregular conjugation pattern is addressed in the verb-stems lessons.',
+    tags: ['verb'],
+  },
+  {
+    id: 'hv-halak',
+    track: 'hebrew',
+    lemma: 'הָלַךְ',
+    transliteration: 'halak',
+    gloss: 'to walk, go',
+    senseNote:
+      'Very frequent verb of motion; also used idiomatically for conduct of life ("walking with God" = living in relationship/obedience with God, not literal strolling).',
+    tags: ['verb'],
+  },
+  {
+    id: 'hv-asah',
+    track: 'hebrew',
+    lemma: 'עָשָׂה',
+    transliteration: 'ʿasah',
+    gloss: 'to do, make',
+    senseNote:
+      'General-purpose verb for making/doing/accomplishing anything — from fashioning an object to performing an action to "making" (keeping) a covenant.',
+    exampleRef: 'Genesis 1:31',
+    examplePhrase: 'וַיַּרְא אֱלֹהִים אֶת־כָּל־אֲשֶׁר עָשָׂה וְהִנֵּה־טוֹב מְאֹד',
+    exampleTranslation: 'And God saw everything that he had made, and behold, it was very good.',
+    tags: ['verb'],
+  },
+  {
+    id: 'hv-kol',
+    track: 'hebrew',
+    lemma: 'כֹּל',
+    transliteration: 'kol',
+    gloss: 'all, every, whole',
+    senseNote:
+      'Almost always appears in construct form (כָּל־) bound tightly to the next word ("all of ___," "every ___") — it functions more like a quantifier prefix than a free-standing noun in most verses.',
+    exampleRef: 'Genesis 1:31',
+    examplePhrase: 'כָּל־אֲשֶׁר עָשָׂה',
+    exampleTranslation: 'all that he had made',
+    tags: ['particle'],
+  },
+  {
+    id: 'hv-asher',
+    track: 'hebrew',
+    lemma: 'אֲשֶׁר',
+    transliteration: 'ʾasher',
+    gloss: 'who, which, that',
+    senseNote:
+      'The all-purpose relative pronoun/particle — invariant in form regardless of the gender or number of what it refers to (unlike English "who" vs. "which"). Introduces a relative clause.',
+    exampleRef: 'Genesis 1:31',
+    examplePhrase: 'כָּל־אֲשֶׁר עָשָׂה',
+    exampleTranslation: 'all that he had made',
+    tags: ['particle'],
+  },
+  {
+    id: 'hv-al',
+    track: 'hebrew',
+    lemma: 'עַל',
+    transliteration: 'ʿal',
+    gloss: 'on, upon, concerning, against',
+    senseNote:
+      'A very common preposition whose English rendering shifts widely by context: spatial ("on top of"), topical ("concerning, about"), or adversarial ("against"). Do not fix it to one meaning.',
+    tags: ['preposition'],
+  },
+  {
+    id: 'hv-el',
+    track: 'hebrew',
+    lemma: 'אֶל',
+    transliteration: 'ʾel',
+    gloss: 'to, toward, into',
+    senseNote:
+      'Marks motion or direction toward something or someone — distinct from עַל ("on/upon"), though the two are sometimes used somewhat interchangeably in later biblical Hebrew.',
+    tags: ['preposition'],
+  },
+  {
+    id: 'hv-min',
+    track: 'hebrew',
+    lemma: 'מִן',
+    transliteration: 'min',
+    gloss: 'from, out of, than',
+    senseNote:
+      'Marks source or separation ("from/out of") and, in a comparative construction, "than" (e.g., "better than"). Commonly shortened and attached to the following word as מִ־ or מֵ־.',
+    exampleRef: 'Genesis 2:7',
+    examplePhrase: 'עָפָר מִן־הָאֲדָמָה',
+    exampleTranslation: 'dust from the ground',
+    tags: ['preposition'],
+  },
+  {
+    id: 'hv-be',
+    track: 'hebrew',
+    lemma: 'בְּ',
+    transliteration: 'be-',
+    gloss: 'in, with, by, at',
+    senseNote:
+      'An inseparable prefixed preposition — it is never a stand-alone word, but is always attached directly to the front of the next noun. Appears at the very start of the Bible: בְּרֵאשִׁית, "in [the] beginning."',
+    exampleRef: 'Genesis 1:1',
+    examplePhrase: 'בְּרֵאשִׁית',
+    exampleTranslation: 'in the beginning',
+    tags: ['preposition', 'prefix'],
+  },
+  {
+    id: 'hv-le',
+    track: 'hebrew',
+    lemma: 'לְ',
+    transliteration: 'le-',
+    gloss: 'to, for',
+    senseNote:
+      'Another inseparable prefixed preposition, attached to the front of a noun (marking a recipient, purpose, or possession) rather than standing alone — compare בְּ above.',
+    tags: ['preposition', 'prefix'],
+  },
+  {
+    id: 'hv-ve',
+    track: 'hebrew',
+    lemma: 'וְ',
+    transliteration: 've-',
+    gloss: 'and',
+    senseNote:
+      'The conjunction "and" — always prefixed directly onto the following word, never written as a separate word. Its vowel can shift (e.g., to וּ before certain consonants); this is covered in the vowels lesson.',
+    exampleRef: 'Genesis 1:1',
+    examplePhrase: 'וְאֵת הָאָרֶץ',
+    exampleTranslation: 'and the earth',
+    tags: ['particle', 'prefix'],
+  },
+]

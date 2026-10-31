@@ -1,24 +1,102 @@
-import type { UserState } from '../lib/types'
+import { dequeueProgressEvents, peekProgressEvents } from './eventQueue'
+import { dequeueGemEvents, peekGemEvents } from './gemQueue'
+import type { GemEventInput } from './gemEvents'
+import type { ProgressEventInput } from './progressEvents'
+import { prepareStateForCloud, withLocalEsvKey } from './privacy'
+import type { UserState } from './types'
 
 export async function fetchCloudProgress(): Promise<UserState | null> {
   const res = await fetch('/api/progress')
   if (res.status === 401 || res.status === 503) return null
   if (!res.ok) throw new Error('Could not load cloud progress')
   const data = (await res.json()) as { state: UserState | null }
-  return data.state
+  // Defensive: never treat an API payload as carrying a personal ESV key
+  return data.state ? prepareStateForCloud(data.state) : null
 }
 
-/** Saves progress; returns the server-merged state (keeps account ESV key, etc.). */
+/**
+ * Saves progress (ESV key stripped). Returns server state with the caller's
+ * local key reattached so UI state is not wiped.
+ */
 export async function saveCloudProgress(state: UserState): Promise<UserState | null> {
+  const localKey = state.esvApiKey
   const res = await fetch('/api/progress', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ state }),
+    body: JSON.stringify({ state: prepareStateForCloud(state) }),
   })
   if (res.status === 401 || res.status === 503) return null
   if (!res.ok) throw new Error('Could not save cloud progress')
   const data = (await res.json()) as { ok?: boolean; state?: UserState }
-  return data.state ?? state
+  const saved = data.state ? prepareStateForCloud(data.state) : prepareStateForCloud(state)
+  return withLocalEsvKey(saved, localKey)
+}
+
+export type ProgressEventsSyncResult = {
+  serverXp: number
+  streak: number
+  longestStreak: number
+  lastReadDate: string | null
+  state: UserState | null
+  inserted: { id: string; awardedXp: number; type: string }[]
+  duplicates: string[]
+  rejected: { id?: string; error: string }[]
+}
+
+/** Flush the offline progress-event queue to the server ledger. */
+export async function syncProgressEvents(
+  seedXp: number,
+  events?: ProgressEventInput[],
+): Promise<ProgressEventsSyncResult | null> {
+  const batch = events ?? peekProgressEvents()
+  const res = await fetch('/api/progress/events', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ events: batch, seedXp }),
+  })
+  if (res.status === 401 || res.status === 503) return null
+  if (!res.ok) throw new Error('Could not sync progress events')
+  const data = (await res.json()) as ProgressEventsSyncResult & {
+    inserted?: { id: string }[]
+    duplicates?: string[]
+  }
+  const done = [
+    ...(data.inserted ?? []).map((e) => e.id),
+    ...(data.duplicates ?? []),
+  ]
+  dequeueProgressEvents(done)
+  return data
+}
+
+export type GemEventsSyncResult = {
+  serverGems: number
+  state: UserState | null
+  inserted: { id: string; deltaGems: number; type: string }[]
+  duplicates: string[]
+  rejected: { id?: string; error: string }[]
+  ownedItemIds: string[]
+}
+
+/** Flush the offline gem-event queue to the server ledger. */
+export async function syncGemEvents(
+  seedGems: number,
+  events?: GemEventInput[],
+): Promise<GemEventsSyncResult | null> {
+  const batch = events ?? peekGemEvents()
+  const res = await fetch('/api/gems/events', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ events: batch, seedGems }),
+  })
+  if (res.status === 401 || res.status === 503) return null
+  if (!res.ok) throw new Error('Could not sync gem events')
+  const data = (await res.json()) as GemEventsSyncResult
+  const done = [
+    ...(data.inserted ?? []).map((e) => e.id),
+    ...(data.duplicates ?? []),
+  ]
+  dequeueGemEvents(done)
+  return data
 }
 
 export type CircleMember = {
@@ -102,16 +180,29 @@ export async function fetchChallenges(): Promise<MemoryChallenge[]> {
 
 export async function challengeAction(
   body: Record<string, unknown>,
-): Promise<{ ok?: boolean; challengeId?: string; score?: ChallengeScore; error?: string }> {
+  opts?: { esvApiKey?: string },
+): Promise<{
+  ok?: boolean
+  challengeId?: string
+  score?: ChallengeScore
+  correct?: boolean
+  duplicate?: boolean
+  error?: string
+}> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  const key = opts?.esvApiKey?.trim()
+  if (key) headers['X-ESV-API-Key'] = key
   const res = await fetch('/api/circle/challenge', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(body),
   })
   const data = (await res.json()) as {
     ok?: boolean
     challengeId?: string
     score?: ChallengeScore
+    correct?: boolean
+    duplicate?: boolean
     error?: string
   }
   if (!res.ok) return { error: data.error || 'Request failed' }
