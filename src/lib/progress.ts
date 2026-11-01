@@ -1,5 +1,6 @@
 import type { TranslationId } from '../data/translations'
 import { clearPassageCache } from './bibleApi'
+import { listActivityHistory } from './activityHistory'
 import { enqueueProgressEvent } from './eventQueue'
 import {
   dateKeyFromIso,
@@ -11,7 +12,8 @@ import {
   newProgressEventId,
   type ProgressEventType,
 } from './progressEvents'
-import { makeMemoryId as makeMemoryIdWithTranslation } from './memoryIds'
+import { makeMemoryId as makeMemoryIdWithTranslation, sameScriptureRef } from './memoryIds'
+import { collapseMemoryBankByScripture, applyFetchedMemoryTranslations } from './memoryTranslation'
 import { appendReviewHistory, migrateMemoryVerse } from './memoryMigrate'
 import {
   buildMemoryQuestDeck as selectQuestDeck,
@@ -29,7 +31,14 @@ import {
 import { isLanguageScoreBetter, languageAchievementCandidates } from './languageProgress'
 import { migrateCosmeticsState } from './cosmetics'
 import { awardAchievementGems, awardGems } from './gems'
+import { migrateGuidedTour } from './ariTour'
 import { migrateNotificationPrefs } from './notifications'
+import {
+  applyActivityOnDay,
+  applyPassiveGapCheck,
+  grantStreakFreeze,
+  migrateStreakFreezes,
+} from './streak'
 import type {
   AchievementId,
   MemoryGrade,
@@ -46,7 +55,6 @@ import {
   levelFromXp,
   todayKey,
   weekKey,
-  yesterdayKey,
 } from './types'
 
 export type { MemoryGrade }
@@ -108,12 +116,14 @@ export function migrateUserState(
     byId.set(v.id, score(v) >= score(prev) ? v : prev)
   }
 
+  const translationId = raw.translationId ?? base.translationId
+
   return {
     ...base,
     ...raw,
-    translationId: raw.translationId ?? base.translationId,
+    translationId,
     esvApiKey: raw.esvApiKey ?? '',
-    memoryVerses: [...byId.values()],
+    memoryVerses: collapseMemoryBankByScripture([...byId.values()], translationId),
     memoryReviewsToday: raw.memoryReviewsToday ?? 0,
     achievements: raw.achievements ?? [],
     completedDays: raw.completedDays ?? [],
@@ -133,6 +143,13 @@ export function migrateUserState(
     notifications: migrateNotificationPrefs(
       (raw as Partial<UserState>).notifications ?? undefined,
     ),
+    guidedTour: migrateGuidedTour((raw as Partial<UserState>).guidedTour ?? undefined, {
+      hasProgress:
+        (raw.xp ?? 0) > 0 ||
+        (raw.completedDays?.length ?? 0) > 0 ||
+        Boolean(raw.lastReadDate) ||
+        (raw.memoryVerses?.length ?? 0) > 0,
+    }),
     gems: Math.max(0, Math.floor(Number((raw as Partial<UserState>).gems) || 0)),
     todayGems: Math.max(0, Math.floor(Number((raw as Partial<UserState>).todayGems) || 0)),
     todayGemsDate: (raw as Partial<UserState>).todayGemsDate ?? todayKey(now),
@@ -145,6 +162,10 @@ export function migrateUserState(
       Math.floor(Number((raw as Partial<UserState>).memoryQuestsCompleted) || 0),
     ),
     cosmetics: migrateCosmeticsState((raw as Partial<UserState>).cosmetics),
+    streakFreezes: migrateStreakFreezes(
+      (raw as Partial<UserState>).streakFreezes,
+      base.streakFreezes,
+    ),
     gameStats: {
       completedGameIds: Array.isArray((raw as Partial<UserState>).gameStats?.completedGameIds)
         ? [
@@ -204,21 +225,21 @@ function normalizeDay(state: UserState): UserState {
     next = { ...next, weekKey: wk, lessonsThisWeek: 0, weekXp: 0 }
   }
 
-  if (
-    next.lastReadDate &&
-    next.lastReadDate !== today &&
-    next.lastReadDate !== yesterdayKey() &&
-    next.streak > 0
-  ) {
-    if (next.streakFreezes > 0) {
-      next = {
-        ...next,
-        streakFreezes: next.streakFreezes - 1,
-        lastReadDate: yesterdayKey(),
-      }
-    } else {
-      next = { ...next, streak: 0 }
-    }
+  const streaked = applyPassiveGapCheck(
+    {
+      streak: next.streak,
+      longestStreak: next.longestStreak,
+      lastReadDate: next.lastReadDate,
+      streakFreezes: next.streakFreezes,
+    },
+    today,
+  )
+  next = {
+    ...next,
+    streak: streaked.streak,
+    longestStreak: streaked.longestStreak,
+    lastReadDate: streaked.lastReadDate,
+    streakFreezes: streaked.streakFreezes,
   }
 
   return next
@@ -319,7 +340,10 @@ function addXp(state: UserState, amount: number): UserState {
 export function updateSettings(
   state: UserState,
   patch: Partial<
-    Pick<UserState, 'translationId' | 'esvApiKey' | 'planId' | 'dailyGoalXp' | 'notifications'>
+    Pick<
+      UserState,
+      'translationId' | 'esvApiKey' | 'planId' | 'dailyGoalXp' | 'notifications' | 'guidedTour'
+    >
   >,
 ): UserState {
   if (patch.translationId && patch.translationId !== state.translationId) {
@@ -339,27 +363,26 @@ export function completeLesson(
   const hour = new Date().getHours()
   const already = state.completedDays.includes(day)
 
-  let streak = state.streak
-  let lastReadDate = state.lastReadDate
-  let streakFreezes = state.streakFreezes
-
-  if (!already) {
-    if (lastReadDate === today) {
-      // already read something today
-    } else if (lastReadDate === yesterdayKey() || lastReadDate === null) {
-      streak = lastReadDate === null ? 1 : streak + 1
-    } else if (streakFreezes > 0) {
-      streakFreezes -= 1
-      streak = streak + 1
-    } else {
-      streak = 1
-    }
-    lastReadDate = today
-  }
+  const streaked = already
+    ? {
+        streak: state.streak,
+        longestStreak: state.longestStreak,
+        lastReadDate: state.lastReadDate,
+        streakFreezes: state.streakFreezes,
+      }
+    : applyActivityOnDay(
+        {
+          streak: state.streak,
+          longestStreak: state.longestStreak,
+          lastReadDate: state.lastReadDate,
+          streakFreezes: state.streakFreezes,
+        },
+        today,
+      )
 
   let earned = already ? Math.floor(XP.lesson / 2) : XP.lesson
   if (opts.reflection) earned += XP.reflection
-  if (streak >= 2) earned += XP.streakBonus
+  if (streaked.streak >= 2) earned += XP.streakBonus
   if (opts.reflection && !already) earned += XP.perfectDay
 
   const prevLevel = levelFromXp(state.xp).level
@@ -370,15 +393,15 @@ export function completeLesson(
   let next: UserState = {
     ...addXp(state, earned),
     completedDays,
-    streak,
-    longestStreak: Math.max(state.longestStreak, streak),
-    lastReadDate,
-    streakFreezes,
+    streak: streaked.streak,
+    longestStreak: streaked.longestStreak,
+    lastReadDate: streaked.lastReadDate,
+    streakFreezes: streaked.streakFreezes,
     lessonsThisWeek: already ? state.lessonsThisWeek : state.lessonsThisWeek + 1,
   }
 
   if (!already && completedDays.length % 7 === 0) {
-    next = { ...next, streakFreezes: Math.min(2, next.streakFreezes + 1) }
+    next = { ...next, streakFreezes: grantStreakFreeze(next.streakFreezes) }
   }
 
   const bonusIds: AchievementId[] = []
@@ -405,9 +428,10 @@ export function completeLesson(
 
   queueClientEvent('lesson_complete', {
     day,
+    planId: state.planId,
     alreadyCompleted: already,
     reflection: opts.reflection,
-    streakBonus: streak >= 2,
+    streakBonus: streaked.streak >= 2,
     perfectDay: opts.reflection && !already,
   })
 
@@ -471,6 +495,7 @@ function createMemoryCard(
     verseEnd: input.verseEnd,
     translationId: input.translationId,
     translationConfident: true,
+    translationStale: false,
     addedAt: todayKey(now),
     nextReview: dateKeyFromIso(fsrs.due),
     intervalDays: 0,
@@ -586,30 +611,29 @@ export function addMemoryVerse(
   },
   now = new Date(),
 ): { state: UserState; added: boolean } {
+  // Always store cards under the user's global translation preference.
+  const translationId = state.translationId || verse.translationId
   const id =
-    verse.id ??
-    makeMemoryIdWithTranslation(
-      verse.bookId,
-      verse.chapter,
-      verse.verseStart,
-      verse.verseEnd,
-      verse.translationId,
-    )
+    verse.id && verse.translationId === translationId
+      ? verse.id
+      : makeMemoryIdWithTranslation(
+          verse.bookId,
+          verse.chapter,
+          verse.verseStart,
+          verse.verseEnd,
+          translationId,
+        )
   if (
     state.memoryVerses.some(
       (v) =>
         v.id === id ||
-        (v.bookId === verse.bookId &&
-          v.chapter === verse.chapter &&
-          v.verseStart === verse.verseStart &&
-          v.verseEnd === verse.verseEnd &&
-          v.translationId === verse.translationId),
+        sameScriptureRef(v, verse),
     )
   ) {
     return { state, added: false }
   }
 
-  const entry = createMemoryCard({ ...verse, id }, now)
+  const entry = createMemoryCard({ ...verse, id, translationId }, now)
   let next: UserState = {
     ...state,
     memoryVerses: [...state.memoryVerses, entry],
@@ -673,23 +697,22 @@ export function completeSectionQuiz(
   }
 
   const today = todayKey()
-  let streak = state.streak
-  let lastReadDate = state.lastReadDate
-  let streakFreezes = state.streakFreezes
-
-  if (!already) {
-    if (lastReadDate === today) {
-      // same day
-    } else if (lastReadDate === yesterdayKey() || lastReadDate === null) {
-      streak = lastReadDate === null ? 1 : streak + 1
-    } else if (streakFreezes > 0) {
-      streakFreezes -= 1
-      streak += 1
-    } else {
-      streak = 1
-    }
-    lastReadDate = today
-  }
+  const streaked = already
+    ? {
+        streak: state.streak,
+        longestStreak: state.longestStreak,
+        lastReadDate: state.lastReadDate,
+        streakFreezes: state.streakFreezes,
+      }
+    : applyActivityOnDay(
+        {
+          streak: state.streak,
+          longestStreak: state.longestStreak,
+          lastReadDate: state.lastReadDate,
+          streakFreezes: state.streakFreezes,
+        },
+        today,
+      )
 
   const completedDays = already
     ? state.completedDays
@@ -702,10 +725,10 @@ export function completeSectionQuiz(
     ...addXp(
       {
         ...state,
-        streak,
-        longestStreak: Math.max(state.longestStreak, streak),
-        lastReadDate,
-        streakFreezes,
+        streak: streaked.streak,
+        longestStreak: streaked.longestStreak,
+        lastReadDate: streaked.lastReadDate,
+        streakFreezes: streaked.streakFreezes,
         completedDays,
         completedQuizzes,
         lessonsThisWeek: already ? state.lessonsThisWeek : state.lessonsThisWeek + 1,
@@ -856,16 +879,16 @@ export function completeCurriculumLesson(
 
   saveState(next)
 
-  if (!already) {
-    queueClientEvent('curriculum_lesson', {
-      topicId: opts.topicId,
-      lessonId: opts.lessonId,
-      alreadyCompleted: false,
-      reflection: true,
-      correctMc: opts.correctMc,
-      totalMc: opts.totalMc,
-    })
-  }
+  // Always record the attempt for history; XP stays 0 when alreadyCompleted.
+  queueClientEvent('curriculum_lesson', {
+    topicId: opts.topicId,
+    lessonId: opts.lessonId,
+    alreadyCompleted: already,
+    reflection: true,
+    correctMc: opts.correctMc,
+    totalMc: opts.totalMc,
+    firstCompletion: !already,
+  })
 
   return {
     state: next,
@@ -1017,16 +1040,15 @@ export function completeLanguageLesson(
 
   saveState(next)
 
-  if (!already) {
-    queueClientEvent('language_lesson', {
-      track: opts.track,
-      lessonId: opts.lessonId,
-      alreadyCompleted: false,
-      reflection: true,
-      correct: opts.correct,
-      total: opts.total,
-    })
-  }
+  queueClientEvent('language_lesson', {
+    track: opts.track,
+    lessonId: opts.lessonId,
+    alreadyCompleted: already,
+    reflection: true,
+    correct: opts.correct,
+    total: opts.total,
+    firstCompletion: !already,
+  })
 
   return {
     state: next,
@@ -1104,24 +1126,21 @@ export function reviewLanguageVocab(
 
 function bumpStreakForMemoryActivity(state: UserState, now: Date): UserState {
   const today = todayKey(now)
-  let streak = state.streak
-  let streakFreezes = state.streakFreezes
-  let lastReadDate = state.lastReadDate
-  if (lastReadDate === today) return state
-  if (lastReadDate === yesterdayKey(now) || lastReadDate === null) {
-    streak = lastReadDate === null ? 1 : streak + 1
-  } else if (streakFreezes > 0) {
-    streakFreezes -= 1
-    streak += 1
-  } else {
-    streak = 1
-  }
+  const streaked = applyActivityOnDay(
+    {
+      streak: state.streak,
+      longestStreak: state.longestStreak,
+      lastReadDate: state.lastReadDate,
+      streakFreezes: state.streakFreezes,
+    },
+    today,
+  )
   return {
     ...state,
-    streak,
-    longestStreak: Math.max(state.longestStreak, streak),
-    lastReadDate: today,
-    streakFreezes,
+    streak: streaked.streak,
+    longestStreak: streaked.longestStreak,
+    lastReadDate: streaked.lastReadDate,
+    streakFreezes: streaked.streakFreezes,
   }
 }
 
@@ -1351,6 +1370,9 @@ export function reviewMemoryVerse(
     grade,
     applySchedule: applied.appliedSchedule && !applied.duplicate,
     source,
+    // Reference id only — never verse body text
+    reference: verse.reference,
+    bookId: verse.bookId,
   })
 
   return {
@@ -1432,6 +1454,9 @@ export function completeBibleGame(
     total,
     sessionKey: opts.sessionKey,
     alreadyRewarded,
+    perfect,
+    // Category = game id until games expose finer tags
+    category: opts.gameId,
   })
 
   return {
@@ -1445,6 +1470,48 @@ export function completeBibleGame(
   }
 }
 
+/**
+ * Record a free reading session in Bible Reader (history only — 0 XP).
+ * Deduped per book+chapter+day via a stable daily activity id pattern stored
+ * as a normal UUID event with dayKey metadata (client still uses UUID ids).
+ */
+export function recordReadingSession(
+  _state: UserState,
+  opts: {
+    bookId: string
+    bookName: string
+    chapter: number
+    translationId: string
+    /** Optional plan day index if this reading is tied to the path. */
+    planDay?: number | null
+  },
+): void {
+  const day = todayKey()
+  const activityDayKey = `read:${opts.bookId}:${opts.chapter}:${day}`
+  try {
+    const already = listActivityHistory({ types: ['reading_session'], sinceDay: day }).some(
+      (r) => r.payload?.activityDayKey === activityDayKey,
+    )
+    if (already) return
+  } catch {
+    /* continue — still record once */
+  }
+  queueClientEvent('reading_session', {
+    bookId: opts.bookId,
+    bookName: opts.bookName,
+    chapter: opts.chapter,
+    translationId: opts.translationId,
+    day,
+    planDay: opts.planDay ?? null,
+    activityDayKey,
+  })
+}
+
+/**
+ * Update a card’s text. When `translationId` differs from the card’s current
+ * translation, re-keys identity via the translation migrator (preserves FSRS).
+ * Do not use this as a bulk migration path — prefer `standardizeMemoryTranslations`.
+ */
 export function refreshMemoryText(
   state: UserState,
   verseId: string,
@@ -1452,20 +1519,33 @@ export function refreshMemoryText(
   reference: string,
   translationId: TranslationId,
 ): UserState {
-  const next = {
-    ...state,
-    memoryVerses: state.memoryVerses.map((v) =>
-      v.id === verseId
-        ? {
-            ...v,
-            text,
-            reference,
-            translationId,
-            textVersion: CURRENT_MEMORY_TEXT_VERSION,
-          }
-        : v,
-    ),
+  const verse = state.memoryVerses.find((v) => v.id === verseId)
+  if (!verse) return state
+
+  if (verse.translationId === translationId && verse.id.endsWith(`:${translationId}`)) {
+    const next = {
+      ...state,
+      memoryVerses: state.memoryVerses.map((v) =>
+        v.id === verseId
+          ? {
+              ...v,
+              text,
+              reference,
+              translationId,
+              textVersion: CURRENT_MEMORY_TEXT_VERSION,
+              translationStale: false,
+              translationConfident: true,
+            }
+          : v,
+      ),
+    }
+    saveState(next)
+    return next
   }
-  saveState(next)
-  return next
+
+  const { state: migrated } = applyFetchedMemoryTranslations(state, translationId, [
+    { sourceId: verseId, ok: true, text, reference },
+  ])
+  saveState(migrated)
+  return migrated
 }

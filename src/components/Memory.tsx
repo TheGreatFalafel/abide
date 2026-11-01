@@ -16,6 +16,11 @@ import {
 } from '../lib/progress'
 import { cardIsDue as isDueNow } from '../lib/memorySelect'
 import {
+  memoryNeedsTranslationSync,
+  standardizeMemoryTranslations,
+} from '../lib/memoryTranslation'
+import { fetchMemoryVerseText } from '../lib/memoryTextFetch'
+import {
   CURRENT_MEMORY_TEXT_VERSION,
   isMastered,
   type MemoryVerse,
@@ -23,6 +28,8 @@ import {
 } from '../lib/types'
 import { EsvAttribution } from './EsvAttribution'
 import { BlankPractice } from './BlankPractice'
+import { MascotBanner } from './MascotBanner'
+import { mascotLineFor } from '../lib/mascot'
 
 type Props = {
   user: UserState
@@ -78,29 +85,7 @@ async function fetchSavedMemoryText(
   verse: MemoryVerse,
   user: UserState,
 ): Promise<string> {
-  const seed = TMS_VERSES.find((candidate) => {
-    const end = candidate.verseEnd ?? candidate.verseStart
-    return sameScriptureRef(
-      {
-        bookId: candidate.bookId,
-        chapter: candidate.chapter,
-        verseStart: candidate.verseStart,
-        verseEnd: end,
-      },
-      verse,
-    )
-  })
-  if (seed) {
-    return (await fetchTmsText(seed, user, verse.translationId)).text
-  }
-  const content = await fetchVerseRange(
-    verse.bookName,
-    verse.chapter,
-    verse.verseStart,
-    verse.verseEnd,
-    { translation: verse.translationId, esvApiKey: user.esvApiKey },
-  )
-  return passageToPlainText(content)
+  return (await fetchMemoryVerseText(verse, verse.translationId, user)).text
 }
 
 export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) {
@@ -131,6 +116,7 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
   const [quizResult, setQuizResult] = useState<string | null>(null)
   const latestUser = useRef(user)
   const auditStarted = useRef(new Set<string>())
+  const migrateAttemptKey = useRef('')
   const mounted = useRef(true)
   latestUser.current = user
 
@@ -145,6 +131,42 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
     },
     [],
   )
+
+  // Keep the memory bank aligned with the global translation (idempotent).
+  useEffect(() => {
+    if (!memoryNeedsTranslationSync(user)) return
+    const pending = user.memoryVerses
+      .filter(
+        (v) =>
+          v.translationId !== user.translationId ||
+          v.translationStale ||
+          !v.id.endsWith(`:${user.translationId}`),
+      )
+      .map((v) => v.id)
+      .sort()
+      .join(',')
+    const attemptKey = `${user.translationId}|${user.esvApiKey ? 'esv-key' : 'no-key'}|${pending}`
+    if (migrateAttemptKey.current === attemptKey) return
+    migrateAttemptKey.current = attemptKey
+    void (async () => {
+      const current = latestUser.current
+      const { state, report } = await standardizeMemoryTranslations(
+        current,
+        (verse, translationId) => fetchMemoryVerseText(verse, translationId, current),
+      )
+      if (!mounted.current) return
+      onUserChange(state)
+      if (report.failed.length) {
+        setMsg(
+          `${report.failed.length} verse${report.failed.length === 1 ? '' : 's'} still use prior text — ${current.translationId.toUpperCase()} unavailable for those.`,
+        )
+      } else if (report.migrated > 0) {
+        setMsg(
+          `Memory bank updated to ${current.translationId.toUpperCase()} (${report.migrated} verse${report.migrated === 1 ? '' : 's'}).`,
+        )
+      }
+    })()
+  }, [user.translationId, user.memoryVerses, user.esvApiKey, onUserChange])
 
   useEffect(() => {
     if (!user.esvApiKey?.trim()) return
@@ -208,7 +230,11 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
         seriesName: seed.seriesName,
       })
       onUserChange(result.state)
-      setMsg(result.added ? `Added ${reference} (${user.translationId.toUpperCase()})` : 'Already in your bank for this translation')
+      setMsg(
+        result.added
+          ? `Added ${reference} (${user.translationId.toUpperCase()})`
+          : 'Already in your memory bank',
+      )
     } catch (err) {
       setAddError(err instanceof Error ? err.message : 'Could not add verse')
     } finally {
@@ -359,6 +385,8 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
           Math.round((stats.reviewedToday / Math.max(1, stats.dueCount + stats.reviewedToday)) * 100),
         )
 
+  const emptyBank = user.memoryVerses.length === 0
+
   return (
     <div className="memory">
       <div className="memory-head">
@@ -375,6 +403,13 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
           </button>
         )}
       </div>
+
+      {mode === 'list' && (
+        <MascotBanner
+          line={mascotLineFor(emptyBank ? 'empty-memory' : 'memory', user)}
+          compact
+        />
+      )}
 
       <div className="memory-stats" aria-label="Review workload">
         <div className="memory-stat">
@@ -447,8 +482,16 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
                   · {(v.translationId || 'web').toUpperCase()}
                   {v.topic ? ` · ${v.topic}` : ''}
                   {isDueNow(v) ? ' · Due' : ''}
+                  {v.translationStale || v.translationId !== user.translationId
+                    ? ` · Waiting for ${user.translationId.toUpperCase()}`
+                    : ''}
                 </span>
                 <p className="memory-preview">{v.text}</p>
+                {(v.translationStale || v.translationId !== user.translationId) && (
+                  <p className="nudge risk">
+                    Showing prior text — could not load {user.translationId.toUpperCase()} yet.
+                  </p>
+                )}
                 <span className="memory-meta">Next: {v.nextReview}</span>
               </div>
               <div className="memory-card-actions">
@@ -503,8 +546,19 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
             <div key={v.id} className="memory-card mastered">
               <div>
                 <strong>{v.reference}</strong>
-                <span className="memory-meta"> · {(v.translationId || 'web').toUpperCase()}</span>
+                <span className="memory-meta">
+                  {' '}
+                  · {(v.translationId || 'web').toUpperCase()}
+                  {v.translationStale || v.translationId !== user.translationId
+                    ? ` · Waiting for ${user.translationId.toUpperCase()}`
+                    : ''}
+                </span>
                 <p className="memory-preview">{v.text}</p>
+                {(v.translationStale || v.translationId !== user.translationId) && (
+                  <p className="nudge risk">
+                    Showing prior text — could not load {user.translationId.toUpperCase()} yet.
+                  </p>
+                )}
                 <span className="memory-meta">
                   Retention · next {v.nextReview}
                   {isMastered(v) ? ' · ✓' : ''}
@@ -533,8 +587,8 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
         <div className="memory-add">
           <p className="muted">
             Topical Memory System verse references from The Navigators (60 verses). Text loads in your
-            current translation ({user.translationId.toUpperCase()}). Same verse in another
-            translation is a separate card. TMS © The Navigators.
+            selected translation ({user.translationId.toUpperCase()}). Changing translation in
+            Settings updates existing cards when that text is available. TMS © The Navigators.
           </p>
           <div className="practice-tabs">
             {TMS_SERIES.map((s) => (
@@ -563,7 +617,16 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
                 end,
                 user.translationId,
               )
-              const owned = user.memoryVerses.some((v) => v.id === id)
+              const owned = user.memoryVerses.some(
+                (v) =>
+                  v.id === id ||
+                  sameScriptureRef(v, {
+                    bookId: s.bookId,
+                    chapter: s.chapter,
+                    verseStart: s.verseStart,
+                    verseEnd: end,
+                  }),
+              )
               return (
                 <button
                   key={id}

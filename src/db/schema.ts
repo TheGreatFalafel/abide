@@ -47,6 +47,7 @@ export const progressEvents = pgTable(
   (t) => [
     index('progress_events_user_idx').on(t.userId),
     index('progress_events_user_received_idx').on(t.userId, t.serverReceivedAt),
+    index('progress_events_user_client_created_idx').on(t.userId, t.clientCreatedAt),
   ],
 )
 

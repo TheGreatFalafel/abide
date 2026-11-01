@@ -13,6 +13,8 @@ export type ProgressEventType =
   | 'bible_game'
   | 'language_lesson'
   | 'language_vocab_review'
+  /** Free reading in Bible Reader — history only, never awards XP. */
+  | 'reading_session'
 
 export type ProgressEventInput = {
   id: string
@@ -44,6 +46,7 @@ const ALLOWED = new Set<ProgressEventType>([
   'bible_game',
   'language_lesson',
   'language_vocab_review',
+  'reading_session',
 ])
 
 export function isProgressEventType(value: unknown): value is ProgressEventType {
@@ -147,6 +150,9 @@ export function computeEventXp(
       if (payload.grade === 'again') return 0
       return XP.languageVocabReview
     }
+    case 'reading_session':
+      // Analytics-only — reading XP comes from lesson_complete / plan flow.
+      return 0
     default:
       return 0
   }

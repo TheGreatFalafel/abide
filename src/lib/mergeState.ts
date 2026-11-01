@@ -1,43 +1,58 @@
 import { mergeCurriculumProgress, migrateCurriculumProgress } from '../data/curriculum/access'
 import { mergeLanguageProgress, migrateLanguageProgress } from '../data/languages/access'
 import { mergeCosmeticsState, migrateCosmeticsState } from './cosmetics'
+import {
+  collapseMemoryBankByScripture,
+  reconcileMemoryPair,
+  scriptureMemoryKey,
+} from './memoryTranslation'
+import { mergeGuidedTour, migrateGuidedTour } from './ariTour'
 import { migrateNotificationPrefs } from './notifications'
+import { mergeStreakFields } from './streak'
 import type { UserState, MemoryVerse } from './types'
+import type { TranslationId } from '../data/translations'
 
-function memoryKey(v: MemoryVerse): string {
-  return v.id || `${v.bookId}:${v.chapter}:${v.verseStart}:${v.reference}`
-}
-
-function mergeMemories(a: MemoryVerse[], b: MemoryVerse[]): MemoryVerse[] {
+/**
+ * Merge memory banks by scripture reference (not raw id) so older cloud cards
+ * in an obsolete translation cannot resurrect as duplicates after a local migrate.
+ */
+function mergeMemories(
+  a: MemoryVerse[],
+  b: MemoryVerse[],
+  preferredTranslation?: TranslationId,
+): MemoryVerse[] {
   const map = new Map<string, MemoryVerse>()
   for (const v of [...a, ...b]) {
-    const key = memoryKey(v)
+    const key = scriptureMemoryKey(v)
     const prev = map.get(key)
     if (!prev) {
       map.set(key, v)
       continue
     }
-    // Keep the more practiced / further along copy
-    const score = (x: MemoryVerse) =>
-      (x.status === 'memorized' ? 1000 : 0) +
-      (x.fsrs?.reps ?? x.repetitions) * 10 +
-      (x.fsrs?.stability ?? x.intervalDays)
-    const progressed = score(v) >= score(prev) ? { ...prev, ...v } : prev
+    const progressed = reconcileMemoryPair(prev, v)
+    const preferred =
+      preferredTranslation &&
+      [prev, v].find((x) => x.translationId === preferredTranslation)
     const newerText =
-      (v.textVersion ?? 0) > (prev.textVersion ?? 0)
+      preferred ??
+      ((v.textVersion ?? 0) > (prev.textVersion ?? 0)
         ? v
         : (prev.textVersion ?? 0) > (v.textVersion ?? 0)
           ? prev
-          : progressed
+          : progressed)
     map.set(key, {
       ...progressed,
       text: newerText.text,
       reference: newerText.reference,
       translationId: newerText.translationId,
       textVersion: newerText.textVersion,
+      translationStale:
+        preferredTranslation != null && newerText.translationId !== preferredTranslation
+          ? true
+          : newerText.translationStale,
     })
   }
-  return [...map.values()]
+  return collapseMemoryBankByScripture([...map.values()], preferredTranslation)
 }
 
 function unionSorted(a: number[], b: number[]): number[] {
@@ -50,8 +65,20 @@ function unionSorted(a: number[], b: number[]): number[] {
  */
 export function mergeUserStates(local: UserState, cloud: UserState): UserState {
   const xp = Math.max(local.xp, cloud.xp)
-  const streak = Math.max(local.streak, cloud.streak)
-  const longestStreak = Math.max(local.longestStreak, cloud.longestStreak)
+  const streaked = mergeStreakFields(
+    {
+      streak: local.streak,
+      longestStreak: local.longestStreak,
+      lastReadDate: local.lastReadDate,
+      streakFreezes: local.streakFreezes,
+    },
+    {
+      streak: cloud.streak,
+      longestStreak: cloud.longestStreak,
+      lastReadDate: cloud.lastReadDate,
+      streakFreezes: cloud.streakFreezes,
+    },
+  )
 
   // Prefer the plan that has more reading progress when both exist
   const localProgress = local.completedDays.length
@@ -82,14 +109,6 @@ export function mergeUserStates(local: UserState, cloud: UserState): UserState {
     if (!customPlans.some((c) => c.id === p.id)) customPlans.push(p)
   }
 
-  const lastReadDate = (() => {
-    const a = local.lastReadDate
-    const b = cloud.lastReadDate
-    if (!a) return b
-    if (!b) return a
-    return a >= b ? a : b
-  })()
-
   // ESV keys are device-local only — never adopt a key from cloud state_json
   const esvApiKey = local.esvApiKey?.trim() || ''
   const translationId = local.translationId || cloud.translationId
@@ -100,14 +119,14 @@ export function mergeUserStates(local: UserState, cloud: UserState): UserState {
     name: local.name?.trim() || cloud.name,
     planId,
     xp,
-    streak,
-    longestStreak,
-    lastReadDate,
-    streakFreezes: Math.max(local.streakFreezes, cloud.streakFreezes),
+    streak: streaked.streak,
+    longestStreak: streaked.longestStreak,
+    lastReadDate: streaked.lastReadDate,
+    streakFreezes: streaked.streakFreezes,
     achievements: [...new Set([...local.achievements, ...cloud.achievements])],
     completedDays,
     completedQuizzes,
-    memoryVerses: mergeMemories(local.memoryVerses, cloud.memoryVerses),
+    memoryVerses: mergeMemories(local.memoryVerses, cloud.memoryVerses, translationId),
     customPlans,
     curriculum: mergeCurriculumProgress(
       migrateCurriculumProgress(local.curriculum),
@@ -122,6 +141,23 @@ export function mergeUserStates(local: UserState, cloud: UserState): UserState {
       local.notifications?.permissionAsked || local.notifications?.enabled
         ? local.notifications
         : cloud.notifications ?? local.notifications,
+    ),
+    // Tour: completed if either side finished — never reopen after sync
+    guidedTour: mergeGuidedTour(
+      migrateGuidedTour(local.guidedTour, {
+        hasProgress:
+          local.xp > 0 ||
+          local.completedDays.length > 0 ||
+          Boolean(local.lastReadDate) ||
+          local.memoryVerses.length > 0,
+      }),
+      migrateGuidedTour(cloud.guidedTour, {
+        hasProgress:
+          cloud.xp > 0 ||
+          cloud.completedDays.length > 0 ||
+          Boolean(cloud.lastReadDate) ||
+          cloud.memoryVerses.length > 0,
+      }),
     ),
     // Gems: take max until server ledger reconciles (never prefer a lower cloud wipe)
     gems: Math.max(local.gems ?? 0, cloud.gems ?? 0),

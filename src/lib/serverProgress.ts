@@ -7,8 +7,14 @@ import {
   validateProgressEventBatch,
 } from './progressEvents'
 import { prepareStateForCloud } from './privacy'
+import {
+  applyActivityDays,
+  clampStreakFreezes,
+  migrateStreakFreezes,
+  type StreakFields,
+} from './streak'
 import type { UserState } from './types'
-import { todayKey, yesterdayKey } from './types'
+import { todayKey } from './types'
 
 type Db = ReturnType<typeof getDb>
 
@@ -29,9 +35,28 @@ export async function hasLegacyImport(db: Db, userId: string): Promise<boolean> 
   return Boolean(rows[0])
 }
 
+function streakFieldsFromProfile(
+  prior:
+    | {
+        streak: number
+        longestStreak: number
+        lastReadDate: string | null
+        stateJson: unknown
+      }
+    | undefined,
+): StreakFields {
+  const state = prior?.stateJson as UserState | null | undefined
+  return {
+    streak: prior?.streak ?? 0,
+    longestStreak: prior?.longestStreak ?? 0,
+    lastReadDate: prior?.lastReadDate ?? null,
+    streakFreezes: migrateStreakFreezes(state?.streakFreezes, state ? 1 : 0),
+  }
+}
+
 /**
  * Insert validated events (skipping duplicate ids). Returns newly inserted awards.
- * Updates profile XP to the ledger sum and optionally bumps streak date.
+ * Updates profile XP to the ledger sum and applies streak/freeze math for new activity days.
  */
 export async function commitProgressEvents(
   db: Db,
@@ -45,6 +70,7 @@ export async function commitProgressEvents(
   streak: number
   longestStreak: number
   lastReadDate: string | null
+  streakFreezes: number
 }> {
   const inserted: ValidatedProgressEvent[] = []
   const duplicates: string[] = []
@@ -77,9 +103,7 @@ export async function commitProgressEvents(
     .where(eq(profiles.userId, userId))
     .limit(1)
   const prior = existing[0]
-  let streak = prior?.streak ?? 0
-  let longestStreak = prior?.longestStreak ?? 0
-  let lastReadDate = prior?.lastReadDate ?? null
+  let streakState = streakFieldsFromProfile(prior)
 
   const activityDates = (opts?.activityDates ?? [])
     .concat(
@@ -88,15 +112,13 @@ export async function commitProgressEvents(
         .map((e) => e.clientCreatedAt.slice(0, 10)),
     )
     .filter(Boolean)
-    .sort()
 
-  for (const day of activityDates) {
-    const next = applyStreakDay(lastReadDate, streak, day)
-    streak = next.streak
-    lastReadDate = next.lastReadDate
-    longestStreak = Math.max(longestStreak, streak)
+  // Only newly inserted events move the streak — duplicates/retries are no-ops here.
+  if (activityDates.length) {
+    streakState = applyActivityDays(streakState, activityDates)
   }
 
+  const { streak, longestStreak, lastReadDate, streakFreezes } = streakState
   const displayName = opts?.displayName || prior?.displayName || 'Friend'
   const stateJson = prior?.stateJson
     ? prepareStateForCloud({
@@ -105,6 +127,7 @@ export async function commitProgressEvents(
         streak,
         longestStreak,
         lastReadDate,
+        streakFreezes: clampStreakFreezes(streakFreezes),
       })
     : null
 
@@ -140,20 +163,8 @@ export async function commitProgressEvents(
     streak,
     longestStreak,
     lastReadDate,
+    streakFreezes: clampStreakFreezes(streakFreezes),
   }
-}
-
-function applyStreakDay(
-  lastReadDate: string | null,
-  streak: number,
-  day: string,
-): { streak: number; lastReadDate: string } {
-  if (lastReadDate === day) return { streak, lastReadDate: day }
-  const y = yesterdayKey(new Date(`${day}T12:00:00.000Z`))
-  if (lastReadDate === y || lastReadDate === null) {
-    return { streak: lastReadDate === null ? 1 : streak + 1, lastReadDate: day }
-  }
-  return { streak: 1, lastReadDate: day }
 }
 
 export function applyServerAuthority(
@@ -164,6 +175,7 @@ export function applyServerAuthority(
     longestStreak: number
     lastReadDate: string | null
     gems?: number
+    streakFreezes?: number
   },
 ): UserState {
   return prepareStateForCloud({
@@ -173,6 +185,10 @@ export function applyServerAuthority(
     longestStreak: Math.max(state.longestStreak, authority.longestStreak),
     lastReadDate: authority.lastReadDate ?? state.lastReadDate,
     gems: authority.gems != null ? Math.max(0, authority.gems) : state.gems,
+    streakFreezes:
+      authority.streakFreezes != null
+        ? clampStreakFreezes(authority.streakFreezes)
+        : migrateStreakFreezes(state.streakFreezes),
   })
 }
 

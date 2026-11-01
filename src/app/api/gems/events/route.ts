@@ -73,7 +73,11 @@ export async function POST(req: Request) {
     if (profile[0]?.stateJson) {
       state = applyServerGemAuthority(
         prepareStateForCloud(profile[0].stateJson as UserState),
-        { gems: result.serverGems, cosmeticsOwned: result.ownedItemIds },
+        {
+          gems: result.serverGems,
+          cosmeticsOwned: result.ownedItemIds,
+          streakFreezes: result.streakFreezes,
+        },
       )
     }
 
@@ -88,6 +92,8 @@ export async function POST(req: Request) {
       rejected: [...rejected, ...result.rejected],
       serverGems: result.serverGems,
       ownedItemIds: result.ownedItemIds,
+      streakFreezes: result.streakFreezes,
+      freezesGranted: result.freezesGranted,
       state,
     })
   } catch (err) {

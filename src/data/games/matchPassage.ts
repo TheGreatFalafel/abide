@@ -1,4 +1,5 @@
 import type { GameDifficulty } from '../../games/types'
+import { SOURCE_CATALOG, type TheologicalSource } from './sources'
 
 export type MatchItem = {
   id: string
@@ -8,6 +9,8 @@ export type MatchItem = {
   difficulty: GameDifficulty
   /** Optional doctrinal/theological category, useful for grouping or filtering. */
   theologyTopic?: string
+  /** Optional researched sources shown after matches are checked. */
+  sources?: TheologicalSource[]
 }
 
 /** Match reference ↔ summary. Summaries are factual, not speculative theology. */
@@ -58,15 +61,26 @@ export const MATCH_BANK: MatchItem[] = [
     id: 'm-7',
     reference: 'Romans 3:21–26',
     summary: 'Paul teaches justification by God’s grace through faith in Christ.',
-    explanation: 'A central New Testament explanation of the gospel.',
+    explanation:
+      'Paul states justification as a gift by grace through the redemption in Christ Jesus, whom God put forward as a propitiation. That is explicit gospel language; debates continue over how to render and nuance “propitiation.”',
     difficulty: 'intermediate',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('Romans 3:21–26', 'Justification / atonement'),
+      SOURCE_CATALOG.gq_propitiation,
+      SOURCE_CATALOG.gty_propitiation,
+    ],
   },
   {
     id: 'm-8',
     reference: 'Isaiah 53',
     summary: 'The suffering servant bears the sins of many.',
-    explanation: 'A prophetic poem Christians read in light of Christ’s atonement.',
+    explanation:
+      'Isaiah describes a servant who bears sin and justifies many. The New Testament applies this to Christ; that Christological reading is apostolic interpretation of the prophet’s poem.',
     difficulty: 'intermediate',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('Isaiah 53; Acts 8:32–35; 1 Peter 2:24', 'Atonement'),
+      SOURCE_CATALOG.gq_propitiation,
+    ],
   },
   {
     id: 'm-9',
@@ -79,8 +93,14 @@ export const MATCH_BANK: MatchItem[] = [
     id: 'm-10',
     reference: 'Ephesians 2:1–10',
     summary: 'Believers were dead in sin but made alive by grace through faith—not by works.',
-    explanation: 'Paul contrasts spiritual death with salvation as God’s gift.',
+    explanation:
+      'Paul contrasts spiritual death with being made alive with Christ, then locates salvation in grace through faith—not works—while affirming believers are created for good works (v. 10).',
     difficulty: 'advanced',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('Ephesians 2:1–10', 'Grace and faith'),
+      SOURCE_CATALOG.gq_ephesians_2,
+      SOURCE_CATALOG.gq_grace_faith,
+    ],
   },
   {
     id: 'm-11',
@@ -225,16 +245,27 @@ export const MATCH_BANK: MatchItem[] = [
     id: 'm-30',
     reference: 'John 1:1–14',
     summary: 'John introduces Jesus as the eternal Word who was with God, is God, and became flesh.',
-    explanation: 'This prologue grounds Jesus’ deity and incarnation at the opening of John’s Gospel.',
+    explanation:
+      'John’s prologue states the Word’s deity and incarnation in plain terms. Later creeds use “hypostatic union” language to guard that biblical claim against reductions of either nature.',
     difficulty: 'intermediate',
     theologyTopic: 'incarnation',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('John 1:1–14', 'Christology'),
+      SOURCE_CATALOG.gq_hypostatic,
+      SOURCE_CATALOG.gq_trinity,
+    ],
   },
   {
     id: 'm-31',
     reference: 'Acts 15:1–21',
     summary: 'The Jerusalem council decides that Gentile believers are saved by grace, not by keeping the Mosaic law.',
-    explanation: 'This pivotal meeting settles a major early controversy over the gospel and Gentile inclusion.',
+    explanation:
+      'Acts 15 records the church rejecting circumcision/law-keeping as a requirement for Gentile salvation, while offering pastoral guidance for table fellowship.',
     difficulty: 'intermediate',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('Acts 15:1–11', 'Gospel and the law'),
+      SOURCE_CATALOG.gq_jerusalem_council,
+    ],
   },
   {
     id: 'm-32',
@@ -247,15 +278,25 @@ export const MATCH_BANK: MatchItem[] = [
     id: 'm-33',
     reference: 'Galatians 2:11–21',
     summary: 'Paul confronts Peter in Antioch and insists that justification comes through faith, not works of the law.',
-    explanation: 'The episode defends the gospel’s core claim against pressure to add law-keeping to faith.',
+    explanation:
+      'Paul’s confrontation protects justification by faith against adding Mosaic boundary markers. How James 2 relates remains a classic interpretive question; Protestants generally treat James as addressing living faith’s fruit, not a second ground of justification.',
     difficulty: 'intermediate',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('Galatians 2:16–21', 'Justification'),
+      SOURCE_CATALOG.gq_grace_faith,
+    ],
   },
   {
     id: 'm-34',
     reference: 'James 2:14–26',
     summary: 'James teaches that genuine faith produces works, and faith without works is dead.',
-    explanation: 'James addresses the fruit of real faith, complementing Paul’s teaching on justification rather than contradicting it.',
+    explanation:
+      'James insists that claim-only faith without works is dead. Historic Protestant reading holds this complements Paul’s justification-by-faith teaching rather than overturning it—a debated harmony that rewards careful study of both letters.',
     difficulty: 'intermediate',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('James 2:14–26; Ephesians 2:8–10', 'Faith and works'),
+      SOURCE_CATALOG.gq_grace_faith,
+    ],
   },
   {
     id: 'm-35',
@@ -271,9 +312,15 @@ export const MATCH_BANK: MatchItem[] = [
     id: 'm-36',
     reference: 'Leviticus 16',
     summary: 'On the Day of Atonement, the high priest offers sacrifices for Israel’s sins and sends a goat into the wilderness.',
-    explanation: 'This ritual pictures substitutionary atonement that the New Testament sees fulfilled in Christ.',
+    explanation:
+      'Leviticus 16 describes blood atonement and the scapegoat. Hebrews interprets these rites as shadows fulfilled in Christ’s once-for-all priesthood—an explicit New Testament reading of the Torah ritual.',
     difficulty: 'advanced',
     theologyTopic: 'atonement',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('Leviticus 16; Hebrews 9:11–14', 'Atonement'),
+      SOURCE_CATALOG.gq_propitiation,
+      SOURCE_CATALOG.lig_propitiation,
+    ],
   },
   {
     id: 'm-37',
@@ -307,16 +354,29 @@ export const MATCH_BANK: MatchItem[] = [
     id: 'm-41',
     reference: 'Romans 9–11',
     summary: 'Paul wrestles with Israel’s unbelief, God’s sovereign purposes in election, and His ongoing faithfulness to Israel.',
-    explanation: 'This dense section has long been read in differing ways across traditions; Paul’s conclusion is praise at God’s wisdom rather than a tidy resolution.',
+    explanation:
+      'Romans 9–11 affirms God’s freedom in mercy and His faithfulness to Israel’s story. Reformed and Arminian readers differ sharply on how election and human responsibility fit; Paul’s doxology (11:33–36) resists reducing the chapters to a party slogan.',
     difficulty: 'advanced',
     theologyTopic: 'election',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('Romans 9–11', 'Election'),
+      SOURCE_CATALOG.bt_election,
+      SOURCE_CATALOG.lig_election,
+      SOURCE_CATALOG.gq_election,
+    ],
   },
   {
     id: 'm-42',
     reference: 'Ephesians 1:3–14',
     summary: 'Paul blesses God for choosing and adopting believers in Christ “before the foundation of the world.”',
-    explanation: 'Paul grounds salvation in God’s eternal plan; Christians have long debated the precise mechanics of election while affirming the text’s praise of grace.',
+    explanation:
+      'The passage explicitly praises God’s choosing and adopting in Christ before the foundation of the world. Mechanics of election (unconditional vs. foreseen faith) remain disputed; the text’s praise of grace is not.',
     difficulty: 'advanced',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('Ephesians 1:3–14', 'Election'),
+      SOURCE_CATALOG.gq_election,
+      SOURCE_CATALOG.lig_election,
+    ],
   },
   {
     id: 'm-43',
@@ -329,23 +389,40 @@ export const MATCH_BANK: MatchItem[] = [
     id: 'm-44',
     reference: '1 Corinthians 15:1–23',
     summary: 'Paul defends the bodily resurrection of Christ as the “firstfruits” guaranteeing believers’ future resurrection.',
-    explanation: 'Paul argues the whole Christian hope stands or falls with Christ’s historical resurrection.',
+    explanation:
+      'Paul places Christ’s death for sins, burial, and resurrection at the center of the gospel (15:1–4) and argues Christian hope collapses without a risen Christ.',
     difficulty: 'advanced',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('1 Corinthians 15:1–23', 'Gospel / resurrection'),
+      SOURCE_CATALOG.gq_gospel,
+    ],
   },
   {
     id: 'm-45',
     reference: 'Colossians 1:15–20',
     summary: 'Paul describes Christ as the image of the invisible God, creator and sustainer of all things, and head of the church.',
-    explanation: 'This “Christ hymn” affirms Christ’s full deity and supremacy over creation and redemption.',
+    explanation:
+      'The hymn ascribes creation and reconciliation to Christ, supporting His full deity and cosmic lordship alongside genuine incarnation.',
     difficulty: 'advanced',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('Colossians 1:15–20; 2:9', 'Christology'),
+      SOURCE_CATALOG.gq_hypostatic,
+    ],
   },
   {
     id: 'm-46',
     reference: '2 Timothy 3:16–17',
     summary: 'Paul teaches that all Scripture is God-breathed and useful for teaching, correction, and equipping believers.',
-    explanation: 'This verse is a foundational statement for the doctrine of Scripture’s inspiration and sufficiency.',
+    explanation:
+      'The verse states Scripture’s inspiration and usefulness. “Sola Scriptura” summarizes a Reformation application of that claim; other Christian traditions dispute that Scripture alone is final over church tradition.',
     difficulty: 'advanced',
     theologyTopic: 'Scripture',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('2 Timothy 3:16–17', 'Doctrine of Scripture'),
+      SOURCE_CATALOG.gq_sola_scriptura,
+      SOURCE_CATALOG.bt_sola_scriptura,
+      SOURCE_CATALOG.gty_scripture,
+    ],
   },
   {
     id: 'm-47',

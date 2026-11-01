@@ -26,6 +26,10 @@ export async function ensureSchema(databaseUrl = process.env.DATABASE_URL): Prom
     CREATE INDEX IF NOT EXISTS "progress_events_user_received_idx"
     ON "progress_events" ("user_id", "server_received_at")
   `
+  await sql`
+    CREATE INDEX IF NOT EXISTS "progress_events_user_client_created_idx"
+    ON "progress_events" ("user_id", "client_created_at" DESC)
+  `
 
   await sql`
     CREATE TABLE IF NOT EXISTS "challenge_submissions" (
@@ -97,5 +101,138 @@ export async function ensureSchema(databaseUrl = process.env.DATABASE_URL): Prom
     await sql`CREATE INDEX IF NOT EXISTS "nudges_circle_idx" ON "nudges" ("circle_id")`
   } catch {
     // Baseline nudges table may be absent in empty DBs.
+  }
+
+  // Atomic streak-freeze purchase: one PG function locks the profile row,
+  // checks ledger balance + inventory cap, inserts gem_events, updates freezes.
+  try {
+    await sql`
+      CREATE OR REPLACE FUNCTION purchase_streak_freeze(
+        p_user_id text,
+        p_event_id text,
+        p_activity_key text,
+        p_payload jsonb,
+        p_client_created_at timestamptz,
+        p_price integer DEFAULT 20,
+        p_max_freezes integer DEFAULT 2
+      ) RETURNS jsonb
+      LANGUAGE plpgsql
+      AS $fn$
+      DECLARE
+        v_balance integer;
+        v_freezes integer;
+        v_state jsonb;
+      BEGIN
+        SELECT
+          coalesce((state_json->>'streakFreezes')::int, 0),
+          coalesce(state_json, '{}'::jsonb)
+        INTO v_freezes, v_state
+        FROM profiles
+        WHERE user_id = p_user_id
+        FOR UPDATE;
+
+        IF NOT FOUND THEN
+          RETURN jsonb_build_object(
+            'ok', false,
+            'error', 'Profile not found',
+            'serverGems', 0,
+            'streakFreezes', 0,
+            'freezesGranted', 0,
+            'duplicate', false
+          );
+        END IF;
+
+        IF EXISTS (
+          SELECT 1 FROM gem_events
+          WHERE user_id = p_user_id
+            AND (id = p_event_id OR activity_key = p_activity_key)
+        ) THEN
+          SELECT coalesce(sum(delta_gems), 0)::int INTO v_balance
+          FROM gem_events WHERE user_id = p_user_id;
+          RETURN jsonb_build_object(
+            'ok', true,
+            'duplicate', true,
+            'serverGems', v_balance,
+            'streakFreezes', v_freezes,
+            'freezesGranted', 0,
+            'spent', 0
+          );
+        END IF;
+
+        SELECT coalesce(sum(delta_gems), 0)::int INTO v_balance
+        FROM gem_events WHERE user_id = p_user_id;
+
+        IF v_freezes >= p_max_freezes THEN
+          RETURN jsonb_build_object(
+            'ok', false,
+            'error', 'Streak freeze inventory is full',
+            'serverGems', v_balance,
+            'streakFreezes', v_freezes,
+            'freezesGranted', 0,
+            'duplicate', false
+          );
+        END IF;
+
+        IF v_balance < p_price THEN
+          RETURN jsonb_build_object(
+            'ok', false,
+            'error', 'Insufficient gems',
+            'serverGems', v_balance,
+            'streakFreezes', v_freezes,
+            'freezesGranted', 0,
+            'duplicate', false
+          );
+        END IF;
+
+        INSERT INTO gem_events (
+          id, user_id, type, payload, delta_gems, activity_key, client_created_at
+        ) VALUES (
+          p_event_id,
+          p_user_id,
+          'shop_streak_freeze',
+          coalesce(p_payload, '{}'::jsonb),
+          -p_price,
+          p_activity_key,
+          p_client_created_at
+        );
+
+        v_freezes := v_freezes + 1;
+        v_balance := v_balance - p_price;
+        v_state := jsonb_set(v_state, '{streakFreezes}', to_jsonb(v_freezes), true);
+        v_state := jsonb_set(v_state, '{gems}', to_jsonb(v_balance), true);
+
+        UPDATE profiles
+        SET gems = v_balance,
+            state_json = v_state,
+            updated_at = now()
+        WHERE user_id = p_user_id;
+
+        RETURN jsonb_build_object(
+          'ok', true,
+          'duplicate', false,
+          'serverGems', v_balance,
+          'streakFreezes', v_freezes,
+          'freezesGranted', 1,
+          'spent', p_price
+        );
+      EXCEPTION
+        WHEN unique_violation THEN
+          SELECT coalesce(sum(delta_gems), 0)::int INTO v_balance
+          FROM gem_events WHERE user_id = p_user_id;
+          SELECT coalesce((state_json->>'streakFreezes')::int, 0) INTO v_freezes
+          FROM profiles WHERE user_id = p_user_id;
+          RETURN jsonb_build_object(
+            'ok', true,
+            'duplicate', true,
+            'serverGems', coalesce(v_balance, 0),
+            'streakFreezes', coalesce(v_freezes, 0),
+            'freezesGranted', 0,
+            'spent', 0
+          );
+      END;
+      $fn$
+    `
+  } catch {
+    // Fail closed for freeze purchases until the function exists.
   }
 }

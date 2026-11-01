@@ -1,3 +1,4 @@
+import { recordActivityHistory } from './activityHistory'
 import type { ProgressEventInput } from './progressEvents'
 
 const QUEUE_KEY = 'abide-progress-events-v1'
@@ -22,6 +23,12 @@ export function enqueueProgressEvent(event: ProgressEventInput): void {
   if (q.some((e) => e.id === event.id)) return
   q.push(event)
   writeRaw(q)
+  // Durable analytics cache (survives queue drain after sync)
+  try {
+    recordActivityHistory(event)
+  } catch {
+    /* history is best-effort */
+  }
 }
 
 export function peekProgressEvents(): ProgressEventInput[] {

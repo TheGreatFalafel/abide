@@ -105,8 +105,9 @@ describe('translation-specific identity', () => {
     expect(parseMemoryId('john-3-16-16:esv')?.translationId).toBe('esv')
   })
 
-  it('allows the same passage in two translations', () => {
+  it('stores one card per scripture under the global translation', () => {
     let state = createInitialState('Ada', 'gospels')
+    state = { ...state, translationId: 'esv' }
     const esv = addMemoryVerse(
       state,
       {
@@ -122,6 +123,9 @@ describe('translation-specific identity', () => {
       NOW,
     )
     state = esv.state
+    expect(esv.added).toBe(true)
+    expect(state.memoryVerses[0].id).toBe('john-3-16-16:esv')
+    state = { ...state, translationId: 'web' }
     const web = addMemoryVerse(
       state,
       {
@@ -136,12 +140,8 @@ describe('translation-specific identity', () => {
       },
       NOW,
     )
-    expect(web.added).toBe(true)
-    expect(web.state.memoryVerses).toHaveLength(2)
-    expect(web.state.memoryVerses.map((v) => v.id).sort()).toEqual([
-      'john-3-16-16:esv',
-      'john-3-16-16:web',
-    ])
+    expect(web.added).toBe(false)
+    expect(web.state.memoryVerses).toHaveLength(1)
   })
 })
 

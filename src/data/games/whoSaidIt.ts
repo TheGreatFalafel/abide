@@ -1,4 +1,5 @@
 import type { GameDifficulty } from '../../games/types'
+import { SOURCE_CATALOG, type TheologicalSource } from './sources'
 
 export type WhoSaidItQuestion = {
   id: string
@@ -20,6 +21,8 @@ export type WhoSaidItQuestion = {
     | 'doctrine-of-salvation'
     | 'doctrine-of-church'
     | 'doctrine-of-last-things'
+  /** Optional researched sources shown after the answer is revealed. */
+  sources?: TheologicalSource[]
 }
 
 /** Speaker identification — quotes paraphrased carefully with references; answers verified. */
@@ -375,9 +378,14 @@ export const WHO_SAID_IT_BANK: WhoSaidItQuestion[] = [
     choices: ['David (in the Psalms)', 'Jesus (on the cross)', 'Job', 'Jeremiah'],
     answer: 1,
     reference: 'Matthew 27:46',
-    explanation: 'Jesus cried out these words from Psalm 22 while bearing the weight of sin on the cross.',
+    explanation:
+      'Matthew records Jesus quoting Psalm 22:1 from the cross. The Gospel states the cry; Christians interpret it in light of His bearing sin (cf. 2 Corinthians 5:21)—a theological reading of the narrative, not an extra verse in Matthew itself.',
     difficulty: 'advanced',
     theologyTopic: 'doctrine-of-christ',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('Matthew 27:46; Psalm 22:1', 'Christology / atonement'),
+      SOURCE_CATALOG.gq_propitiation,
+    ],
   },
   {
     id: 'ws-40',
@@ -385,9 +393,15 @@ export const WHO_SAID_IT_BANK: WhoSaidItQuestion[] = [
     choices: ['John the Baptist', 'Jesus', 'Pilate', 'The centurion'],
     answer: 1,
     reference: 'John 19:30',
-    explanation: 'Jesus declared His redemptive work complete just before He gave up His spirit on the cross.',
+    explanation:
+      'John records Jesus’ declaration that His work was complete. Historic Protestant teaching hears in this the finished sufficiency of His atoning death; the text itself states completion without detailing every atonement theory.',
     difficulty: 'advanced',
     theologyTopic: 'doctrine-of-salvation',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('John 19:30; Hebrews 10:12–14', 'Atonement'),
+      SOURCE_CATALOG.gq_salvation,
+      SOURCE_CATALOG.lig_propitiation,
+    ],
   },
   {
     id: 'ws-41',
@@ -434,9 +448,14 @@ export const WHO_SAID_IT_BANK: WhoSaidItQuestion[] = [
     choices: ['An angel', 'Jesus', 'John', 'The twenty-four elders'],
     answer: 1,
     reference: 'Revelation 22:13',
-    explanation: 'Jesus identifies Himself with this title near the close of Revelation, affirming His eternal sovereignty.',
+    explanation:
+      'Revelation 22:13 applies Alpha and Omega language to Jesus, echoing titles used of God (Revelation 1:8). The text supports Christ’s full deity; unitarian readings dispute that identification.',
     difficulty: 'advanced',
     theologyTopic: 'doctrine-of-christ',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('Revelation 22:13; 1:8; Isaiah 44:6', 'Christology'),
+      SOURCE_CATALOG.gq_trinity,
+    ],
   },
   {
     id: 'ws-46',
@@ -462,9 +481,15 @@ export const WHO_SAID_IT_BANK: WhoSaidItQuestion[] = [
     choices: ['Peter', 'Paul', 'James', 'John'],
     answer: 1,
     reference: 'Ephesians 2:8',
-    explanation: 'Paul grounds salvation entirely in God’s gracious gift, received through faith, not human achievement.',
+    explanation:
+      'Paul’s words in Ephesians 2:8 deny that salvation is self-produced or earned by works. Abide’s Reformed framing stresses grace as God’s gift; Christians still debate how faith and regeneration relate, while agreeing the boast is excluded.',
     difficulty: 'advanced',
     theologyTopic: 'doctrine-of-salvation',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('Ephesians 2:8–9', 'Grace and faith'),
+      SOURCE_CATALOG.gq_grace_faith,
+      SOURCE_CATALOG.gq_ephesians_2,
+    ],
   },
 ]
 

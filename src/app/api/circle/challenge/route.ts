@@ -18,6 +18,7 @@ import {
 } from '@/lib/serverScripture'
 import { newProgressEventId } from '@/lib/progressEvents'
 import { commitProgressEvents, validateAndBuildChallengeXpEvent } from '@/lib/challengeProgress'
+import { publicAvatarFromStateJson } from '@/lib/publicAvatar'
 
 export type ChallengeVerse = {
   id: string
@@ -91,6 +92,7 @@ export async function GET() {
           attempts: memoryChallengeScores.attempts,
           updatedAt: memoryChallengeScores.updatedAt,
           displayName: profiles.displayName,
+          stateJson: profiles.stateJson,
         })
         .from(memoryChallengeScores)
         .leftJoin(profiles, eq(profiles.userId, memoryChallengeScores.userId))
@@ -108,7 +110,10 @@ export async function GET() {
         endsAt: ch.endsAt,
         status,
         createdAt: ch.createdAt,
-        scores,
+        scores: scores.map(({ stateJson, ...rest }) => ({
+          ...rest,
+          avatar: publicAvatarFromStateJson(stateJson),
+        })),
       })
     }
 

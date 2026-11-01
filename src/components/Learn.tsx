@@ -22,7 +22,9 @@ import {
   type LanguageTrackId,
 } from '../data/languages'
 import { dueLanguageVocab } from '../lib/languageProgress'
+import { mascotLineFor } from '../lib/mascot'
 import type { UserState } from '../lib/types'
+import { MascotBanner } from './MascotBanner'
 
 type LearnTab = 'theology' | 'greek' | 'hebrew'
 
@@ -40,6 +42,8 @@ export function Learn({ user, onOpenLesson, onOpenLanguageLesson }: Props) {
   const byId = curriculumTopicsById()
   const courses = listLanguageCourses()
 
+  const noTheologyYet = progress.completedLessonIds.length === 0
+
   return (
     <div className="learn">
       <div className="learn-intro">
@@ -49,6 +53,11 @@ export function Learn({ user, onOpenLesson, onOpenLanguageLesson }: Props) {
           each — opening a lesson alone does not earn XP.
         </p>
       </div>
+
+      <MascotBanner
+        line={mascotLineFor(noTheologyYet ? 'empty-learn' : 'learn', user)}
+        compact
+      />
 
       <div className="shop-filters learn-tabs" role="tablist" aria-label="Learn tracks">
         {(

@@ -8,6 +8,7 @@ import {
   type CirclePayload,
 } from '../lib/cloud'
 import { titleForXp, type UserState } from '../lib/types'
+import { AbideAvatar } from './AbideAvatar'
 import { MemoryChallengePanel } from './MemoryChallengePanel'
 
 type Props = {
@@ -146,6 +147,7 @@ export function CirclePanel({ user, onUserChange, onSyncedName }: Props) {
                   .map((m, i) => (
                     <li key={m.userId} className={m.userId === clerkUser?.id ? 'me' : ''}>
                       <span className="rank">{i + 1}</span>
+                      <AbideAvatar publicAvatar={m.avatar} size="sm" className="circle-avatar" />
                       <span className="who">
                         {m.displayName || 'Friend'}
                         {i === 0 && (m.weekXp ?? 0) > 0 ? ' · leading' : ''}
@@ -161,7 +163,8 @@ export function CirclePanel({ user, onUserChange, onSyncedName }: Props) {
 
             <div className="memory-list">
               {data.members.map((m) => (
-                <div key={m.userId} className="memory-card">
+                <div key={m.userId} className="memory-card circle-member-card">
+                  <AbideAvatar publicAvatar={m.avatar} size="md" className="circle-avatar" />
                   <div>
                     <strong>{m.displayName || 'Friend'}</strong>
                     <p className="memory-meta">

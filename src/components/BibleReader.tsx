@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { BOOKS, type BibleBook } from '../data/bible'
 import { fetchPassage, type PassageContent, type Verse } from '../lib/bibleApi'
-import { addMemoryVerse } from '../lib/progress'
+import { addMemoryVerse, recordReadingSession } from '../lib/progress'
 import type { UserState } from '../lib/types'
 import { EsvAttribution } from './EsvAttribution'
 import { ESV_SITE } from '../data/esvCopyright'
@@ -53,6 +53,17 @@ export function BibleReader({ user, onUserChange }: Props) {
       cancelled = true
     }
   }, [book.id, book.name, chapter, user.translationId, user.esvApiKey])
+
+  // History-only reading activity (0 XP); deduped per book+chapter+day.
+  useEffect(() => {
+    if (!content) return
+    recordReadingSession(user, {
+      bookId: book.id,
+      bookName: book.name,
+      chapter,
+      translationId: content.translationId,
+    })
+  }, [content, book.id, book.name, chapter, user])
 
   function goBook(next: BibleBook) {
     setBookId(next.id)

@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from 'react'
 import { triviaForDifficulty } from '../../data/games/trivia'
 import type { GameSessionProps } from '../../games/types'
 import { GameChrome } from './GameChrome'
+import { SourceDetails } from './SourceDetails'
 
 export function BibleTrivia({ difficulty, onComplete, onBack }: GameSessionProps) {
   const seed = useMemo(() => Date.now(), [])
@@ -97,10 +98,13 @@ export function BibleTrivia({ difficulty, onComplete, onBack }: GameSessionProps
         })}
       </div>
       {checked && (
-        <p className={`nudge ${ok ? 'good' : 'risk'}`}>
-          {ok ? 'Correct. ' : 'Not quite. '}
-          {q.explanation} ({q.reference})
-        </p>
+        <div className="game-feedback">
+          <p className={`nudge ${ok ? 'good' : 'risk'}`}>
+            {ok ? 'Correct. ' : 'Not quite. '}
+            {q.explanation} ({q.reference})
+          </p>
+          <SourceDetails sources={q.sources} />
+        </div>
       )}
     </GameChrome>
   )

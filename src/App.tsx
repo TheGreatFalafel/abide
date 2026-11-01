@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Onboarding } from './components/Onboarding'
 import { Home, type HomeView } from './components/Home'
 import { ReadingSession } from './components/ReadingSession'
@@ -49,6 +49,24 @@ type Screen =
 const HAS_CLERK = isClerkConfigured()
 const CHAPTER_QUIZ_EVERY = 7
 
+const HOME_VIEWS: HomeView[] = [
+  'path',
+  'read',
+  'memory',
+  'learn',
+  'circle',
+  'badges',
+  'shop',
+  'games',
+  'settings',
+  'insights',
+]
+
+function parseHomeView(raw: string | null): HomeView | null {
+  if (!raw) return null
+  return HOME_VIEWS.includes(raw as HomeView) ? (raw as HomeView) : null
+}
+
 function boot(): { user: UserState | null; screen: Screen } {
   const user = loadState()
   return {
@@ -62,21 +80,35 @@ export default function App() {
   const [user, setUser] = useState<UserState | null>(initial.user)
   const [screen, setScreen] = useState<Screen>(initial.screen)
   const [view, setView] = useState<HomeView>(() => {
-    if (typeof window === 'undefined') return 'read'
-    const q = new URLSearchParams(window.location.search).get('view')
-    const allowed: HomeView[] = [
-      'path',
-      'read',
-      'memory',
-      'learn',
-      'circle',
-      'badges',
-      'shop',
-      'games',
-      'settings',
-    ]
-    return allowed.includes(q as HomeView) ? (q as HomeView) : 'read'
+    if (typeof window === 'undefined') return 'path'
+    return parseHomeView(new URLSearchParams(window.location.search).get('view')) ?? 'path'
   })
+
+  const navigateView = useCallback((next: HomeView) => {
+    setView(next)
+    if (typeof window === 'undefined') return
+    const url = new URL(window.location.href)
+    if (url.searchParams.get('view') === next) return
+    url.searchParams.set('view', next)
+    window.history.pushState({ view: next }, '', url)
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const url = new URL(window.location.href)
+    if (!url.searchParams.get('view')) {
+      url.searchParams.set('view', view)
+      window.history.replaceState({ view }, '', url)
+    }
+    function onPop() {
+      const q = parseHomeView(new URLSearchParams(window.location.search).get('view'))
+      setView(q ?? 'path')
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+    // Seed URL once; popstate owns later sync.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const plan = getPlanById(user?.planId ?? 'year', user?.customPlans ?? [])
   const days = useMemo(() => plan.generate(), [plan.id, user?.customPlans])
@@ -280,11 +312,11 @@ export default function App() {
           user={user}
           onUserChange={handleUserChange}
           onBack={() => {
-            setView('learn')
+            navigateView('learn')
             setScreen({ name: 'home' })
           }}
           onComplete={(result) => {
-            setView('learn')
+            navigateView('learn')
             setScreen({ name: 'celebrate', result })
           }}
         />
@@ -303,11 +335,11 @@ export default function App() {
           user={user}
           onUserChange={handleUserChange}
           onBack={() => {
-            setView('learn')
+            navigateView('learn')
             setScreen({ name: 'home' })
           }}
           onComplete={(result) => {
-            setView('learn')
+            navigateView('learn')
             setScreen({ name: 'celebrate', result })
           }}
         />
@@ -325,7 +357,7 @@ export default function App() {
           onUserChange={handleUserChange}
           onBack={() => setScreen({ name: 'home' })}
           onGoMemory={() => {
-            setView('memory')
+            navigateView('memory')
             setScreen({ name: 'home' })
           }}
           onComplete={(result) => setScreen({ name: 'celebrate', result })}
@@ -344,13 +376,13 @@ export default function App() {
           difficulty={screen.difficulty}
           user={user}
           onBack={() => {
-            setView('games')
+            navigateView('games')
             setScreen({ name: 'home' })
           }}
           onComplete={(play) => {
             const result = completeBibleGame(user, play)
             setUser(result.state)
-            setView('games')
+            navigateView('games')
             setScreen({ name: 'celebrate', result })
           }}
         />
@@ -388,7 +420,7 @@ export default function App() {
         user={user}
         days={days}
         view={view}
-        setView={setView}
+        setView={navigateView}
         onOpenLesson={(day) => setScreen({ name: 'lesson', day })}
         onOpenCurriculumLesson={(lessonId) =>
           setScreen({ name: 'curriculumLesson', lessonId })

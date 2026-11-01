@@ -6,8 +6,16 @@ import {
   GEM_REWARDS,
   computeGemDelta,
   newGemEventId,
+  type GemEventInput,
   type GemEventType,
 } from './gemEvents'
+import {
+  MAX_STREAK_FREEZES,
+  STREAK_FREEZE_PRICE,
+  STREAK_FREEZE_SHOP_ID,
+  canPurchaseStreakFreeze,
+  streakFreezeActivityKey,
+} from './streak'
 import type { AchievementId, UserState } from './types'
 import { todayKey } from './types'
 
@@ -39,7 +47,7 @@ function normalizeGemDay(state: UserState): UserState {
  */
 export function awardGems(
   state: UserState,
-  type: Exclude<GemEventType, 'shop_purchase' | 'legacy_gem_import'>, // includes gem_bible_game
+  type: Exclude<GemEventType, 'shop_purchase' | 'shop_streak_freeze' | 'legacy_gem_import'>,
   activityKey: string,
   payload: Record<string, unknown> = {},
 ): { state: UserState; awarded: number } {
@@ -128,4 +136,39 @@ export function setEquippedCosmetic(state: UserState, itemId: string): UserState
   }
 }
 
-export { GEM_REWARDS, GEM_DAILY_EARN_CAP }
+/**
+ * Local eligibility only — never grants freezes or spends gems offline.
+ * Server ledger is authoritative for streak-freeze purchases.
+ */
+export function streakFreezePurchaseBlockReason(state: UserState): string | null {
+  if (!canPurchaseStreakFreeze(state.streakFreezes)) {
+    return `You already have ${MAX_STREAK_FREEZES} streak freezes (maximum).`
+  }
+  if (state.gems < STREAK_FREEZE_PRICE) {
+    return `Need ${STREAK_FREEZE_PRICE} gems (you have ${state.gems}).`
+  }
+  return null
+}
+
+/** Build a one-shot ledger event for an online streak-freeze purchase (not queued offline). */
+export function buildStreakFreezePurchaseEvent(now = new Date()): GemEventInput {
+  const id = newGemEventId()
+  return {
+    id,
+    type: 'shop_streak_freeze',
+    clientCreatedAt: now.toISOString(),
+    payload: {
+      itemId: STREAK_FREEZE_SHOP_ID,
+      purchaseId: id,
+      activityKey: streakFreezeActivityKey(id),
+    },
+  }
+}
+
+export {
+  GEM_REWARDS,
+  GEM_DAILY_EARN_CAP,
+  STREAK_FREEZE_PRICE,
+  STREAK_FREEZE_SHOP_ID,
+  MAX_STREAK_FREEZES,
+}

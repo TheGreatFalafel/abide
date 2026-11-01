@@ -15,6 +15,7 @@ import {
   scoreMemoryQuizChallenge,
 } from '../lib/progress'
 import type { MemoryVerse, UserState } from '../lib/types'
+import { AbideAvatar } from './AbideAvatar'
 
 type Props = {
   user: UserState
@@ -408,6 +409,7 @@ export function MemoryChallengePanel({ user, onUserChange, myUserId }: Props) {
               {ch.scores.map((s, i) => (
                 <li key={s.userId} className={s.userId === myUserId ? 'me' : ''}>
                   <span className="rank">{i + 1}</span>
+                  <AbideAvatar publicAvatar={s.avatar} size="sm" className="circle-avatar" />
                   <span className="who">{s.displayName || 'Friend'}</span>
                   <span className="pts">
                     {s.score} pts · {s.correct}/{s.attempts}
@@ -439,6 +441,7 @@ export function MemoryChallengePanel({ user, onUserChange, myUserId }: Props) {
                 {ch.scores.slice(0, 3).map((s, i) => (
                   <li key={s.userId}>
                     <span className="rank">{i + 1}</span>
+                    <AbideAvatar publicAvatar={s.avatar} size="sm" className="circle-avatar" />
                     <span className="who">{s.displayName || 'Friend'}</span>
                     <span className="pts">{s.score} pts</span>
                   </li>

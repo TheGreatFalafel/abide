@@ -7,7 +7,10 @@ import { PLANS } from '../data/bible'
 import { isClerkConfigured } from '../lib/clerk'
 import { esvKeyStorageMessage } from '../lib/privacy'
 import { updateSettings } from '../lib/progress'
+import { AbideAvatar } from './AbideAvatar'
 import { saveCloudProgress } from '../lib/cloud'
+import { memoryNeedsTranslationSync, standardizeMemoryTranslations } from '../lib/memoryTranslation'
+import { fetchMemoryVerseText } from '../lib/memoryTextFetch'
 import type { CustomPlan, UserState } from '../lib/types'
 import { DAILY_GOAL_OPTIONS } from '../lib/types'
 import { EsvAttribution } from './EsvAttribution'
@@ -24,9 +27,15 @@ type Props = {
   user: UserState
   onUserChange: (user: UserState) => void
   onReset: () => void
+  /** Opens badges / achievements (profile secondary destination). */
+  onOpenBadges?: () => void
+  /** Replay Ari’s guided tour (session overlay; completion still syncs). */
+  onReplayTour?: () => void
+  /** Open Learning Insights (secondary Path view). */
+  onOpenInsights?: () => void
 }
 
-type SectionId = 'bible' | 'reminders' | 'plan' | 'about'
+type SectionId = 'bible' | 'reminders' | 'plan' | 'profile' | 'about'
 
 type SettingsViewProps = Props & {
   /** From Clerk when configured; always false when Clerk is off. */
@@ -48,7 +57,9 @@ export function Settings(props: Props) {
 
 function SettingsWithClerk(props: Props) {
   const { isSignedIn } = useAuth()
-  return <SettingsView {...props} hasClerk isSignedIn={Boolean(isSignedIn)} />
+  return (
+    <SettingsView {...props} hasClerk isSignedIn={Boolean(isSignedIn)} />
+  )
 }
 
 /** Exported for tests — pure UI with auth flags injected. */
@@ -58,6 +69,9 @@ export function SettingsView({
   onReset,
   isSignedIn,
   hasClerk,
+  onOpenBadges,
+  onReplayTour,
+  onOpenInsights,
 }: SettingsViewProps) {
   const esvKey = user.esvApiKey ?? ''
   const [keyDraft, setKeyDraft] = useState(esvKey)
@@ -104,6 +118,38 @@ export function SettingsView({
     })
   }
 
+  async function applyTranslationAndMigrate(id: TranslationId, base: UserState = user) {
+    const next = updateSettings(base, { translationId: id })
+    onUserChange(next)
+    if (!memoryNeedsTranslationSync(next) && next.memoryVerses.length === 0) return next
+    try {
+      const { state, report } = await standardizeMemoryTranslations(
+        next,
+        (verse, translationId) => fetchMemoryVerseText(verse, translationId, next),
+        { target: id },
+      )
+      onUserChange(state)
+      if (report.failed.length) {
+        setTestMsg(
+          `Translation set to ${id.toUpperCase()}. ${report.failed.length} memory verse${report.failed.length === 1 ? '' : 's'} could not be updated yet — previous text kept.`,
+        )
+        setTestOk(false)
+      } else if (report.migrated > 0) {
+        setTestMsg(
+          `Updated ${report.migrated} memory verse${report.migrated === 1 ? '' : 's'} to ${id.toUpperCase()}.`,
+        )
+        setTestOk(true)
+      }
+      return state
+    } catch {
+      setTestMsg(
+        `Translation set to ${id.toUpperCase()}, but memory verses could not all be refreshed. Previous text kept where needed.`,
+      )
+      setTestOk(false)
+      return next
+    }
+  }
+
   function setTranslation(id: TranslationId) {
     if (id === 'esv' && !user.esvApiKey?.trim() && !keyDraft.trim()) {
       setOpen('bible')
@@ -111,17 +157,17 @@ export function SettingsView({
       setTestOk(false)
       return
     }
-    onUserChange(updateSettings(user, { translationId: id }))
+    void applyTranslationAndMigrate(id)
   }
 
   async function saveKey() {
     const trimmed = keyDraft.trim()
     if (!trimmed) return
-    const next = updateSettings(user, {
+    const withKey = updateSettings(user, {
       esvApiKey: trimmed,
       translationId: 'esv',
     })
-    onUserChange(next)
+    const next = await applyTranslationAndMigrate('esv', withKey)
     setSaved(true)
 
     if (accountSync) {
@@ -531,6 +577,47 @@ export function SettingsView({
                   }}
                 />
               )}
+            </section>
+          </div>
+        )}
+
+        <button
+          type="button"
+          className={`settings-acc-head ${open === 'profile' ? 'open' : ''}`}
+          onClick={() => toggle('profile')}
+        >
+          Profile & badges
+          <span aria-hidden>{open === 'profile' ? '−' : '+'}</span>
+        </button>
+        {open === 'profile' && (
+          <div className="settings-acc-body">
+            <section className="settings-block tight">
+              <div className="settings-profile-avatar">
+                <AbideAvatar user={user} size="md" />
+                <div>
+                  <p className="muted">
+                    Hi, {user.name}. Customize your look and buy cosmetics in the shop — they never
+                    change XP, streaks, or competition.
+                  </p>
+                </div>
+              </div>
+              <div className="settings-profile-actions">
+                {onOpenBadges && (
+                  <button type="button" className="btn primary" onClick={onOpenBadges}>
+                    View badges ({user.achievements.length})
+                  </button>
+                )}
+                {onOpenInsights && (
+                  <button type="button" className="btn ghost" onClick={onOpenInsights}>
+                    Learning Insights
+                  </button>
+                )}
+                {onReplayTour && (
+                  <button type="button" className="btn ghost" onClick={onReplayTour}>
+                    Replay Ari’s tour
+                  </button>
+                )}
+              </div>
             </section>
           </div>
         )}

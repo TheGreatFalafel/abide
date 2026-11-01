@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { getReadyDb, hasDatabase } from '@/db/client'
 import { circleMembers, circles, nudges, profiles } from '@/db/schema'
 import { isSchemaDriftError, schemaDriftMessage } from '@/lib/dbErrors'
+import { publicAvatarFromStateJson } from '@/lib/publicAvatar'
 
 function code() {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -81,6 +82,7 @@ export async function GET() {
       lastReadDate: m.lastReadDate,
       weekXp,
       lessonsThisWeek: state?.weekKey === currentWeek ? state.lessonsThisWeek ?? 0 : 0,
+      avatar: publicAvatarFromStateJson(m.stateJson),
     }
   })
 

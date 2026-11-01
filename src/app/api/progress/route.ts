@@ -12,6 +12,7 @@ import {
   sumAwardedXp,
 } from '@/lib/serverProgress'
 import { ensureLegacyGemImport, sumGemBalance } from '@/lib/serverGems'
+import { mergeStreakFields, migrateStreakFreezes } from '@/lib/streak'
 import type { UserState } from '@/lib/types'
 
 function asUserState(value: unknown): UserState | null {
@@ -39,13 +40,16 @@ export async function GET() {
     const serverGems = await sumGemBalance(db, userId)
     const xp = Math.max(serverXp, rows[0].xp)
     const gems = Math.max(serverGems, rows[0].gems ?? 0)
-    const state = rows[0].stateJson
-      ? applyServerAuthority(asUserState(rows[0].stateJson)!, {
+    const priorState = asUserState(rows[0].stateJson)
+    const streakFreezes = migrateStreakFreezes(priorState?.streakFreezes)
+    const state = priorState
+      ? applyServerAuthority(priorState, {
           xp,
           streak: rows[0].streak,
           longestStreak: rows[0].longestStreak,
           lastReadDate: rows[0].lastReadDate,
           gems,
+          streakFreezes,
         })
       : null
 
@@ -56,6 +60,7 @@ export async function GET() {
         xp,
         gems,
         lastReadDate: rows[0].lastReadDate,
+        streakFreezes,
         updatedAt: rows[0].updatedAt,
       },
       state,
@@ -119,23 +124,37 @@ export async function PUT(req: Request) {
 
     const serverXp = await sumAwardedXp(db, userId)
     const serverGems = await sumGemBalance(db, userId)
-    const streak = existing[0]?.streak ?? incoming.streak ?? 0
-    const longestStreak = Math.max(
-      existing[0]?.longestStreak ?? 0,
-      incoming.longestStreak ?? 0,
-      streak,
-    )
-    const lastReadDate = existing[0]?.lastReadDate ?? incoming.lastReadDate ?? null
 
+    // Content merge first, then reconcile streak/freeze tuples against denormalized
+    // profile columns. mergeStreakFields prefers newer lastReadDate and never
+    // Math.max-resurrects a consumed freeze (important for passive normalizeDay bridges).
     const contentMerged = prepareStateForCloud(
       prior ? mergeUserStates(incoming, prior) : incoming,
     )
+
+    const streaked = mergeStreakFields(
+      {
+        streak: contentMerged.streak,
+        longestStreak: contentMerged.longestStreak,
+        lastReadDate: contentMerged.lastReadDate,
+        streakFreezes: migrateStreakFreezes(contentMerged.streakFreezes),
+      },
+      {
+        streak: existing[0]?.streak ?? 0,
+        longestStreak: existing[0]?.longestStreak ?? 0,
+        lastReadDate: existing[0]?.lastReadDate ?? null,
+        streakFreezes: migrateStreakFreezes(prior?.streakFreezes, 0),
+      },
+    )
+    const { streak, longestStreak, lastReadDate, streakFreezes } = streaked
+
     const merged = applyServerAuthority(contentMerged, {
       xp: serverXp,
       streak,
       longestStreak,
       lastReadDate,
       gems: serverGems,
+      streakFreezes,
     })
 
     await db
@@ -155,7 +174,7 @@ export async function PUT(req: Request) {
         target: profiles.userId,
         set: {
           displayName,
-          // Keep server streak/gem authority; only refresh content blob + denormalized totals
+          // Keep server streak/gem authority; freezes stay in reconciled state_json
           streak,
           longestStreak,
           xp: serverXp,

@@ -253,6 +253,11 @@ export type MemoryVerse = {
    * New cards are always confident.
    */
   translationConfident?: boolean
+  /**
+   * True when this card’s text is not yet available in the user’s selected translation.
+   * Existing text is retained; never silently substitute another translation.
+   */
+  translationStale?: boolean
   addedAt: string
   /** Calendar due date (YYYY-MM-DD) derived from FSRS `due` for UI. */
   nextReview: string
@@ -310,6 +315,11 @@ export type NotificationPrefsState = {
   permissionAsked: boolean
 }
 
+/** Ari guided tour — completed after Skip or Finish; replay from Settings. */
+export type GuidedTourPrefsState = {
+  completed: boolean
+}
+
 export type UserState = {
   name: string
   planId: string
@@ -344,6 +354,11 @@ export type UserState = {
   /** Local reminder preferences (device permission is separate). */
   notifications: NotificationPrefsState
   /**
+   * Ari’s first-use guided tour. Merge uses OR-completed so a finished tour
+   * never reopens after cloud sync. Replay is session-only from Settings.
+   */
+  guidedTour: GuidedTourPrefsState
+  /**
    * Gem balance — local optimistic; cloud/server ledger is authoritative when signed in.
    * Never trust a client-submitted gems field on the server.
    */
@@ -362,6 +377,14 @@ export type UserState = {
       color: string
       accessory: string | null
       frame: string
+    }
+    /** Free human appearance — migrated when missing. */
+    appearance?: {
+      skin: string
+      hair: string
+      hairColor: string
+      face: string
+      clothes: string
     }
   }
   /** Bible Game Center progress (rewards keyed separately via event activity keys). */
@@ -534,6 +557,9 @@ export function createInitialState(name: string, planId: string): UserState {
       reminderHour: 8,
       permissionAsked: false,
     },
+    guidedTour: {
+      completed: false,
+    },
     gems: 0,
     todayGems: 0,
     todayGemsDate: today,
@@ -546,6 +572,13 @@ export function createInitialState(name: string, planId: string): UserState {
         color: 'color-deep',
         accessory: null,
         frame: 'frame-simple',
+      },
+      appearance: {
+        skin: 'medium',
+        hair: 'wavy',
+        hairColor: 'brown',
+        face: 'warm',
+        clothes: 'tee',
       },
     },
     gameStats: {

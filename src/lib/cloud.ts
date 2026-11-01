@@ -1,3 +1,8 @@
+import {
+  markActivityHistorySynced,
+  mergeActivityHistory,
+  type ActivityHistoryRecord,
+} from './activityHistory'
 import { dequeueProgressEvents, peekProgressEvents } from './eventQueue'
 import { dequeueGemEvents, peekGemEvents } from './gemQueue'
 import type { GemEventInput } from './gemEvents'
@@ -37,6 +42,7 @@ export type ProgressEventsSyncResult = {
   streak: number
   longestStreak: number
   lastReadDate: string | null
+  streakFreezes?: number
   state: UserState | null
   inserted: { id: string; awardedXp: number; type: string }[]
   duplicates: string[]
@@ -65,7 +71,32 @@ export async function syncProgressEvents(
     ...(data.duplicates ?? []),
   ]
   dequeueProgressEvents(done)
+  const awardedById: Record<string, number> = {}
+  for (const row of data.inserted ?? []) {
+    if (typeof (row as { awardedXp?: number }).awardedXp === 'number') {
+      awardedById[row.id] = (row as { awardedXp: number }).awardedXp
+    }
+  }
+  markActivityHistorySynced(done, awardedById)
   return data
+}
+
+/** Pull private progress_events into the durable local activity history cache. */
+export async function fetchActivityHistory(opts?: {
+  limit?: number
+  since?: string
+}): Promise<ActivityHistoryRecord[] | null> {
+  const params = new URLSearchParams()
+  if (opts?.limit) params.set('limit', String(opts.limit))
+  if (opts?.since) params.set('since', opts.since)
+  const qs = params.toString()
+  const res = await fetch(`/api/progress/history${qs ? `?${qs}` : ''}`)
+  if (res.status === 401 || res.status === 503) return null
+  if (!res.ok) throw new Error('Could not load activity history')
+  const data = (await res.json()) as { events?: ActivityHistoryRecord[] }
+  const events = Array.isArray(data.events) ? data.events : []
+  mergeActivityHistory(events)
+  return events
 }
 
 export type GemEventsSyncResult = {
@@ -75,6 +106,8 @@ export type GemEventsSyncResult = {
   duplicates: string[]
   rejected: { id?: string; error: string }[]
   ownedItemIds: string[]
+  streakFreezes?: number
+  freezesGranted?: number
 }
 
 /** Flush the offline gem-event queue to the server ledger. */
@@ -99,6 +132,74 @@ export async function syncGemEvents(
   return data
 }
 
+export type StreakFreezePurchaseResult =
+  | {
+      ok: true
+      state: UserState | null
+      serverGems: number
+      streakFreezes: number
+      spent: number
+      duplicate?: boolean
+    }
+  | { ok: false; error: string; status?: number }
+
+/**
+ * Online-only streak freeze purchase. Does not enqueue offline gem events and
+ * never applies an unverified local spend/grant — server ledger is authoritative.
+ */
+export async function purchaseStreakFreezeOnline(
+  seedGems: number,
+  event: GemEventInput,
+): Promise<StreakFreezePurchaseResult> {
+  const res = await fetch('/api/gems/events', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ events: [event], seedGems }),
+  })
+  if (res.status === 401) {
+    return { ok: false, error: 'Sign in to buy streak freezes.', status: 401 }
+  }
+  if (res.status === 503) {
+    return {
+      ok: false,
+      error: 'Cloud sync is unavailable. Try again when you are online.',
+      status: 503,
+    }
+  }
+  if (!res.ok) {
+    return { ok: false, error: 'Purchase failed. Please try again.', status: res.status }
+  }
+
+  const data = (await res.json()) as GemEventsSyncResult
+  const rejected = data.rejected?.[0]
+  if (rejected) {
+    return { ok: false, error: rejected.error || 'Purchase rejected.' }
+  }
+
+  const inserted = data.inserted?.some((e) => e.id === event.id)
+  const duplicate = data.duplicates?.includes(event.id) ?? false
+  if (!inserted && !duplicate) {
+    return { ok: false, error: 'Purchase was not confirmed by the server.' }
+  }
+
+  const spent =
+    data.inserted?.find((e) => e.id === event.id)?.deltaGems != null
+      ? Math.abs(data.inserted.find((e) => e.id === event.id)!.deltaGems)
+      : 0
+
+  return {
+    ok: true,
+    state: data.state,
+    serverGems: data.serverGems,
+    streakFreezes:
+      data.streakFreezes ??
+      data.state?.streakFreezes ??
+      0,
+    spent: inserted ? spent : 0,
+    duplicate,
+  }
+}
+
 export type CircleMember = {
   userId: string
   displayName: string | null
@@ -107,6 +208,8 @@ export type CircleMember = {
   lastReadDate: string | null
   weekXp?: number
   lessonsThisWeek?: number
+  /** Public avatar snapshot (appearance + equipped ids only). */
+  avatar?: import('./cosmetics').PublicAvatar
 }
 
 export type CirclePayload = {
@@ -154,6 +257,7 @@ export type ChallengeScore = {
   attempts: number
   updatedAt: string
   displayName: string | null
+  avatar?: import('./cosmetics').PublicAvatar
 }
 
 export type MemoryChallenge = {

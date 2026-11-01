@@ -27,11 +27,13 @@ export async function GET() {
     const db = await getReadyDb()
     const xp = await sumAwardedXp(db, userId)
     const rows = await db.select().from(profiles).where(eq(profiles.userId, userId)).limit(1)
+    const state = rows[0]?.stateJson as { streakFreezes?: number } | null | undefined
     return NextResponse.json({
       serverXp: xp,
       streak: rows[0]?.streak ?? 0,
       longestStreak: rows[0]?.longestStreak ?? 0,
       lastReadDate: rows[0]?.lastReadDate ?? null,
+      streakFreezes: state?.streakFreezes ?? null,
     })
   } catch (err) {
     if (isSchemaDriftError(err)) {
@@ -90,6 +92,7 @@ export async function POST(req: Request) {
         streak: result.streak,
         longestStreak: result.longestStreak,
         lastReadDate: result.lastReadDate,
+        streakFreezes: result.streakFreezes,
       })
     }
 
@@ -102,6 +105,7 @@ export async function POST(req: Request) {
       streak: result.streak,
       longestStreak: result.longestStreak,
       lastReadDate: result.lastReadDate,
+      streakFreezes: result.streakFreezes,
       state,
     })
   } catch (err) {

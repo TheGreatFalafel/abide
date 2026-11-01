@@ -1,4 +1,5 @@
 import { getCosmetic } from '../data/cosmetics/catalog'
+import { STREAK_FREEZE_PRICE, streakFreezeActivityKey } from './streak'
 
 /**
  * Gem currency — separate from XP.
@@ -17,6 +18,7 @@ export type GemEventType =
   | 'gem_language_lesson'
   | 'gem_language_vocab'
   | 'shop_purchase'
+  | 'shop_streak_freeze'
 
 export type GemEventInput = {
   id: string
@@ -65,6 +67,7 @@ const ALLOWED = new Set<GemEventType>([
   'gem_language_lesson',
   'gem_language_vocab',
   'shop_purchase',
+  'shop_streak_freeze',
 ])
 
 export function isGemEventType(v: unknown): v is GemEventType {
@@ -79,13 +82,29 @@ function asBool(v: unknown): boolean {
   return v === true
 }
 
+/** One-shot activity key per cosmetic — never trust client-supplied variants. */
+export function shopPurchaseActivityKey(itemId: string): string {
+  return `shop:${itemId}`.slice(0, 160)
+}
+
 function activityKey(type: GemEventType, payload: Record<string, unknown>): string {
-  const raw = typeof payload.activityKey === 'string' ? payload.activityKey.trim() : ''
-  // Client/server pass fully-qualified keys (e.g. lesson:3, shop:base-scribe)
-  if (raw) return raw.slice(0, 160)
+  // Cosmetics: always derive from itemId so spoofed keys cannot repurchase.
   if (type === 'shop_purchase') {
-    const itemId = typeof payload.itemId === 'string' ? payload.itemId : 'unknown'
-    return `shop:${itemId}`
+    const itemId = typeof payload.itemId === 'string' ? payload.itemId.trim() : 'unknown'
+    return shopPurchaseActivityKey(itemId || 'unknown')
+  }
+  const raw = typeof payload.activityKey === 'string' ? payload.activityKey.trim() : ''
+  // Client/server pass fully-qualified keys (e.g. lesson:3)
+  if (raw) return raw.slice(0, 160)
+  if (type === 'shop_streak_freeze') {
+    // Each purchase must carry a unique key (usually shop:streak-freeze:<eventUuid>).
+    const purchaseId =
+      typeof payload.purchaseId === 'string' && payload.purchaseId.trim()
+        ? payload.purchaseId.trim()
+        : typeof payload.activityKey === 'string' && payload.activityKey.includes(':')
+          ? payload.activityKey.slice(payload.activityKey.lastIndexOf(':') + 1)
+          : 'unknown'
+    return streakFreezeActivityKey(purchaseId).slice(0, 160)
   }
   if (type === 'legacy_gem_import') return 'legacy_gem_import'
   return `${type}:${typeof payload.ref === 'string' ? payload.ref : 'once'}`
@@ -143,6 +162,9 @@ export function computeGemDelta(
       if (!item || item.price <= 0) return 0
       return -item.price
     }
+    case 'shop_streak_freeze':
+      // Fixed server price — ignore any client-supplied amount.
+      return -STREAK_FREEZE_PRICE
     default:
       return 0
   }
@@ -178,17 +200,49 @@ export function validateGemEvent(
     return { ok: false, error: { id, error: 'Event is too old' } }
   }
 
-  const payload =
+  let payload: Record<string, unknown> =
     e.payload && typeof e.payload === 'object' && !Array.isArray(e.payload)
-      ? (e.payload as Record<string, unknown>)
+      ? { ...(e.payload as Record<string, unknown>) }
       : {}
 
   const deltaGems = computeGemDelta(e.type, payload)
-  if (e.type === 'shop_purchase' && deltaGems >= 0) {
+  if ((e.type === 'shop_purchase' || e.type === 'shop_streak_freeze') && deltaGems >= 0) {
     return { ok: false, error: { id, error: 'Invalid shop item' } }
   }
-  if (e.type !== 'shop_purchase' && e.type !== 'legacy_gem_import' && deltaGems < 0) {
+  if (
+    e.type !== 'shop_purchase' &&
+    e.type !== 'shop_streak_freeze' &&
+    e.type !== 'legacy_gem_import' &&
+    deltaGems < 0
+  ) {
     return { ok: false, error: { id, error: 'Invalid gem award' } }
+  }
+
+  let key = activityKey(e.type, payload)
+  if (e.type === 'shop_purchase') {
+    const itemId = typeof payload.itemId === 'string' ? payload.itemId.trim() : ''
+    if (!itemId || !getCosmetic(itemId)) {
+      return { ok: false, error: { id, error: 'Unknown shop item' } }
+    }
+    key = shopPurchaseActivityKey(itemId)
+    payload = { ...payload, itemId, activityKey: key }
+  }
+  if (e.type === 'shop_streak_freeze') {
+    // Require a per-purchase unique key so retries are idempotent and
+    // consumable buys are not collapsed like one-shot cosmetics.
+    const explicit =
+      typeof payload.activityKey === 'string' ? payload.activityKey.trim() : ''
+    const purchaseId =
+      typeof payload.purchaseId === 'string' ? payload.purchaseId.trim() : ''
+    if (explicit.startsWith('shop:streak-freeze:')) {
+      key = explicit.slice(0, 160)
+    } else if (purchaseId && UUID_RE.test(purchaseId)) {
+      key = streakFreezeActivityKey(purchaseId)
+    } else if (UUID_RE.test(id)) {
+      key = streakFreezeActivityKey(id)
+    } else {
+      return { ok: false, error: { id, error: 'Streak freeze purchase needs a unique id' } }
+    }
   }
 
   return {
@@ -199,7 +253,7 @@ export function validateGemEvent(
       payload,
       clientCreatedAt: new Date(created).toISOString(),
       deltaGems,
-      activityKey: activityKey(e.type, payload),
+      activityKey: key,
     },
   }
 }
@@ -230,13 +284,14 @@ export function validateGemEventBatch(
       rejected.push({ id: result.event.id, error: 'Duplicate id in batch' })
       continue
     }
-    // Purchases may repeat different items; earn keys must be unique in-batch
-    if (result.event.deltaGems > 0 && seenActivity.has(result.event.activityKey)) {
+    // Earn keys and freeze purchase keys must be unique in-batch; cosmetic
+    // shop_purchase keys are also unique (one-shot per item).
+    if (seenActivity.has(result.event.activityKey)) {
       rejected.push({ id: result.event.id, error: 'Duplicate activity in batch' })
       continue
     }
     seen.add(result.event.id)
-    if (result.event.deltaGems > 0) seenActivity.add(result.event.activityKey)
+    seenActivity.add(result.event.activityKey)
     accepted.push(result.event)
   }
 

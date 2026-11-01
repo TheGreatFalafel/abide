@@ -1,4 +1,5 @@
 import type { GameDifficulty } from '../../games/types'
+import { SOURCE_CATALOG, type TheologicalSource } from './sources'
 
 export type TriviaQuestion = {
   id: string
@@ -22,6 +23,11 @@ export type TriviaQuestion = {
     | 'doctrine-of-salvation'
     | 'doctrine-of-church'
     | 'doctrine-of-last-things'
+  /**
+   * Optional researched sources for further reading (shown after the answer).
+   * Narrative/history items often omit this and rest on Scripture alone via `reference`.
+   */
+  sources?: TheologicalSource[]
 }
 
 /** Curated, verified Bible trivia — factual prompts with Scripture references. */
@@ -192,10 +198,12 @@ export const TRIVIA_BANK: TriviaQuestion[] = [
     choices: ['The fifth day', 'The sixth day', 'The seventh day', 'The eighth day'],
     answer: 2,
     reference: 'Genesis 2:2–3',
-    explanation: 'God finished His work and rested on the seventh day, setting it apart as holy.',
+    explanation:
+      'Genesis 2:2–3 states that God rested on the seventh day and blessed it. The text records God’s rest; later Sabbath theology builds on this narrative without replacing what Genesis itself says.',
     difficulty: 'beginner',
     category: 'events',
     theologyTopic: 'doctrine-of-god',
+    sources: [SOURCE_CATALOG.scripture_basis('Genesis 2:2–3; Exodus 20:8–11', 'Creation / Sabbath')],
   },
   {
     id: 'tr-18',
@@ -233,10 +241,15 @@ export const TRIVIA_BANK: TriviaQuestion[] = [
     choices: ['Jesus’ birth', 'Jesus’ resurrection', 'Jesus’ ascension', 'The giving of the Law'],
     answer: 1,
     reference: 'Luke 24:1–7',
-    explanation: 'Easter celebrates the bodily resurrection of Jesus Christ from the dead on the third day.',
+    explanation:
+      'The Gospels narrate Jesus’ bodily resurrection on the third day (e.g., Luke 24). Easter is the church’s celebration of that historical claim, which Paul treats as essential to the gospel (1 Corinthians 15).',
     difficulty: 'beginner',
     category: 'events',
     theologyTopic: 'doctrine-of-christ',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('Luke 24:1–7; 1 Corinthians 15:3–4', 'Resurrection'),
+      SOURCE_CATALOG.gq_gospel,
+    ],
   },
   {
     id: 'tr-22',
@@ -324,10 +337,16 @@ export const TRIVIA_BANK: TriviaQuestion[] = [
     choices: ['Law', 'Grace', 'Tradition', 'Sacrifice'],
     answer: 1,
     reference: 'Ephesians 2:8–9',
-    explanation: 'Paul teaches that believers are saved by grace through faith, not by works, so that no one may boast.',
+    explanation:
+      'Ephesians 2:8–9 explicitly says salvation is by grace through faith, “not of yourselves… not of works.” Abide’s Reformed framing emphasizes that grace is God’s free favor; traditions differ on how faith itself relates to God’s prior work, but the text denies salvation by human merit.',
     difficulty: 'intermediate',
     category: 'concepts',
     theologyTopic: 'doctrine-of-salvation',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('Ephesians 2:8–9; Romans 3:24', 'Grace and faith'),
+      SOURCE_CATALOG.gq_grace_faith,
+      SOURCE_CATALOG.gq_ephesians_2,
+    ],
   },
   {
     id: 'tr-31',
@@ -365,10 +384,17 @@ export const TRIVIA_BANK: TriviaQuestion[] = [
     choices: ['Sola Fide', 'Sola Scriptura', 'Sola Gratia', 'Soli Deo Gloria'],
     answer: 1,
     reference: '2 Timothy 3:16–17',
-    explanation: 'Sola Scriptura holds that Scripture, being God-breathed, is the final and sufficient authority over church tradition or private opinion.',
+    explanation:
+      '2 Timothy 3:16–17 calls Scripture God-breathed and sufficient to equip believers. “Sola Scriptura” is a Reformation summary of that conviction—not a Bible phrase itself. Roman Catholic and Orthodox traditions give a larger role to sacred tradition and magisterium; Protestants disagree on how creeds relate to Scripture, while still treating Scripture as final.',
     difficulty: 'intermediate',
     category: 'concepts',
     theologyTopic: 'doctrine-of-scripture',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('2 Timothy 3:16–17; Acts 17:11', 'Doctrine of Scripture'),
+      SOURCE_CATALOG.gq_sola_scriptura,
+      SOURCE_CATALOG.bt_sola_scriptura,
+      SOURCE_CATALOG.gty_scripture,
+    ],
   },
   {
     id: 'tr-35',
@@ -385,11 +411,18 @@ export const TRIVIA_BANK: TriviaQuestion[] = [
     prompt: 'What theological term describes Christ’s sacrifice as satisfying God’s righteous wrath against sin?',
     choices: ['Propitiation', 'Sanctification', 'Adoption', 'Glorification'],
     answer: 0,
-    reference: 'Romans 3:25',
-    explanation: 'Paul says God put Christ forward as a propitiation by His blood, turning aside divine wrath for those who believe.',
+    reference: 'Romans 3:25; 1 John 2:2',
+    explanation:
+      'Romans 3:25 and 1 John 2:2 use language historically rendered “propitiation”: Christ’s blood addresses God’s righteous opposition to sin. Related “expiation” language stresses removal of guilt. Some translations prefer “atoning sacrifice”; Christians debate nuances of wrath language, but the texts locate reconciliation in Christ’s cross, not human effort.',
     difficulty: 'advanced',
     category: 'concepts',
     theologyTopic: 'doctrine-of-salvation',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('Romans 3:25; 1 John 2:2; 4:10', 'Atonement'),
+      SOURCE_CATALOG.gq_propitiation,
+      SOURCE_CATALOG.gty_propitiation,
+      SOURCE_CATALOG.lig_propitiation,
+    ],
   },
   {
     id: 'tr-37',
@@ -416,22 +449,33 @@ export const TRIVIA_BANK: TriviaQuestion[] = [
     prompt: 'At the council described in Acts 15, church leaders debated whether Gentile believers needed to do what?',
     choices: ['Be baptized', 'Keep the law of Moses and be circumcised', 'Fast during Lent', 'Speak in tongues'],
     answer: 1,
-    reference: 'Acts 15:1–21',
-    explanation: 'The Jerusalem council concluded that Gentiles are saved by grace through faith, not by adopting the Mosaic law.',
+    reference: 'Acts 15:1–11',
+    explanation:
+      'Acts 15 records teachers claiming Gentiles must be circumcised and keep Moses’ law to be saved. Peter and James insist God saves Jews and Gentiles through the grace of the Lord Jesus (Acts 15:11). The council’s pastoral guidelines aimed at fellowship, not adding works to the gospel.',
     difficulty: 'advanced',
     category: 'events',
     theologyTopic: 'doctrine-of-salvation',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('Acts 15:1–11, 19–21', 'Gospel and the law'),
+      SOURCE_CATALOG.gq_jerusalem_council,
+      SOURCE_CATALOG.gq_salvation,
+    ],
   },
   {
     id: 'tr-40',
     prompt: 'What theological term describes the union of full deity and full humanity in the one person of Jesus Christ?',
     choices: ['Trinity', 'Hypostatic union', 'Transfiguration', 'Theophany'],
     answer: 1,
-    reference: 'Colossians 2:9',
-    explanation: 'The hypostatic union affirms that in Christ “the whole fullness of deity dwells bodily,” united with true humanity in one person.',
+    reference: 'Colossians 2:9; John 1:14',
+    explanation:
+      'Scripture affirms both Christ’s full deity (e.g., Colossians 2:9) and true humanity (John 1:14). “Hypostatic union” is the historic term for one person with two natures—unmixed and undivided. It is theological vocabulary summarizing biblical data, crystallized especially at Chalcedon (AD 451).',
     difficulty: 'advanced',
     category: 'concepts',
     theologyTopic: 'doctrine-of-christ',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('Colossians 2:9; John 1:1, 14; Hebrews 2:14–17', 'Christology'),
+      SOURCE_CATALOG.gq_hypostatic,
+    ],
   },
   {
     id: 'tr-41',
@@ -459,22 +503,32 @@ export const TRIVIA_BANK: TriviaQuestion[] = [
     choices: ['Romans', 'Hebrews', 'James', '1 Peter'],
     answer: 1,
     reference: 'Hebrews 7',
-    explanation: 'Hebrews presents Christ as a priest forever in the order of Melchizedek, superior to the Aaronic priesthood.',
+    explanation:
+      'Hebrews explicitly argues Christ’s priesthood is better than Levi’s, using Melchizedek as a type. That is the letter’s own theological reading of Genesis 14 and Psalm 110.',
     difficulty: 'advanced',
     category: 'books',
     theologyTopic: 'doctrine-of-christ',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('Hebrews 7; Genesis 14:18–20; Psalm 110:4', 'Christology / priesthood'),
+    ],
   },
   {
     id: 'tr-44',
     prompt: 'What term refers to God’s eternal choice of those who will be saved?',
     choices: ['Sanctification', 'Election', 'Justification', 'Glorification'],
     answer: 1,
-    reference: 'Ephesians 1:4–5',
+    reference: 'Ephesians 1:4–5; Romans 8:33',
     explanation:
-      'Scripture teaches that God chose believers in Christ before the foundation of the world; Christians have long debated how election relates to human choice (e.g., Reformed vs. Arminian views), but all agree salvation originates with God’s initiative.',
+      'Ephesians 1:4–5 and Romans 8:33 speak of God choosing / electing people in Christ. That God elects is a biblical statement; whether election is unconditional (classic Reformed) or conditioned on foreseen faith (many Arminians) is a significant intramural Christian disagreement. Abide’s Reformed leaning affirms God’s sovereign initiative without denying the call to repent and believe.',
     difficulty: 'advanced',
     category: 'concepts',
     theologyTopic: 'doctrine-of-salvation',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('Ephesians 1:4–5; Romans 8:29–33; 1 Peter 1:1–2', 'Election'),
+      SOURCE_CATALOG.gq_election,
+      SOURCE_CATALOG.bt_election,
+      SOURCE_CATALOG.lig_election,
+    ],
   },
   {
     id: 'tr-45',
@@ -488,10 +542,14 @@ export const TRIVIA_BANK: TriviaQuestion[] = [
     answer: 1,
     reference: 'Revelation 20:7–10',
     explanation:
-      'Revelation describes Satan’s final defeat in the lake of fire; Christians hold differing views on the timing and nature of the millennium (premillennial, amillennial, postmillennial), but all affirm Satan’s ultimate, decisive defeat.',
+      'Revelation 20:7–10 narrates Satan’s release after the thousand years, a final deception, and his being thrown into the lake of fire. The text’s sequence is explicit; how to interpret the millennium (pre-, a-, or postmillennial) remains a major Christian disagreement. The shared confession is Satan’s final, decisive defeat.',
     difficulty: 'advanced',
     category: 'events',
     theologyTopic: 'doctrine-of-last-things',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('Revelation 20:7–10', 'Eschatology'),
+      SOURCE_CATALOG.gq_millennium,
+    ],
   },
   {
     id: 'tr-46',
@@ -511,22 +569,88 @@ export const TRIVIA_BANK: TriviaQuestion[] = [
     answer: 0,
     reference: 'Genesis 14:18–20; Hebrews 7:1–3',
     explanation:
-      'Melchizedek blessed Abram and received a tithe from him; Hebrews uses his priest-king office, without recorded beginning or end, to picture Christ’s unending priesthood.',
+      'Genesis introduces Melchizedek as priest-king of Salem; Hebrews interprets his brief appearance as a picture of Christ’s forever priesthood. The Genesis narrative is brief; the Christological typology is Hebrews’ explicit teaching.',
     difficulty: 'advanced',
     category: 'people',
     theologyTopic: 'doctrine-of-christ',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('Genesis 14:18–20; Hebrews 7:1–3', 'Christology / priesthood'),
+    ],
   },
   {
     id: 'tr-48',
     prompt: 'What doctrine teaches that all humanity inherits a sinful, fallen nature because of Adam’s sin?',
     choices: ['Original sin', 'Progressive sanctification', 'Eternal security', 'Common grace'],
     answer: 0,
-    reference: 'Romans 5:12',
+    reference: 'Romans 5:12–19',
     explanation:
-      'Through one man sin entered the world, and death through sin, so death spread to all because all sinned; Christian traditions differ somewhat on how Adam’s guilt and corruption are transmitted, but agree humanity is born spiritually fallen.',
+      'Romans 5 links Adam’s trespass to death and condemnation spreading to all, contrasted with Christ’s obedience bringing righteousness. “Original sin” names that inherited fallen condition. Traditions differ on whether Adam’s guilt is imputed as well as corruption (classic Reformed yes; some Arminians nuance or deny imputation). Pelagian denial of inherited corruption is outside historic orthodoxy.',
     difficulty: 'advanced',
     category: 'concepts',
     theologyTopic: 'nature-of-man',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('Romans 5:12–19; Psalm 51:5; Ephesians 2:1–3', 'Anthropology / sin'),
+      SOURCE_CATALOG.gq_original_sin,
+      SOURCE_CATALOG.gty_original_sin,
+      SOURCE_CATALOG.lig_original_sin,
+    ],
+  },
+  {
+    id: 'tr-49',
+    prompt: 'Historic Christian teaching that God is one Being in three Persons—Father, Son, and Holy Spirit—is called what?',
+    choices: ['Tritheism', 'The Trinity', 'Modalism', 'Adoptionism'],
+    answer: 1,
+    reference: 'Matthew 28:19; 2 Corinthians 13:14',
+    explanation:
+      'Scripture affirms one God (Deuteronomy 6:4) while naming Father, Son, and Spirit as divine persons (e.g., Matthew 28:19). “Trinity” is the church’s summary term. Modalism collapses the persons into modes; tritheism splits God into three gods—both rejected by historic Christianity.',
+    difficulty: 'intermediate',
+    category: 'concepts',
+    theologyTopic: 'doctrine-of-god',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('Deuteronomy 6:4; Matthew 28:19; 2 Corinthians 13:14; John 1:1', 'Trinity'),
+      SOURCE_CATALOG.gq_trinity,
+      SOURCE_CATALOG.bt_trinity,
+      SOURCE_CATALOG.lig_trinity,
+    ],
+  },
+  {
+    id: 'tr-50',
+    prompt: 'According to Paul in 1 Corinthians 15, which facts are “of first importance” in the gospel he preached?',
+    choices: [
+      'Christ’s moral teachings and miracles',
+      'Christ’s death for sins, burial, and resurrection according to the Scriptures',
+      'Joining the right denomination and keeping feast days',
+      'Speaking in tongues and interpreting dreams',
+    ],
+    answer: 1,
+    reference: '1 Corinthians 15:1–4',
+    explanation:
+      'Paul states as of first importance that Christ died for our sins according to the Scriptures, was buried, and was raised on the third day according to the Scriptures. That is an explicit gospel summary; wider Christian ethics and church practices matter, but Paul locates saving good news here.',
+    difficulty: 'intermediate',
+    category: 'concepts',
+    theologyTopic: 'doctrine-of-salvation',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('1 Corinthians 15:1–4; Romans 1:16', 'Gospel'),
+      SOURCE_CATALOG.gq_gospel,
+      SOURCE_CATALOG.gq_salvation,
+    ],
+  },
+  {
+    id: 'tr-51',
+    prompt: 'John 1:1 says the Word was with God and the Word was what?',
+    choices: ['An angel', 'A created force', 'God', 'A prophet like Moses'],
+    answer: 2,
+    reference: 'John 1:1–3, 14',
+    explanation:
+      'John 1:1 states the Word was with God and was God; verse 14 says the Word became flesh. Together these support the deity and incarnation of Christ. Groups that deny Christ’s full deity (e.g., Arian or unitarian readings) dispute the historic Christian reading of this prologue.',
+    difficulty: 'beginner',
+    category: 'concepts',
+    theologyTopic: 'doctrine-of-christ',
+    sources: [
+      SOURCE_CATALOG.scripture_basis('John 1:1–3, 14; Colossians 1:15–17', 'Christology'),
+      SOURCE_CATALOG.gq_hypostatic,
+      SOURCE_CATALOG.gq_trinity,
+    ],
   },
 ]
 

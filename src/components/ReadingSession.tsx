@@ -95,7 +95,7 @@ export function ReadingSession({ day, user, onUserChange, onComplete, onBack }: 
       chapter: currentRef.chapter,
       verseStart: verseNum,
       verseEnd: verseNum,
-      translationId: current.translationId as TranslationId,
+      translationId: user.translationId,
     })
     onUserChange(result.state)
     setMemoryNote(

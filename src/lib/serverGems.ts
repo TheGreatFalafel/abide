@@ -2,7 +2,7 @@ import { and, eq, gte, sql } from 'drizzle-orm'
 import type { getDb } from '@/db/client'
 import { gemEvents, profiles } from '@/db/schema'
 import { getCosmetic } from '@/data/cosmetics/catalog'
-import { grantCosmetic, migrateCosmeticsState } from './cosmetics'
+import { grantCosmetic, migrateCosmeticsState, ownsCosmetic } from './cosmetics'
 import { isUniqueViolation } from './dbErrors'
 import {
   GEM_DAILY_EARN_CAP,
@@ -10,6 +10,13 @@ import {
   validateGemEventBatch,
 } from './gemEvents'
 import { prepareStateForCloud } from './privacy'
+import {
+  MAX_STREAK_FREEZES,
+  STREAK_FREEZE_PRICE,
+  clampStreakFreezes,
+  migrateStreakFreezes,
+} from './streak'
+import { purchaseStreakFreezeAtomic } from './streakFreezeAtomic'
 import type { UserState } from './types'
 import { todayKey } from './types'
 
@@ -73,6 +80,8 @@ export async function commitGemEvents(
   rejected: { id?: string; error: string }[]
   serverGems: number
   ownedItemIds: string[]
+  streakFreezes: number
+  freezesGranted: number
 }> {
   const inserted: ValidatedGemEvent[] = []
   const duplicates: string[] = []
@@ -80,6 +89,11 @@ export async function commitGemEvents(
   let earnedToday = await sumGemsEarnedToday(db, userId)
   let balance = await sumGemBalance(db, userId)
   const ownedGranted: string[] = []
+  let freezesGranted = 0
+
+  const existing = await db.select().from(profiles).where(eq(profiles.userId, userId)).limit(1)
+  let stateJson = existing[0]?.stateJson as UserState | null | undefined
+  let runningFreezes = migrateStreakFreezes(stateJson?.streakFreezes, stateJson ? 1 : 0)
 
   for (const event of events) {
     const exists = await db
@@ -114,12 +128,49 @@ export async function commitGemEvents(
         rejected.push({ id: event.id, error: 'Unknown shop item' })
         continue
       }
+      const cosmeticsNow = migrateCosmeticsState(stateJson?.cosmetics)
+      if (ownsCosmetic(cosmeticsNow, itemId) || ownedGranted.includes(itemId)) {
+        rejected.push({ id: event.id, error: 'Already owns this item' })
+        continue
+      }
       if (balance < item.price) {
         rejected.push({ id: event.id, error: 'Insufficient gems' })
         continue
       }
       delta = -item.price
       ownedGranted.push(itemId)
+    }
+
+    if (event.type === 'shop_streak_freeze') {
+      // Atomic DB function: FOR UPDATE profile → balance/cap checks → ledger + inventory.
+      // Never use application-level read-then-write for freeze purchases.
+      const atomic = await purchaseStreakFreezeAtomic({
+        userId,
+        eventId: event.id,
+        activityKey: event.activityKey,
+        payload: (event.payload ?? {}) as Record<string, unknown>,
+        clientCreatedAt: event.clientCreatedAt,
+      })
+      if (atomic.duplicate) {
+        duplicates.push(event.id)
+        balance = atomic.serverGems
+        runningFreezes = atomic.streakFreezes
+        continue
+      }
+      if (!atomic.ok) {
+        rejected.push({
+          id: event.id,
+          error: atomic.error || 'Streak freeze purchase failed',
+        })
+        balance = atomic.serverGems
+        runningFreezes = atomic.streakFreezes
+        continue
+      }
+      balance = atomic.serverGems
+      runningFreezes = atomic.streakFreezes
+      freezesGranted += atomic.freezesGranted
+      inserted.push({ ...event, deltaGems: -STREAK_FREEZE_PRICE })
+      continue
     }
 
     if (balance + delta < 0) {
@@ -152,8 +203,16 @@ export async function commitGemEvents(
 
   const serverGems = await sumGemBalance(db, userId)
 
-  const existing = await db.select().from(profiles).where(eq(profiles.userId, userId)).limit(1)
-  let stateJson = existing[0]?.stateJson as UserState | null | undefined
+  // Re-read profile after atomic freeze purchases so cosmetics merge does not
+  // clobber the function's inventory update.
+  if (freezesGranted > 0 || duplicates.length) {
+    const refreshed = await db.select().from(profiles).where(eq(profiles.userId, userId)).limit(1)
+    if (refreshed[0]?.stateJson) {
+      stateJson = refreshed[0].stateJson as UserState
+      runningFreezes = migrateStreakFreezes(stateJson.streakFreezes, runningFreezes)
+    }
+  }
+
   if (stateJson && ownedGranted.length) {
     let cosmetics = migrateCosmeticsState(stateJson.cosmetics)
     for (const id of ownedGranted) cosmetics = grantCosmetic(cosmetics, id)
@@ -161,9 +220,14 @@ export async function commitGemEvents(
       ...stateJson,
       gems: serverGems,
       cosmetics,
+      streakFreezes: runningFreezes,
     })
   } else if (stateJson) {
-    stateJson = prepareStateForCloud({ ...stateJson, gems: serverGems })
+    stateJson = prepareStateForCloud({
+      ...stateJson,
+      gems: serverGems,
+      streakFreezes: runningFreezes,
+    })
   }
 
   if (existing[0]) {
@@ -185,12 +249,24 @@ export async function commitGemEvents(
     })
   }
 
-  return { inserted, duplicates, rejected, serverGems, ownedItemIds: ownedGranted }
+  return {
+    inserted,
+    duplicates,
+    rejected,
+    serverGems,
+    ownedItemIds: ownedGranted,
+    streakFreezes: runningFreezes,
+    freezesGranted,
+  }
 }
 
 export function applyServerGemAuthority(
   state: UserState,
-  authority: { gems: number; cosmeticsOwned?: string[] },
+  authority: {
+    gems: number
+    cosmeticsOwned?: string[]
+    streakFreezes?: number
+  },
 ): UserState {
   let cosmetics = migrateCosmeticsState(state.cosmetics)
   for (const id of authority.cosmeticsOwned ?? []) {
@@ -200,5 +276,11 @@ export function applyServerGemAuthority(
     ...state,
     gems: Math.max(0, authority.gems),
     cosmetics,
+    streakFreezes:
+      authority.streakFreezes != null
+        ? clampStreakFreezes(authority.streakFreezes)
+        : migrateStreakFreezes(state.streakFreezes),
   }
 }
+
+export { MAX_STREAK_FREEZES, STREAK_FREEZE_PRICE }

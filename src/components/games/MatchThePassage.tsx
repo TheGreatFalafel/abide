@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from 'react'
 import { matchItemsForDifficulty, type MatchItem } from '../../data/games/matchPassage'
 import type { GameSessionProps } from '../../games/types'
 import { GameChrome } from './GameChrome'
+import { SourceDetails } from './SourceDetails'
 
 function shuffle<T>(items: T[], seed: number): T[] {
   let t = seed >>> 0
@@ -150,6 +151,7 @@ export function MatchThePassage({ difficulty, onComplete, onBack }: GameSessionP
             <li key={item.id}>
               <strong>{item.reference}</strong> — {item.summary}{' '}
               <span className="muted">({item.explanation})</span>
+              <SourceDetails sources={item.sources} />
             </li>
           ))}
         </ul>

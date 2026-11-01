@@ -6,6 +6,7 @@ import {
   fetchCloudProgress,
   saveCloudProgress,
   syncGemEvents,
+  fetchActivityHistory,
   syncProgressEvents,
 } from '../lib/cloud'
 import { mergeUserStates } from '../lib/mergeState'
@@ -23,6 +24,7 @@ function fingerprint(state: UserState): string {
     xp: state.xp,
     streak: state.streak,
     longestStreak: state.longestStreak,
+    streakFreezes: state.streakFreezes,
     planId: state.planId,
     completedDays: state.completedDays,
     completedQuizzes: state.completedQuizzes,
@@ -32,6 +34,7 @@ function fingerprint(state: UserState): string {
       catalogVersion: state.curriculum?.catalogVersion ?? 0,
     },
     notifications: state.notifications,
+    guidedTour: state.guidedTour,
     gems: state.gems,
     cosmetics: state.cosmetics,
     memory: state.memoryVerses.map(
@@ -83,6 +86,8 @@ async function flushEvents(
           streak: result.streak,
           longestStreak: Math.max(local.longestStreak, result.longestStreak),
           lastReadDate: result.lastReadDate ?? local.lastReadDate,
+          streakFreezes:
+            result.streakFreezes != null ? result.streakFreezes : local.streakFreezes,
         },
         localKey,
         onCloudState,
@@ -96,8 +101,23 @@ async function flushEvents(
   } else if (gems) {
     const local = loadState()
     if (local) {
-      applyMerged({ ...local, gems: gems.serverGems }, localKey, onCloudState)
+      applyMerged(
+        {
+          ...local,
+          gems: gems.serverGems,
+          ...(gems.streakFreezes != null ? { streakFreezes: gems.streakFreezes } : {}),
+        },
+        localKey,
+        onCloudState,
+      )
     }
+  }
+
+  // Refresh private activity history for Insights (best-effort; never blocks XP sync)
+  try {
+    await fetchActivityHistory({ limit: 200 })
+  } catch {
+    /* offline / unsigned */
   }
 }
 

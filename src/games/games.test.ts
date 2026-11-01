@@ -4,6 +4,13 @@ import { WHO_SAID_IT_BANK } from '../data/games/whoSaidIt'
 import { MATCH_BANK } from '../data/games/matchPassage'
 import { TIMELINE_SETS } from '../data/games/timeline'
 import { PUBLIC_VERSES } from '../data/games/publicVerses'
+import {
+  catalogExternalSources,
+  looksLikeScriptureReference,
+  validateSourceList,
+  validateTheologicalSource,
+  type TheologicalSource,
+} from '../data/games/sources'
 import { completeBibleGame } from '../lib/progress'
 import { computeEventXp } from '../lib/progressEvents'
 import { computeGemDelta } from '../lib/gemEvents'
@@ -133,6 +140,79 @@ describe('question banks', () => {
     expect(new Set(whoQuotes).size).toBe(whoQuotes.length)
     const matchRefs = MATCH_BANK.map((m) => m.reference.trim().toLowerCase())
     expect(new Set(matchRefs).size).toBe(matchRefs.length)
+  })
+
+  it('scripture references look like Bible citations', () => {
+    for (const q of TRIVIA_BANK) {
+      expect(looksLikeScriptureReference(q.reference)).toBe(true)
+    }
+    for (const q of WHO_SAID_IT_BANK) {
+      expect(looksLikeScriptureReference(q.reference)).toBe(true)
+    }
+    for (const m of MATCH_BANK) {
+      expect(looksLikeScriptureReference(m.reference)).toBe(true)
+    }
+  })
+
+  it('doctrinal trivia/who-said-it items carry valid source metadata', () => {
+    const doctrinalTrivia = TRIVIA_BANK.filter((q) => q.theologyTopic)
+    expect(doctrinalTrivia.length).toBeGreaterThanOrEqual(10)
+    for (const q of doctrinalTrivia) {
+      // Narrative/doctrine hybrids may rest on Scripture alone via reference,
+      // but when sources are present they must validate.
+      const issues = validateSourceList(q.sources, q.id)
+      expect(issues).toEqual([])
+      if (q.sources?.length) {
+        expect(q.sources.some((s) => s.org === 'scripture')).toBe(true)
+      }
+    }
+    for (const q of WHO_SAID_IT_BANK.filter((q) => q.theologyTopic && q.sources)) {
+      expect(validateSourceList(q.sources, q.id)).toEqual([])
+    }
+    for (const m of MATCH_BANK.filter((m) => m.sources?.length)) {
+      expect(validateSourceList(m.sources, m.id)).toEqual([])
+    }
+  })
+
+  it('source catalog URLs are https allowlisted and scripture entries omit URLs', () => {
+    for (const s of catalogExternalSources()) {
+      expect(validateTheologicalSource(s, s.title)).toEqual([])
+      if (s.org === 'scripture') {
+        expect(s.url).toBeUndefined()
+      } else {
+        expect(s.url?.startsWith('https://')).toBe(true)
+      }
+    }
+  })
+
+  it('rejects invented or non-allowlisted source links', () => {
+    const bad: TheologicalSource = {
+      org: 'gotquestions',
+      author: 'Fake',
+      title: 'Invented',
+      url: 'https://example.com/not-real',
+      topic: 'Test',
+    }
+    const issues = validateTheologicalSource(bad)
+    expect(issues.some((i) => i.message.includes('allowlist'))).toBe(true)
+
+    const scriptureWithUrl: TheologicalSource = {
+      org: 'scripture',
+      author: 'Holy Scripture',
+      title: 'John 1:1',
+      url: 'https://www.gotquestions.org/what-is-the-gospel.html',
+      topic: 'Test',
+    }
+    expect(validateTheologicalSource(scriptureWithUrl).length).toBeGreaterThan(0)
+  })
+
+  it('key doctrinal topics have researched external attribution', () => {
+    const byId = Object.fromEntries(TRIVIA_BANK.map((q) => [q.id, q]))
+    for (const id of ['tr-30', 'tr-34', 'tr-36', 'tr-40', 'tr-44', 'tr-48', 'tr-49', 'tr-50']) {
+      const q = byId[id]
+      expect(q?.sources?.length).toBeGreaterThan(0)
+      expect(q!.sources!.some((s) => s.org !== 'scripture' && s.url)).toBe(true)
+    }
   })
 })
 
