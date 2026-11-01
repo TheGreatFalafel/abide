@@ -444,7 +444,7 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
                 <strong>{v.reference}</strong>
                 <span className="memory-meta">
                   {' '}
-                  · {v.translationId.toUpperCase()}
+                  · {(v.translationId || 'web').toUpperCase()}
                   {v.topic ? ` · ${v.topic}` : ''}
                   {isDueNow(v) ? ' · Due' : ''}
                 </span>
@@ -503,7 +503,7 @@ export function Memory({ user, onUserChange, onReviewed, onStartQuest }: Props) 
             <div key={v.id} className="memory-card mastered">
               <div>
                 <strong>{v.reference}</strong>
-                <span className="memory-meta"> · {v.translationId.toUpperCase()}</span>
+                <span className="memory-meta"> · {(v.translationId || 'web').toUpperCase()}</span>
                 <p className="memory-preview">{v.text}</p>
                 <span className="memory-meta">
                   Retention · next {v.nextReview}

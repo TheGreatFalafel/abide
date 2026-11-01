@@ -117,16 +117,27 @@ function normalizeFsrsSnapshot(
   raw: LegacyLike,
   now: Date,
 ): FsrsCardSnapshot {
+  const due = snap.due || now.toISOString()
+  const reps = Number(snap.reps) || raw.repetitions || 0
+  const scheduledDays = Number(snap.scheduled_days) || 0
+  let lastReview = snap.last_review ?? null
+  if (!lastReview && reps > 0) {
+    const dueMs = new Date(due).getTime()
+    lastReview = new Date(
+      (Number.isFinite(dueMs) ? dueMs : now.getTime()) -
+        Math.max(scheduledDays, 0.01) * 86_400_000,
+    ).toISOString()
+  }
   return {
-    due: snap.due || now.toISOString(),
+    due,
     stability: Number(snap.stability) || 0,
     difficulty: Number(snap.difficulty) || 0,
-    scheduled_days: Number(snap.scheduled_days) || 0,
+    scheduled_days: scheduledDays,
     learning_steps: Number(snap.learning_steps) || 0,
-    reps: Number(snap.reps) || raw.repetitions || 0,
+    reps,
     lapses: Number(snap.lapses) || raw.lapses || 0,
     state: Number(snap.state) || State.New,
-    last_review: snap.last_review ?? null,
+    last_review: lastReview,
   }
 }
 
@@ -156,10 +167,15 @@ function seedFsrsFromLegacy(raw: LegacyLike, now: Date): FsrsCardSnapshot {
         ? State.Review
         : State.Learning
 
-  const card = createEmptyCard(new Date(dueIso))
+  const dueDate = new Date(dueIso)
+  const lastReview =
+    reps > 0
+      ? new Date(dueDate.getTime() - Math.max(intervalDays, 0.01) * 86_400_000)
+      : undefined
+  const card = createEmptyCard(dueDate)
   return fromFsrsCard({
     ...card,
-    due: new Date(dueIso),
+    due: dueDate,
     stability,
     difficulty,
     scheduled_days: intervalDays,
@@ -167,7 +183,7 @@ function seedFsrsFromLegacy(raw: LegacyLike, now: Date): FsrsCardSnapshot {
     reps,
     lapses,
     state,
-    last_review: undefined,
+    last_review: lastReview,
   })
 }
 

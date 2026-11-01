@@ -62,8 +62,16 @@ export function ratingToGrade(rating: number): MemoryGrade {
 }
 
 export function toFsrsCard(snap: FsrsCardSnapshot): Card {
+  const due = new Date(snap.due)
+  let lastReview: Date | undefined = snap.last_review ? new Date(snap.last_review) : undefined
+  // ts-fsrs retrievability() throws FSRSValidationError("Invalid date") when reps > 0
+  // but last_review is missing — common after legacy seed migration.
+  if ((!lastReview || Number.isNaN(lastReview.getTime())) && snap.reps > 0) {
+    const scheduled = Number(snap.scheduled_days) || 0
+    lastReview = new Date(due.getTime() - Math.max(scheduled, 0.01) * 86_400_000)
+  }
   return {
-    due: new Date(snap.due),
+    due,
     stability: snap.stability,
     difficulty: snap.difficulty,
     scheduled_days: snap.scheduled_days,
@@ -71,7 +79,7 @@ export function toFsrsCard(snap: FsrsCardSnapshot): Card {
     reps: snap.reps,
     lapses: snap.lapses,
     state: snap.state as State,
-    last_review: snap.last_review ? new Date(snap.last_review) : undefined,
+    last_review: lastReview,
   }
 }
 
@@ -103,12 +111,17 @@ export function reviewFsrsCard(
   return { card: fromFsrsCard(result.card), rating }
 }
 
-/** Predicted recall probability in [0, 1]. */
+/** Predicted recall probability in [0, 1]. Never throws — Memory UI depends on this. */
 export function retrievabilityOf(snap: FsrsCardSnapshot, now: Date): number {
   if (snap.reps === 0 || snap.stability <= 0) return 0
-  const value = fsrsScheduler.retrievability(toFsrsCard(snap), now)
-  const n = typeof value === 'number' ? value : Number.parseFloat(String(value))
-  return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0
+  if (!snap.due || Number.isNaN(new Date(snap.due).getTime())) return 0
+  try {
+    const value = fsrsScheduler.retrievability(toFsrsCard(snap), now)
+    const n = typeof value === 'number' ? value : Number.parseFloat(String(value))
+    return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0
+  } catch {
+    return 0
+  }
 }
 
 export function dateKeyFromIso(iso: string): string {

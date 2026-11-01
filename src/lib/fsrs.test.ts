@@ -171,9 +171,44 @@ describe('legacy migration', () => {
     expect(migrated.id).toBe('john-3-16-16:web')
     expect(migrated.fsrs.reps).toBe(5)
     expect(migrated.fsrs.lapses).toBe(1)
-    expect(migrated.fsrs.last_review).toBeNull()
+    // Seeded last_review so ts-fsrs.retrievability won't throw (no invented rating history).
+    expect(migrated.fsrs.last_review).toBeTruthy()
     expect(migrated.reviewHistory).toEqual([])
     expect(migrated.scheduler).toBe('fsrs-6')
+  })
+
+  it('does not crash Memory ranking for legacy cards missing last_review', () => {
+    const migrated = migrateMemoryVerse(
+      {
+        id: 'john-3-16',
+        reference: 'John 3:16',
+        text: 'For God so loved the world...',
+        bookName: 'John',
+        bookId: 'john',
+        chapter: 3,
+        verseStart: 16,
+        verseEnd: 16,
+        addedAt: '2024-01-01',
+        nextReview: '2024-01-01',
+        intervalDays: 1,
+        ease: 2.5,
+        repetitions: 3,
+        lapses: 0,
+        status: 'learning',
+      },
+      NOW,
+    )
+    expect(() =>
+      memoryDashboardStats({ memoryVerses: [migrated], memoryReviewsToday: 0 }, NOW),
+    ).not.toThrow()
+    // Even a pre-fix snapshot with null last_review must be safe for ranking.
+    const broken = {
+      ...migrated,
+      fsrs: { ...migrated.fsrs, last_review: null },
+    }
+    expect(() =>
+      memoryDashboardStats({ memoryVerses: [broken], memoryReviewsToday: 0 }, NOW),
+    ).not.toThrow()
   })
 
   it('keeps legacy id when translation cannot be determined', () => {
