@@ -83,10 +83,12 @@ export async function commitProgressEvents(
         type: event.type,
         payload: event.payload ?? {},
         awardedXp: event.awardedXp,
+        activityKey: event.activityKey,
         clientCreatedAt: new Date(event.clientCreatedAt),
       })
       inserted.push(event)
     } catch (err) {
+      // PK or (user_id, activity_key) unique — both are idempotent retries.
       if (isUniqueViolation(err)) {
         duplicates.push(event.id)
         continue

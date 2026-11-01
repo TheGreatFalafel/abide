@@ -9,7 +9,9 @@ import {
   reviewFsrsCard,
 } from './fsrsEngine'
 import {
+  deterministicProgressEventId,
   newProgressEventId,
+  readingSessionActivityKey,
   type ProgressEventType,
 } from './progressEvents'
 import { makeMemoryId as makeMemoryIdWithTranslation, sameScriptureRef } from './memoryIds'
@@ -72,10 +74,11 @@ const STORAGE_KEY = 'abide-user-v1'
 function queueClientEvent(
   type: ProgressEventType,
   payload: Record<string, unknown> = {},
+  opts?: { id?: string },
 ): void {
   try {
     enqueueProgressEvent({
-      id: newProgressEventId(),
+      id: opts?.id ?? newProgressEventId(),
       type,
       payload,
       clientCreatedAt: new Date().toISOString(),
@@ -1472,8 +1475,8 @@ export function completeBibleGame(
 
 /**
  * Record a free reading session in Bible Reader (history only — 0 XP).
- * Deduped per book+chapter+day via a stable daily activity id pattern stored
- * as a normal UUID event with dayKey metadata (client still uses UUID ids).
+ * Uses a deterministic event id + activityKey so the same book/chapter/
+ * translation/UTC-day syncing from two devices collapses server-side.
  */
 export function recordReadingSession(
   _state: UserState,
@@ -1487,31 +1490,42 @@ export function recordReadingSession(
   },
 ): void {
   const day = todayKey()
+  const activityKey =
+    readingSessionActivityKey({
+      bookId: opts.bookId,
+      chapter: opts.chapter,
+      day,
+      translationId: opts.translationId,
+    }) ?? `read:${opts.bookId}:${opts.chapter}:${day}`
+  // Legacy local field kept for older history rows during merge.
   const activityDayKey = `read:${opts.bookId}:${opts.chapter}:${day}`
   try {
     const already = listActivityHistory({ types: ['reading_session'], sinceDay: day }).some(
-      (r) => r.payload?.activityDayKey === activityDayKey,
+      (r) =>
+        r.payload?.activityKey === activityKey ||
+        r.payload?.activityDayKey === activityDayKey ||
+        r.id === deterministicProgressEventId(activityKey),
     )
     if (already) return
   } catch {
     /* continue — still record once */
   }
-  queueClientEvent('reading_session', {
-    bookId: opts.bookId,
-    bookName: opts.bookName,
-    chapter: opts.chapter,
-    translationId: opts.translationId,
-    day,
-    planDay: opts.planDay ?? null,
-    activityDayKey,
-  })
+  queueClientEvent(
+    'reading_session',
+    {
+      bookId: opts.bookId,
+      bookName: opts.bookName,
+      chapter: opts.chapter,
+      translationId: opts.translationId,
+      day,
+      planDay: opts.planDay ?? null,
+      activityKey,
+      activityDayKey,
+    },
+    { id: deterministicProgressEventId(activityKey) },
+  )
 }
 
-/**
- * Update a card’s text. When `translationId` differs from the card’s current
- * translation, re-keys identity via the translation migrator (preserves FSRS).
- * Do not use this as a bulk migration path — prefer `standardizeMemoryTranslations`.
- */
 export function refreshMemoryText(
   state: UserState,
   verseId: string,

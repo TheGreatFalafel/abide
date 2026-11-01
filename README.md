@@ -105,23 +105,32 @@ npm run db:push
 | `memory_challenges` | Async circle memory competitions |
 | `memory_challenge_scores` | Per-user challenge tallies |
 
-Phase 2/5 tables (`progress_events`, `challenge_submissions`, `gem_events`, `profiles.gems`) are also ensured at runtime via `getReadyDb()` / `ensureSchema()` so Memory sync and competitions recover after a deploy that skipped `db:migrate`. Prefer running migrations in shared environments; the runtime path is idempotent backup.
+Phase 2/5 tables (`progress_events`, `challenge_submissions`, `gem_events`, `profiles.gems`) are also ensured at runtime via `getReadyDb()` / `ensureSchema()` so Memory sync and competitions recover after a deploy that skipped `db:migrate`. Prefer running migrations in shared environments; the runtime path is an idempotent, additive safety net (advisory-locked) — **not** a substitute for migrations in production.
 
 ### Migrations (Phase 2+)
-Versioned SQL lives in `drizzle/`:
+Versioned SQL lives in `drizzle/`. Apply with:
+
+```bash
+# Requires DATABASE_URL in .env.local (or environment).
+npm run db:migrate
+```
 
 | File | Purpose |
 |---|---|
 | `0000_baseline.sql` | profiles, circles, nudges, memory challenges |
 | `0001_phase2_integrity.sql` | `progress_events`, `challenge_submissions`, rate-limit indexes |
+| `0002_phase5_gems.sql` | gem ledger (`gem_events`, `profiles.gems`) |
+| `0003_activity_history_index.sql` | `progress_events (user_id, client_created_at DESC)` |
+| `0004_progress_activity_key.sql` | nullable `activity_key` + partial unique `(user_id, activity_key)` |
+
+**Deployment requirement:** run `npm run db:migrate` against the target Neon database **before or with** the app release that writes `activity_key`. Fresh DBs and existing DBs both apply safely (`IF NOT EXISTS` / nullable column). Do not rely solely on `ensureSchema` for production schema changes.
 
 ```bash
-npm run db:migrate   # preferred for shared environments
-# or, for a brand-new empty DB during local experimentation:
+# brand-new empty DB during local experimentation only:
 npm run db:push
 ```
 
-**Rollback (0001):** drop `challenge_submissions` and `progress_events` (and the nudge indexes). Does not delete reading/memory content in `profiles.state_json`.
+**Rollback (0004):** `DROP INDEX IF EXISTS progress_events_user_activity_uidx;` then optionally `ALTER TABLE progress_events DROP COLUMN activity_key;` — existing event rows remain. **Rollback (0001):** drop `challenge_submissions` and `progress_events` (destructive to ledger). Does not delete reading/memory content in `profiles.state_json`.
 
 ### Progress integrity (Phase 2)
 - Local XP still updates immediately (offline-friendly).

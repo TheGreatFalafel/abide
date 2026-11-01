@@ -63,17 +63,20 @@ describe('computeEventXp', () => {
     ).toBe(0)
   })
 
-  it('accepts reading_session with zero XP', () => {
+  it('accepts reading_session with zero XP and server activityKey', () => {
     const result = validateProgressEvent(
       event({
         id: '33333333-3333-4333-8333-333333333333',
         type: 'reading_session',
-        payload: { bookId: 'john', chapter: 1, day: '2026-06-15' },
+        payload: { bookId: 'john', chapter: 1, day: '2026-06-15', translationId: 'web' },
       }),
       NOW,
     )
     expect(result.ok).toBe(true)
-    if (result.ok) expect(result.event.awardedXp).toBe(0)
+    if (result.ok) {
+      expect(result.event.awardedXp).toBe(0)
+      expect(result.event.activityKey).toBe('read:john:1:2026-06-15:web')
+    }
   })
 })
 

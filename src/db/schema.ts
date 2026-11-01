@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import {
   pgTable,
   text,
@@ -39,6 +40,11 @@ export const progressEvents = pgTable(
     type: text('type').notNull(),
     payload: jsonb('payload').notNull().default({}),
     awardedXp: integer('awarded_xp').notNull().default(0),
+    /**
+     * Optional semantic idempotency key (e.g. reading_session).
+     * NULL for legacy / non-keyed events — excluded from the unique index.
+     */
+    activityKey: text('activity_key'),
     clientCreatedAt: timestamp('client_created_at', { withTimezone: true }).notNull(),
     serverReceivedAt: timestamp('server_received_at', { withTimezone: true })
       .defaultNow()
@@ -48,6 +54,9 @@ export const progressEvents = pgTable(
     index('progress_events_user_idx').on(t.userId),
     index('progress_events_user_received_idx').on(t.userId, t.serverReceivedAt),
     index('progress_events_user_client_created_idx').on(t.userId, t.clientCreatedAt),
+    uniqueIndex('progress_events_user_activity_uidx')
+      .on(t.userId, t.activityKey)
+      .where(sql`${t.activityKey} is not null`),
   ],
 )
 

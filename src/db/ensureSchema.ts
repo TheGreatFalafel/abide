@@ -1,15 +1,24 @@
 import { neon } from '@neondatabase/serverless'
 
 /**
- * Idempotent DDL for Phase 2/5 tables that Memory sync + competitions need.
- * Safe to call on every cold start when production was deployed without
- * `drizzle-kit migrate` — matches the additive SQL in drizzle/0001 and 0002.
+ * Idempotent DDL safety net for Phase 2/5 tables.
+ * Prefer `npm run db:migrate` in shared/production environments (drizzle/0000–0004).
+ * Runtime path is additive only — never drops columns or data.
+ * Uses a session advisory lock so concurrent cold starts do not race DDL.
  */
 export async function ensureSchema(databaseUrl = process.env.DATABASE_URL): Promise<void> {
   if (!databaseUrl) return
 
   const sql = neon(databaseUrl)
 
+  // Serialize multi-instance cold-start DDL (lock id is app-stable, not secret).
+  try {
+    await sql`SELECT pg_advisory_lock(872014004)`
+  } catch {
+    // Some Neon HTTP plans may lack advisory locks; continue with IF NOT EXISTS DDL.
+  }
+
+  try {
   await sql`
     CREATE TABLE IF NOT EXISTS "progress_events" (
       "id" text PRIMARY KEY NOT NULL,
@@ -21,6 +30,9 @@ export async function ensureSchema(databaseUrl = process.env.DATABASE_URL): Prom
       "server_received_at" timestamptz DEFAULT now() NOT NULL
     )
   `
+  await sql`
+    ALTER TABLE "progress_events" ADD COLUMN IF NOT EXISTS "activity_key" text
+  `
   await sql`CREATE INDEX IF NOT EXISTS "progress_events_user_idx" ON "progress_events" ("user_id")`
   await sql`
     CREATE INDEX IF NOT EXISTS "progress_events_user_received_idx"
@@ -29,6 +41,11 @@ export async function ensureSchema(databaseUrl = process.env.DATABASE_URL): Prom
   await sql`
     CREATE INDEX IF NOT EXISTS "progress_events_user_client_created_idx"
     ON "progress_events" ("user_id", "client_created_at" DESC)
+  `
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS "progress_events_user_activity_uidx"
+    ON "progress_events" ("user_id", "activity_key")
+    WHERE "activity_key" IS NOT NULL
   `
 
   await sql`
@@ -234,5 +251,12 @@ export async function ensureSchema(databaseUrl = process.env.DATABASE_URL): Prom
     `
   } catch {
     // Fail closed for freeze purchases until the function exists.
+  }
+  } finally {
+    try {
+      await sql`SELECT pg_advisory_unlock(872014004)`
+    } catch {
+      /* ignore */
+    }
   }
 }

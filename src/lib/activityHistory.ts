@@ -96,6 +96,44 @@ export function recordActivityHistory(
   writeRaw(records)
 }
 
+function readingDedupeKey(r: ActivityHistoryRecord): string | null {
+  const key = typeof r.payload?.activityKey === 'string' ? r.payload.activityKey : ''
+  if (key) return key
+  if (r.type !== 'reading_session') return null
+  const legacy = typeof r.payload?.activityDayKey === 'string' ? r.payload.activityDayKey : ''
+  return legacy || null
+}
+
+/** Prefer synced + earlier clientCreatedAt when collapsing duplicates. */
+function preferHistoryRecord(
+  a: ActivityHistoryRecord,
+  b: ActivityHistoryRecord,
+): ActivityHistoryRecord {
+  if (Boolean(a.synced) !== Boolean(b.synced)) return a.synced ? a : b
+  return a.clientCreatedAt <= b.clientCreatedAt ? a : b
+}
+
+/**
+ * Collapse cross-device reading_session duplicates that share activityKey
+ * (or legacy activityDayKey) but have different UUIDs.
+ */
+export function collapseReadingSessionDuplicates(
+  records: ActivityHistoryRecord[],
+): ActivityHistoryRecord[] {
+  const byKey = new Map<string, ActivityHistoryRecord>()
+  const rest: ActivityHistoryRecord[] = []
+  for (const r of records) {
+    const k = readingDedupeKey(r)
+    if (!k) {
+      rest.push(r)
+      continue
+    }
+    const prev = byKey.get(k)
+    byKey.set(k, prev ? preferHistoryRecord(prev, r) : r)
+  }
+  return [...rest, ...byKey.values()]
+}
+
 /** Merge remote/server rows by id without dropping local-only events. */
 export function mergeActivityHistory(incoming: ActivityHistoryRecord[]): ActivityHistoryRecord[] {
   const map = new Map<string, ActivityHistoryRecord>()
@@ -113,7 +151,7 @@ export function mergeActivityHistory(incoming: ActivityHistoryRecord[]): Activit
     const prev = map.get(cleaned.id)
     map.set(cleaned.id, prev ? { ...prev, ...cleaned, synced: true } : cleaned)
   }
-  const merged = [...map.values()].sort((a, b) =>
+  const merged = collapseReadingSessionDuplicates([...map.values()]).sort((a, b) =>
     a.clientCreatedAt.localeCompare(b.clientCreatedAt),
   )
   writeRaw(merged)

@@ -21,6 +21,22 @@ function writeRaw(events: ProgressEventInput[]): void {
 export function enqueueProgressEvent(event: ProgressEventInput): void {
   const q = readRaw()
   if (q.some((e) => e.id === event.id)) return
+  // Avoid queuing a second reading_session with the same semantic key (offline retries).
+  if (event.type === 'reading_session') {
+    const key =
+      typeof event.payload?.activityKey === 'string' ? event.payload.activityKey : ''
+    if (
+      key &&
+      q.some(
+        (e) =>
+          e.type === 'reading_session' &&
+          typeof e.payload?.activityKey === 'string' &&
+          e.payload.activityKey === key,
+      )
+    ) {
+      return
+    }
+  }
   q.push(event)
   writeRaw(q)
   // Durable analytics cache (survives queue drain after sync)

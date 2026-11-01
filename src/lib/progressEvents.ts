@@ -26,6 +26,11 @@ export type ProgressEventInput = {
 
 export type ValidatedProgressEvent = ProgressEventInput & {
   awardedXp: number
+  /**
+   * Server-derived semantic idempotency key (null = no uniqueness beyond PK).
+   * Never trust a client-supplied activityKey as authority.
+   */
+  activityKey: string | null
 }
 
 const UUID_RE =
@@ -55,6 +60,67 @@ export function isProgressEventType(value: unknown): value is ProgressEventType 
 
 export function newProgressEventId(): string {
   return crypto.randomUUID()
+}
+
+/**
+ * Stable reading-session key: book + chapter + UTC day + translation.
+ * Same logical sync from two devices shares this key; different translations
+ * or days remain distinct. Same-day revisits of the same passage collapse
+ * (client cannot share a per-sitting id across devices before first sync).
+ */
+export function readingSessionActivityKey(opts: {
+  bookId: string
+  chapter: number
+  day: string
+  translationId: string
+}): string | null {
+  const book = opts.bookId.trim().toLowerCase().slice(0, 40)
+  const chapter = Math.floor(Number(opts.chapter))
+  const day = opts.day.trim().slice(0, 10)
+  const tr = opts.translationId.trim().toLowerCase().slice(0, 16) || 'web'
+  if (!book || !/^[a-z0-9_-]+$/i.test(book)) return null
+  if (!Number.isFinite(chapter) || chapter < 1 || chapter > 200) return null
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null
+  return `read:${book}:${chapter}:${day}:${tr}`.slice(0, 160)
+}
+
+/** UUID-shaped id derived from a seed so dual-device syncs collide on PK. */
+export function deterministicProgressEventId(seed: string): string {
+  let h1 = 2166136261 >>> 0
+  let h2 = 2166136261 >>> 0
+  const a = seed
+  const b = `abide:${seed}`
+  for (let i = 0; i < a.length; i++) {
+    h1 ^= a.charCodeAt(i)
+    h1 = Math.imul(h1, 16777619) >>> 0
+  }
+  for (let i = 0; i < b.length; i++) {
+    h2 ^= b.charCodeAt(i)
+    h2 = Math.imul(h2, 16777619) >>> 0
+  }
+  const hex = (
+    h1.toString(16).padStart(8, '0') +
+    h2.toString(16).padStart(8, '0') +
+    (h1 ^ h2).toString(16).padStart(8, '0') +
+    ((h2 ^ 0xa5a5a5a5) >>> 0).toString(16).padStart(8, '0')
+  ).slice(0, 32)
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-5${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20, 32)}`
+}
+
+/** Resolve server activity key from type + payload + client time (UTC day). */
+export function resolveProgressActivityKey(
+  type: ProgressEventType,
+  payload: Record<string, unknown>,
+  clientCreatedAtIso: string,
+): string | null {
+  if (type !== 'reading_session') return null
+  const bookId = typeof payload.bookId === 'string' ? payload.bookId : ''
+  const chapter = Number(payload.chapter)
+  const translationId =
+    typeof payload.translationId === 'string' ? payload.translationId : 'web'
+  // Day from validated clientCreatedAt (offline delayed sync), not wall clock.
+  const day = clientCreatedAtIso.slice(0, 10)
+  return readingSessionActivityKey({ bookId, chapter, day, translationId })
 }
 
 function asBool(v: unknown): boolean {
@@ -205,10 +271,23 @@ export function validateProgressEvent(
     // Ignore — server recomputes; do not fail solely for extra fields
   }
 
+  const clientCreatedAtIso = new Date(created).toISOString()
+
+  if (e.type === 'reading_session') {
+    const bookId = typeof payload.bookId === 'string' ? payload.bookId.trim() : ''
+    const chapter = Math.floor(Number(payload.chapter))
+    if (!bookId || !Number.isFinite(chapter) || chapter < 1) {
+      return { ok: false, error: { id, error: 'reading_session requires bookId and chapter' } }
+    }
+  }
+
   const awardedXp = computeEventXp(e.type, payload)
   if (e.type !== 'legacy_import' && e.type !== 'memory_quiz' && awardedXp < 0) {
     return { ok: false, error: { id, error: 'Invalid award' } }
   }
+
+  // Server-derived key only — ignore client activityKey claims.
+  const activityKey = resolveProgressActivityKey(e.type, payload, clientCreatedAtIso)
 
   return {
     ok: true,
@@ -216,8 +295,9 @@ export function validateProgressEvent(
       id,
       type: e.type,
       payload,
-      clientCreatedAt: new Date(created).toISOString(),
+      clientCreatedAt: clientCreatedAtIso,
       awardedXp,
+      activityKey,
     },
   }
 }
@@ -232,6 +312,7 @@ export function validateProgressEventBatch(
   const accepted: ValidatedProgressEvent[] = []
   const rejected: EventValidationError[] = []
   const seen = new Set<string>()
+  const seenActivity = new Set<string>()
 
   if (!Array.isArray(events)) {
     return { accepted, rejected: [{ error: 'events must be an array' }] }
@@ -249,6 +330,16 @@ export function validateProgressEventBatch(
     if (seen.has(result.event.id)) {
       rejected.push({ id: result.event.id, error: 'Duplicate id in batch' })
       continue
+    }
+    if (result.event.activityKey) {
+      if (seenActivity.has(result.event.activityKey)) {
+        rejected.push({
+          id: result.event.id,
+          error: 'Duplicate activity key in batch',
+        })
+        continue
+      }
+      seenActivity.add(result.event.activityKey)
     }
     seen.add(result.event.id)
     accepted.push(result.event)
