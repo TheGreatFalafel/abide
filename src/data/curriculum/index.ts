@@ -5,8 +5,14 @@ import { DOCTRINE_OF_CHRIST } from './topics/doctrine-of-christ'
 import { DOCTRINE_OF_SALVATION } from './topics/doctrine-of-salvation'
 import { DOCTRINE_OF_CHURCH } from './topics/doctrine-of-church'
 import { DOCTRINE_OF_LAST_THINGS } from './topics/doctrine-of-last-things'
+import { EARLY_CHURCH } from './topics/early-church'
+import { GOSPEL_FOUNDATIONS } from './topics/gospel-foundations'
+import { CHRISTIAN_APOLOGETICS } from './topics/christian-apologetics'
+import { SHARING_YOUR_FAITH } from './topics/sharing-your-faith'
+import { WORLDVIEW_ATHEISM } from './topics/worldview-atheism'
+import { UNDERSTANDING_ISLAM } from './topics/understanding-islam'
 import { assertValidTopic } from './validate'
-import type { CurriculumLesson, CurriculumTopic } from './types'
+import type { CurriculumDomain, CurriculumLesson, CurriculumTopic } from './types'
 import { CURRICULUM_CATALOG_VERSION } from './types'
 
 export * from './types'
@@ -16,8 +22,9 @@ export { curriculumPrimaryPassagesReady } from './scriptureGate'
 export { validateCurriculumTopic, assertValidTopic, validatePassageRef } from './validate'
 
 /**
- * Published theology topics (browse order).
- * Nature of Man lesson IDs are stable — never rename existing completions.
+ * Published Learn curriculum topics (browse order).
+ * Lesson IDs are stable — never rename existing completions.
+ * Theology topics first; Church History eras follow.
  */
 export const CURRICULUM_TOPICS: CurriculumTopic[] = [
   DOCTRINE_OF_SCRIPTURE,
@@ -27,6 +34,12 @@ export const CURRICULUM_TOPICS: CurriculumTopic[] = [
   DOCTRINE_OF_SALVATION,
   DOCTRINE_OF_CHURCH,
   DOCTRINE_OF_LAST_THINGS,
+  EARLY_CHURCH,
+  GOSPEL_FOUNDATIONS,
+  CHRISTIAN_APOLOGETICS,
+  SHARING_YOUR_FAITH,
+  WORLDVIEW_ATHEISM,
+  UNDERSTANDING_ISLAM,
 ]
 
 const byId = new Map<string, CurriculumTopic>()
@@ -49,6 +62,14 @@ export function getCurriculumCatalogVersion(): number {
 
 export function listCurriculumTopics(): CurriculumTopic[] {
   return CURRICULUM_TOPICS
+}
+
+export function topicDomain(topic: CurriculumTopic): CurriculumDomain {
+  return topic.domain ?? 'theology'
+}
+
+export function listCurriculumTopicsByDomain(domain: CurriculumDomain): CurriculumTopic[] {
+  return CURRICULUM_TOPICS.filter((t) => topicDomain(t) === domain)
 }
 
 export function getCurriculumTopic(id: string): CurriculumTopic | undefined {

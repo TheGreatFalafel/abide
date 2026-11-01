@@ -303,6 +303,15 @@ export type CurriculumProgressState = {
     string,
     { correctMc: number; totalMc: number; completedAt: string }
   >
+  /** Partial bite-sized lesson resume; cleared on complete. */
+  draft?: {
+    lessonId: string
+    subject: 'curriculum'
+    stepIndex: number
+    correct: number
+    total: number
+    updatedAt: string
+  } | null
 }
 
 /** Opt-in local reminder prefs — never requested on first launch. */

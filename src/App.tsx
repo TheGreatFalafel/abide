@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { scrollWindowToTop } from './lib/scroll'
 import { Onboarding } from './components/Onboarding'
 import { Home, type HomeView } from './components/Home'
 import { ReadingSession } from './components/ReadingSession'
 import { Celebration } from './components/Celebration'
 import { SectionQuizSession } from './components/SectionQuiz'
 import { MemoryQuest } from './components/MemoryQuest'
-import { CurriculumLessonSession } from './components/CurriculumLesson'
-import { LanguageLessonSession } from './components/languages/LanguageLessonSession'
+import { BiteSizedLessonSession } from './components/biteSized/BiteSizedLessonSession'
 import { GameSession } from './components/games/GameSession'
 import type { LanguageTrackId } from './data/languages'
 import { CloudBridge } from './components/CloudBridge'
@@ -92,6 +92,24 @@ export default function App() {
     url.searchParams.set('view', next)
     window.history.pushState({ view: next }, '', url)
   }, [])
+
+  // Opening a lesson / celebration / game must not inherit the prior screen's scroll.
+  const screenScrollKey =
+    screen.name === 'lesson'
+      ? `lesson:${screen.day}`
+      : screen.name === 'curriculumLesson'
+        ? `curriculum:${screen.lessonId}`
+        : screen.name === 'languageLesson'
+          ? `language:${screen.track}:${screen.lessonId}`
+          : screen.name === 'chapterQuiz'
+            ? `quiz:${screen.quizId}`
+            : screen.name === 'bibleGame'
+              ? `game:${screen.gameId}:${screen.difficulty}`
+              : screen.name
+
+  useEffect(() => {
+    scrollWindowToTop('auto')
+  }, [screenScrollKey])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -307,7 +325,8 @@ export default function App() {
       <>
         {pwa}
         {bridge}
-        <CurriculumLessonSession
+        <BiteSizedLessonSession
+          subject="curriculum"
           lessonId={screen.lessonId}
           user={user}
           onUserChange={handleUserChange}
@@ -329,7 +348,8 @@ export default function App() {
       <>
         {pwa}
         {bridge}
-        <LanguageLessonSession
+        <BiteSizedLessonSession
+          subject="language"
           track={screen.track}
           lessonId={screen.lessonId}
           user={user}

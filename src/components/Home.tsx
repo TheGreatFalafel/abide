@@ -221,6 +221,12 @@ export function Home({
     setContentKey(view)
   }, [view])
 
+  // Tab / view switches remount main content; also reset window scroll.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [contentKey])
+
   useEffect(() => {
     if (!profileOpen) return
     function onDoc(e: MouseEvent | TouchEvent) {

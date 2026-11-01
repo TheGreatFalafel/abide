@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { whoSaidItForDifficulty } from '../../data/games/whoSaidIt'
 import type { GameSessionProps } from '../../games/types'
+import { AriReactionCue } from '../AriReactionCue'
 import { GameChrome } from './GameChrome'
 import { SourceDetails } from './SourceDetails'
 
@@ -100,6 +101,7 @@ export function WhoSaidIt({ difficulty, onComplete, onBack }: GameSessionProps) 
       </div>
       {checked && (
         <div className="game-feedback">
+          <AriReactionCue active correct={ok} />
           <p className={`nudge ${ok ? 'good' : 'risk'}`}>
             {ok ? 'Correct. ' : 'Not quite. '}
             {q.explanation} ({q.reference})

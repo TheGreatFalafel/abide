@@ -1,6 +1,6 @@
 'use client'
 
-import { useId } from 'react'
+import { useCallback, useId, useState, type KeyboardEvent } from 'react'
 import {
   clothesColor,
   hairColor as hairFill,
@@ -35,6 +35,10 @@ type Props = {
   /** Preview overrides (shop / customizer). */
   previewAppearance?: Partial<AvatarAppearance>
   previewEquipped?: Partial<CosmeticsState['equipped']>
+  /** Soft blink + idle; honors prefers-reduced-motion via CSS. */
+  animate?: boolean
+  /** Enable click/tap expressive flash (learner’s character, not a mascot). */
+  interactive?: boolean
 }
 
 function resolveAvatar(props: Props): PublicAvatar {
@@ -60,101 +64,153 @@ function HairLayer({
   if (style === 'bald') return null
   if (style === 'short') {
     return (
-      <path
-        d="M22 28c1-8 6-12 14-12s13 4 14 12c-3-4-8-6-14-6s-11 2-14 6z"
-        fill={color}
-      />
+      <g fill={color}>
+        <path d="M20 29c1.5-9 7-14 16-14s14.5 5 16 14c-3.5-4.5-9-7-16-7s-12.5 2.5-16 7z" />
+        <path d="M21 30c0.5-2 2-3.5 4-4.2" fill="none" stroke="#fff" strokeWidth="1" opacity="0.15" />
+      </g>
     )
   }
   if (style === 'bun') {
     return (
       <g fill={color}>
-        <path d="M20 30c2-10 8-14 16-14s14 4 16 14c-4-5-9-7-16-7s-12 2-16 7z" />
-        <circle cx="36" cy="14" r="5.5" />
+        <path d="M19 31c2-11 8.5-15.5 17-15.5s15 4.5 17 15.5c-4-5.5-9.5-7.5-17-7.5s-13 2-17 7.5z" />
+        <circle cx="36" cy="13.5" r="5.8" />
+        <circle cx="36" cy="12.5" r="2.4" fill="#fff" opacity="0.12" />
       </g>
     )
   }
   if (style === 'braids') {
     return (
       <g fill={color}>
-        <path d="M20 29c2-9 8-13 16-13s14 4 16 13c-4-4-9-6-16-6s-12 2-16 6z" />
-        <path d="M22 32c0 8-2 14-3 18h5c1-4 2-10 2-18z" />
-        <path d="M46 32c0 8 2 14 3 18h-5c-1-4-2-10-2-18z" />
+        <path d="M19 30c2-10 8.5-14.5 17-14.5s15 4.5 17 14.5c-4-4.5-9.5-6.5-17-6.5s-13 2-17 6.5z" />
+        <path d="M21.5 32c0 8.5-2.2 15-3.2 19h5.2c1-4.2 2-10.5 2-19z" />
+        <path d="M46.5 32c0 8.5 2.2 15 3.2 19h-5.2c-1-4.2-2-10.5-2-19z" />
+        <circle cx="21" cy="42" r="1.4" opacity="0.35" />
+        <circle cx="47" cy="42" r="1.4" opacity="0.35" />
       </g>
     )
   }
   if (style === 'curly') {
     return (
       <g fill={color}>
-        <circle cx="22" cy="24" r="5" />
-        <circle cx="30" cy="18" r="5.5" />
-        <circle cx="40" cy="18" r="5.5" />
-        <circle cx="48" cy="24" r="5" />
-        <circle cx="26" cy="28" r="4" />
-        <circle cx="44" cy="28" r="4" />
+        <circle cx="21" cy="24" r="5.2" />
+        <circle cx="29" cy="17.5" r="5.6" />
+        <circle cx="39" cy="17" r="5.8" />
+        <circle cx="47.5" cy="23.5" r="5.2" />
+        <circle cx="25" cy="29" r="4.2" />
+        <circle cx="43.5" cy="28.5" r="4.2" />
+        <circle cx="34" cy="15" r="4.5" />
       </g>
     )
   }
   // wavy
   return (
-    <path
-      d="M18 30c2-11 9-15 18-15s16 4 18 15c-3-6-9-8-18-8s-15 2-18 8zM18 30c4 2 8 0 12 1s8 3 12 1 8-2 12-1"
-      fill={color}
-    />
+    <g fill={color}>
+      <path d="M17.5 31c2-12 9.5-16.5 18.5-16.5s16.5 4.5 18.5 16.5c-3-6.5-9.5-9-18.5-9s-15.5 2.5-18.5 9z" />
+      <path
+        d="M18 31c3.5 2 7.5 0.2 11.5 1.2s8 3.2 12 1.2 8-2.2 12.5-1"
+        fill="none"
+        stroke={color}
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        opacity="0.85"
+      />
+    </g>
   )
 }
 
-function FaceLayer({ face, skin }: { face: FaceId; skin: string }) {
+function FaceLayer({
+  face,
+  skin,
+  reacting,
+}: {
+  face: FaceId
+  skin: string
+  reacting: boolean
+}) {
   const blush =
-    face === 'warm' || face === 'bright' ? (
+    face === 'warm' || face === 'bright' || reacting ? (
       <>
-        <circle cx="24" cy="36" r="2.2" fill="#e8a090" opacity="0.45" />
-        <circle cx="44" cy="36" r="2.2" fill="#e8a090" opacity="0.45" />
+        <ellipse cx="24" cy="36.5" rx="2.6" ry="1.8" fill="#e8a090" opacity={reacting ? 0.55 : 0.42} />
+        <ellipse cx="44" cy="36.5" rx="2.6" ry="1.8" fill="#e8a090" opacity={reacting ? 0.55 : 0.42} />
       </>
     ) : null
-  const browY = face === 'thoughtful' ? 29.5 : 30.5
-  const smile =
-    face === 'bright' ? (
-      <path d="M28 41c2 3 10 3 12 0" fill="none" stroke="#5a3a2a" strokeWidth="1.6" strokeLinecap="round" />
-    ) : face === 'calm' ? (
-      <path d="M29 41.5c2 1.5 8 1.5 10 0" fill="none" stroke="#5a3a2a" strokeWidth="1.5" strokeLinecap="round" />
-    ) : face === 'thoughtful' ? (
-      <path d="M30 42h8" fill="none" stroke="#5a3a2a" strokeWidth="1.5" strokeLinecap="round" />
-    ) : (
-      <path d="M28.5 41c2.2 2.4 9 2.4 11 0" fill="none" stroke="#5a3a2a" strokeWidth="1.55" strokeLinecap="round" />
-    )
+  const browY = face === 'thoughtful' ? 29.2 : 30.2
+  const smile = reacting ? (
+    <path
+      d="M27.5 41c2.4 3.4 10.6 3.4 13 0"
+      fill="none"
+      stroke="#5a3a2a"
+      strokeWidth="1.65"
+      strokeLinecap="round"
+    />
+  ) : face === 'bright' ? (
+    <path d="M28 41c2 3 10 3 12 0" fill="none" stroke="#5a3a2a" strokeWidth="1.6" strokeLinecap="round" />
+  ) : face === 'calm' ? (
+    <path d="M29 41.5c2 1.5 8 1.5 10 0" fill="none" stroke="#5a3a2a" strokeWidth="1.5" strokeLinecap="round" />
+  ) : face === 'thoughtful' ? (
+    <path d="M30 42h8" fill="none" stroke="#5a3a2a" strokeWidth="1.5" strokeLinecap="round" />
+  ) : (
+    <path d="M28.5 41c2.2 2.4 9 2.4 11 0" fill="none" stroke="#5a3a2a" strokeWidth="1.55" strokeLinecap="round" />
+  )
 
   return (
-    <g>
-      {/* neck */}
-      <rect x="30" y="44" width="8" height="8" rx="2" fill={skin} />
+    <g className="avatar-face">
+      {/* neck with soft shade */}
+      <rect x="30" y="44" width="8" height="9" rx="2.5" fill={skin} />
+      <rect x="30" y="44" width="8" height="9" rx="2.5" fill="#000" opacity="0.06" />
+
       {/* head */}
-      <ellipse cx="34" cy="34" rx="14" ry="15" fill={skin} />
+      <ellipse cx="34" cy="33.5" rx="14.2" ry="15.2" fill={skin} />
+      {/* cheek / forehead light */}
+      <ellipse cx="30" cy="28" rx="7" ry="6" fill="#fff" opacity="0.14" />
+      <ellipse cx="38" cy="36" rx="5" ry="4" fill="#000" opacity="0.04" />
+
+      {/* ears */}
+      <ellipse cx="20.5" cy="34" rx="2.4" ry="3.2" fill={skin} />
+      <ellipse cx="47.5" cy="34" rx="2.4" ry="3.2" fill={skin} />
+      <ellipse cx="20.5" cy="34" rx="1.1" ry="1.6" fill="#c4894a" opacity="0.35" />
+      <ellipse cx="47.5" cy="34" rx="1.1" ry="1.6" fill="#c4894a" opacity="0.35" />
+
       {blush}
+
       {/* eyes */}
-      <ellipse cx="28" cy="33" rx="1.7" ry="2" fill="#2a2018" />
-      <ellipse cx="40" cy="33" rx="1.7" ry="2" fill="#2a2018" />
-      <circle cx="27.5" cy="32.4" r="0.45" fill="#fff" />
-      <circle cx="39.5" cy="32.4" r="0.45" fill="#fff" />
+      <g className="avatar-eyes">
+        <ellipse className="avatar-eye" cx="28" cy="32.8" rx="1.85" ry="2.25" fill="#2a2018" />
+        <ellipse className="avatar-eye" cx="40" cy="32.8" rx="1.85" ry="2.25" fill="#2a2018" />
+        <circle cx="27.45" cy="32.1" r="0.55" fill="#fff" />
+        <circle cx="39.45" cy="32.1" r="0.55" fill="#fff" />
+        <circle cx="28.35" cy="33.4" r="0.35" fill="#fff" opacity="0.35" />
+        <circle cx="40.35" cy="33.4" r="0.35" fill="#fff" opacity="0.35" />
+      </g>
+
       {/* brows */}
       <path
         d={`M24 ${browY}c2-1.5 6-1.5 8 0`}
         fill="none"
         stroke="#3a2a20"
-        strokeWidth="1.2"
+        strokeWidth="1.25"
         strokeLinecap="round"
-        opacity="0.7"
+        opacity="0.72"
       />
       <path
         d={`M36 ${browY}c2-1.5 6-1.5 8 0`}
         fill="none"
         stroke="#3a2a20"
-        strokeWidth="1.2"
+        strokeWidth="1.25"
         strokeLinecap="round"
-        opacity="0.7"
+        opacity="0.72"
       />
-      {/* nose hint */}
-      <path d="M34 34v3.5" stroke="#8a5a40" strokeWidth="1.1" strokeLinecap="round" opacity="0.45" />
+
+      {/* nose */}
+      <path
+        d="M34 33.5c0.4 1.6 0.2 3.2-0.8 3.8"
+        fill="none"
+        stroke="#8a5a40"
+        strokeWidth="1.15"
+        strokeLinecap="round"
+        opacity="0.5"
+      />
       {smile}
     </g>
   )
@@ -170,7 +226,6 @@ function ClothesLayer({
   outfitColor: string | null
 }) {
   const base = clothesColor(clothesId)
-  // Distinct premium silhouettes when an outfit is equipped
   if (outfitId === 'base-scribe' && outfitColor) {
     return (
       <g>
@@ -212,6 +267,8 @@ function ClothesLayer({
       <g>
         <path d="M14 62c2-12 10-18 20-18s18 6 20 18" fill={base} />
         <path d="M24 46c2-4 6-6 10-6s8 2 10 6" fill="none" stroke="#2d3748" strokeWidth="2" opacity="0.35" />
+        <path d="M22 44c-1 4 0 8 1 10" fill="none" stroke={base} strokeWidth="5" strokeLinecap="round" opacity="0.9" />
+        <path d="M46 44c1 4 0 8-1 10" fill="none" stroke={base} strokeWidth="5" strokeLinecap="round" opacity="0.9" />
       </g>
     )
   }
@@ -220,13 +277,24 @@ function ClothesLayer({
       <g>
         <path d="M14 62c2-12 10-18 20-18s18 6 20 18" fill={base} />
         <path d="M30 44l4 6 4-6" fill="#f5efe6" />
+        <path d="M28 45h12" stroke="#fff" strokeWidth="1" opacity="0.25" />
       </g>
     )
   }
   if (clothesId === 'sweater') {
-    return <path d="M12 62c3-14 11-20 22-20s19 6 22 20" fill={base} />
+    return (
+      <g>
+        <path d="M12 62c3-14 11-20 22-20s19 6 22 20" fill={base} />
+        <path d="M18 50h32" stroke="#fff" strokeWidth="1.2" opacity="0.12" />
+      </g>
+    )
   }
-  return <path d="M14 62c2-12 10-18 20-18s18 6 20 18" fill={base} />
+  return (
+    <g>
+      <path d="M14 62c2-12 10-18 20-18s18 6 20 18" fill={base} />
+      <path d="M26 46h16" stroke="#fff" strokeWidth="1" opacity="0.15" />
+    </g>
+  )
 }
 
 function AccessoryLayer({ id }: { id: string | null }) {
@@ -321,6 +389,8 @@ export function AbideAvatar({
   className = '',
   previewAppearance,
   previewEquipped,
+  animate = true,
+  interactive = false,
 }: Props) {
   const avatar = resolveAvatar({ user, publicAvatar, cosmetics, previewAppearance, previewEquipped })
   const { appearance, equipped } = avatar
@@ -338,12 +408,44 @@ export function AbideAvatar({
   const outfitColor = outfitId ? (baseItem?.color ?? null) : null
   const dim = avatarPixelSize(size)
   const gradId = useId().replace(/:/g, '')
+  const [reacting, setReacting] = useState(false)
+
+  const flash = useCallback(() => {
+    if (!interactive) return
+    setReacting(true)
+    window.setTimeout(() => setReacting(false), 700)
+  }, [interactive])
+
+  const onKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (!interactive) return
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        flash()
+      }
+    },
+    [flash, interactive],
+  )
 
   return (
     <div
-      className={`abide-avatar human ${size} ${className}`}
+      className={[
+        'abide-avatar',
+        'human',
+        size,
+        animate ? 'avatar-anim' : '',
+        reacting ? 'avatar-react' : '',
+        interactive ? 'avatar-interactive' : '',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
       style={{ width: dim, height: dim }}
       aria-label="Abide avatar"
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onClick={interactive ? flash : undefined}
+      onKeyDown={interactive ? onKeyDown : undefined}
     >
       <svg viewBox="0 0 64 64" width={dim} height={dim} role="img">
         <defs>
@@ -356,7 +458,7 @@ export function AbideAvatar({
         <rect x="2" y="2" width="60" height="60" rx="16" fill={frame} />
         <rect x="5" y="5" width="54" height="54" rx="13" fill={`url(#${gradId})`} />
         <ClothesLayer clothesId={appearance.clothes} outfitId={outfitId} outfitColor={outfitColor} />
-        <FaceLayer face={appearance.face} skin={skin} />
+        <FaceLayer face={appearance.face} skin={skin} reacting={reacting} />
         <HairLayer style={appearance.hair} color={hair} />
         <AccessoryLayer id={equipped.accessory} />
         <FrameOverlay color={frame} id={equipped.frame} />

@@ -40,9 +40,12 @@ type EsvResponse = {
 }
 
 const cache = new Map<string, PassageContent>()
+/** Deduplicate concurrent identical fetches (prevents race thrash / double network). */
+const inflight = new Map<string, Promise<PassageContent>>()
 
 export function clearPassageCache(): void {
   cache.clear()
+  inflight.clear()
   void clearStoredPassages()
 }
 
@@ -323,23 +326,12 @@ export async function fetchVerseRange(
   return fetchQuery(query, opts)
 }
 
-export async function fetchQuery(
+async function fetchQueryNetwork(
   query: string,
   opts: FetchOptions,
+  stored: PassageContent | undefined,
 ): Promise<PassageContent> {
   const key = cacheKey(opts.translation, query)
-  const hit = cache.get(key)
-  if (hit) return hit
-
-  const stored = await readStoredPassage(key)
-  if (stored) {
-    cache.set(key, stored)
-    // Prefer network refresh when online; fall through on failure
-    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-      return { ...stored, fromOfflineCache: true }
-    }
-  }
-
   try {
     let content: PassageContent
     if (opts.translation === 'esv') {
@@ -366,6 +358,37 @@ export async function fetchQuery(
       )
     }
     throw err
+  }
+}
+
+export async function fetchQuery(
+  query: string,
+  opts: FetchOptions,
+): Promise<PassageContent> {
+  const key = cacheKey(opts.translation, query)
+  const hit = cache.get(key)
+  if (hit) return hit
+
+  const pending = inflight.get(key)
+  if (pending) return pending
+
+  const work = (async () => {
+    const stored = await readStoredPassage(key)
+    if (stored) {
+      cache.set(key, stored)
+      // Prefer network refresh when online; fall through on failure
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        return { ...stored, fromOfflineCache: true }
+      }
+    }
+    return fetchQueryNetwork(query, opts, stored ?? undefined)
+  })()
+
+  inflight.set(key, work)
+  try {
+    return await work
+  } finally {
+    inflight.delete(key)
   }
 }
 

@@ -128,6 +128,17 @@ export type LanguageCourse = {
   version: number
 }
 
+/** In-progress bite-sized language session (cleared on complete). */
+export type LanguageLessonDraft = {
+  lessonId: string
+  subject: 'language'
+  track?: LanguageTrackId
+  stepIndex: number
+  correct: number
+  total: number
+  updatedAt: string
+}
+
 export type LanguageTrackProgress = {
   completedLessonIds: string[]
   lastLessonId: string | null
@@ -135,6 +146,8 @@ export type LanguageTrackProgress = {
   vocabCards: LanguageVocabCard[]
   /** Alphabet recognition drills finished (once) */
   alphabetMastered: boolean
+  /** Partial bite-sized lesson resume */
+  draft?: LanguageLessonDraft | null
 }
 
 export type LanguageProgress = {
@@ -152,6 +165,7 @@ export function emptyTrackProgress(): LanguageTrackProgress {
     lessonScores: {},
     vocabCards: [],
     alphabetMastered: false,
+    draft: null,
   }
 }
 

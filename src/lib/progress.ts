@@ -853,6 +853,7 @@ export function completeCurriculumLesson(
       ...curriculum.lessonScores,
       [opts.lessonId]: keepPrevious ? previousScore : incomingScore,
     },
+    draft: null,
   }
 
   let next: UserState = {
@@ -1017,6 +1018,7 @@ export function completeLanguageLesson(
       track.alphabetMastered ||
       opts.lessonId === 'greek-alphabet' ||
       opts.lessonId === 'hebrew-consonants',
+    draft: null,
   }
 
   let next: UserState = setLanguageTrack(

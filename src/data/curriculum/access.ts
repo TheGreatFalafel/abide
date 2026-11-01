@@ -99,11 +99,27 @@ export function migrateCurriculumProgress(
     : []
   const lessonScores =
     raw.lessonScores && typeof raw.lessonScores === 'object' ? { ...raw.lessonScores } : {}
+  const draftRaw = (raw as { draft?: unknown }).draft
+  let draft: CurriculumProgress['draft'] = null
+  if (draftRaw && typeof draftRaw === 'object') {
+    const d = draftRaw as Record<string, unknown>
+    if (typeof d.lessonId === 'string' && typeof d.stepIndex === 'number') {
+      draft = {
+        lessonId: d.lessonId,
+        subject: 'curriculum',
+        stepIndex: Math.max(0, Math.floor(d.stepIndex)),
+        correct: typeof d.correct === 'number' ? Math.max(0, Math.floor(d.correct)) : 0,
+        total: typeof d.total === 'number' ? Math.max(0, Math.floor(d.total)) : 0,
+        updatedAt: typeof d.updatedAt === 'string' ? d.updatedAt : new Date().toISOString(),
+      }
+    }
+  }
   return {
     catalogVersion: CURRICULUM_CATALOG_VERSION,
     completedLessonIds: completed,
     lastLessonId: typeof raw.lastLessonId === 'string' ? raw.lastLessonId : null,
     lessonScores,
+    draft,
   }
 }
 
@@ -133,10 +149,22 @@ export function mergeCurriculumProgress(
     if (aAt || bAt) return aAt >= bAt ? a.lastLessonId : b.lastLessonId
     return a.lastLessonId
   })()
+  // Prefer the newer in-progress draft when lesson ids match; otherwise keep local.
+  const draft = (() => {
+    const aAt = a.draft?.updatedAt ?? ''
+    const bAt = b.draft?.updatedAt ?? ''
+    if (a.draft && b.draft && a.draft.lessonId === b.draft.lessonId) {
+      return aAt >= bAt ? a.draft : b.draft
+    }
+    if (a.draft && !b.draft) return a.draft
+    if (b.draft && !a.draft) return b.draft
+    return a.draft ?? b.draft ?? null
+  })()
   return {
     catalogVersion: Math.max(a.catalogVersion, b.catalogVersion, CURRICULUM_CATALOG_VERSION),
     completedLessonIds,
     lastLessonId,
     lessonScores,
+    draft,
   }
 }

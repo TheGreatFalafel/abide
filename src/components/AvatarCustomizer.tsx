@@ -69,7 +69,7 @@ export function AvatarCustomizer({ user, onUserChange }: Props) {
   return (
     <section className="avatar-customizer" aria-label="Customize appearance">
       <div className="avatar-customizer-preview">
-        <AbideAvatar user={user} size="lg" />
+        <AbideAvatar user={user} size="lg" animate interactive />
         <div>
           <h3>Your look</h3>
           <p className="muted">

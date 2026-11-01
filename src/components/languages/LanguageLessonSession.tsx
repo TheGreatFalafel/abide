@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   getLanguageLesson,
   type LanguageContentBlock,
@@ -9,6 +9,7 @@ import {
 } from '../../data/languages'
 import type { LessonResult } from '../../lib/progress'
 import { completeLanguageLesson, touchLanguageLesson } from '../../lib/progress'
+import { useScrollOnChange } from '../../lib/useScrollOnChange'
 import type { UserState } from '../../lib/types'
 
 type Phase = 'study' | 'practice' | 'reflect'
@@ -114,6 +115,11 @@ export function LanguageLessonSession({
   const [reflectText, setReflectText] = useState('')
   const [reflectIndex, setReflectIndex] = useState(0)
   const [targetLetterId, setTargetLetterId] = useState<string | null>(null)
+  const sessionTopRef = useRef<HTMLElement>(null)
+
+  useScrollOnChange(sessionTopRef, [lessonId, track, phase, step, reflectIndex], {
+    windowTop: true,
+  })
 
   useEffect(() => {
     if (!found) return
@@ -123,11 +129,18 @@ export function LanguageLessonSession({
 
   useEffect(() => {
     if (!found) return
-    const ex = found.lesson.exercises[step]
-    if (ex?.kind === 'alphabet_match' && ex.letterIds.length) {
-      setTargetLetterId(ex.letterIds[step % ex.letterIds.length] ?? ex.letterIds[0])
+    const exercise = found.lesson.exercises[step]
+    if (exercise?.kind === 'alphabet_match' && exercise.letterIds.length) {
+      setTargetLetterId(
+        exercise.letterIds[step % exercise.letterIds.length] ?? exercise.letterIds[0],
+      )
     }
   }, [found, step])
+
+  const letterById = useMemo(
+    () => new Map((found?.course.alphabet ?? []).map((l) => [l.id, l])),
+    [found],
+  )
 
   if (!found || found.course.id !== track) {
     return (
@@ -175,14 +188,9 @@ export function LanguageLessonSession({
     setTotal(nextTotal)
   }
 
-  const letterById = useMemo(
-    () => new Map(course.alphabet.map((l) => [l.id, l])),
-    [course.alphabet],
-  )
-
   return (
     <div className="screen session curriculum-session language-session">
-      <header className="session-top">
+      <header className="session-top" ref={sessionTopRef}>
         <button type="button" className="btn ghost" onClick={onBack}>
           ← Learn
         </button>

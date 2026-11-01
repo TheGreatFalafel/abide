@@ -1,10 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { BOOKS, type BibleBook } from '../data/bible'
 import { fetchPassage, type PassageContent, type Verse } from '../lib/bibleApi'
 import { addMemoryVerse, recordReadingSession } from '../lib/progress'
+import { useScrollOnChange } from '../lib/useScrollOnChange'
 import type { UserState } from '../lib/types'
+import { ConnectivityBanner } from './ConnectivityBanner'
 import { EsvAttribution } from './EsvAttribution'
 import { ESV_SITE } from '../data/esvCopyright'
 import { CommentaryPanel } from './CommentaryPanel'
@@ -24,8 +26,17 @@ export function BibleReader({ user, onUserChange }: Props) {
   const [note, setNote] = useState<string | null>(null)
   const [picker, setPicker] = useState<'book' | 'chapter' | null>(null)
   const [activeVerse, setActiveVerse] = useState<Verse | null>(null)
+  const [loadNonce, setLoadNonce] = useState(0)
+  const readerTopRef = useRef<HTMLDivElement>(null)
+  const versesRef = useRef<HTMLElement>(null)
 
   const book = BOOKS.find((b) => b.id === bookId) ?? BOOKS[42]
+  const translation = user.translationId
+  const esvApiKey = user.esvApiKey
+
+  useScrollOnChange(readerTopRef, [book.id, chapter], {
+    nestedRef: versesRef,
+  })
 
   useEffect(() => {
     let cancelled = false
@@ -35,24 +46,22 @@ export function BibleReader({ user, onUserChange }: Props) {
     setActiveVerse(null)
     fetchPassage(
       { bookId: book.id, bookName: book.name, chapter },
-      { translation: user.translationId, esvApiKey: user.esvApiKey },
+      { translation, esvApiKey },
     )
       .then((data) => {
-        if (!cancelled) {
-          setContent(data)
-          setLoading(false)
-        }
+        if (cancelled) return
+        setContent(data)
+        setLoading(false)
       })
       .catch((err: Error) => {
-        if (!cancelled) {
-          setError(err.message || 'Could not load chapter')
-          setLoading(false)
-        }
+        if (cancelled) return
+        setError(err.message || 'Could not load chapter')
+        setLoading(false)
       })
     return () => {
       cancelled = true
     }
-  }, [book.id, book.name, chapter, user.translationId, user.esvApiKey])
+  }, [book.id, book.name, chapter, translation, esvApiKey, loadNonce])
 
   // History-only reading activity (0 XP); deduped per book+chapter+day.
   useEffect(() => {
@@ -63,7 +72,9 @@ export function BibleReader({ user, onUserChange }: Props) {
       chapter,
       translationId: content.translationId,
     })
-  }, [content, book.id, book.name, chapter, user])
+    // Intentionally omit full `user` — only re-record when the passage identity changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [content, book.id, book.name, chapter])
 
   function goBook(next: BibleBook) {
     setBookId(next.id)
@@ -72,19 +83,16 @@ export function BibleReader({ user, onUserChange }: Props) {
   }
 
   function goRandom(scope: 'all' | 'OT' | 'NT') {
-    const pool =
-      scope === 'all'
-        ? BOOKS
-        : BOOKS.filter((b) => b.testament === scope)
-    const book = pool[Math.floor(Math.random() * pool.length)]
-    const ch = 1 + Math.floor(Math.random() * book.chapters)
-    setBookId(book.id)
+    const pool = scope === 'all' ? BOOKS : BOOKS.filter((b) => b.testament === scope)
+    const pick = pool[Math.floor(Math.random() * pool.length)]
+    const ch = 1 + Math.floor(Math.random() * pick.chapters)
+    setBookId(pick.id)
     setChapter(ch)
     setPicker(null)
     setNote(
       scope === 'all'
-        ? `Random · ${book.name} ${ch}`
-        : `Random ${scope} · ${book.name} ${ch}`,
+        ? `Random · ${pick.name} ${ch}`
+        : `Random ${scope} · ${pick.name} ${ch}`,
     )
   }
 
@@ -135,8 +143,14 @@ export function BibleReader({ user, onUserChange }: Props) {
     )
   }
 
+  const canPrev =
+    chapter > 1 || BOOKS.findIndex((b) => b.id === book.id) > 0
+  const canNext =
+    chapter < book.chapters ||
+    BOOKS.findIndex((b) => b.id === book.id) < BOOKS.length - 1
+
   return (
-    <div className="bible-reader">
+    <div className="bible-reader" ref={readerTopRef}>
       <div className="reader-nav">
         <button type="button" className="btn tiny ghost-outline" onClick={() => setPicker('book')}>
           {book.name}
@@ -218,10 +232,36 @@ export function BibleReader({ user, onUserChange }: Props) {
       )}
 
       <div className="reader enter">
-        {loading && <p className="muted center">Loading…</p>}
+        <ConnectivityBanner
+          detail={
+            content?.fromOfflineCache
+              ? 'Showing a saved offline copy of this chapter.'
+              : null
+          }
+        />
+        {loading && (
+          <p className="muted center passage-loading" role="status" aria-live="polite">
+            Loading chapter…
+          </p>
+        )}
         {error && (
-          <div className="error-box">
+          <div className="error-box" role="alert">
             <p>{error}</p>
+            {translation === 'esv' ? (
+              <p className="muted">
+                Confirm your key under Settings → Connect ESV, and that ESV is selected. Or
+                temporarily switch to WEB/KJV.
+              </p>
+            ) : (
+              <p className="muted">Check your connection, then try again.</p>
+            )}
+            <button
+              type="button"
+              className="btn primary"
+              onClick={() => setLoadNonce((n) => n + 1)}
+            >
+              Retry
+            </button>
           </div>
         )}
         {!loading && !error && content && (
@@ -240,7 +280,7 @@ export function BibleReader({ user, onUserChange }: Props) {
               )}
             </p>
             {note && <p className="nudge good">{note}</p>}
-            <article className="verses">
+            <article className="verses" ref={versesRef}>
               {content.verses.map((v) => (
                 <div key={v.number}>
                   {v.heading && <h3 className="section-heading">{v.heading}</h3>}
@@ -275,16 +315,12 @@ export function BibleReader({ user, onUserChange }: Props) {
               chapter breaks in every translation.
             </p>
             <ListenButton
-              text={
-                content
-                  ? [
-                      content.reference,
-                      ...content.verses.flatMap((v) =>
-                        v.heading ? [v.heading, v.text] : [v.text],
-                      ),
-                    ].join('. ')
-                  : ''
-              }
+              text={[
+                content.reference,
+                ...content.verses.flatMap((v) =>
+                  v.heading ? [v.heading, v.text] : [v.text],
+                ),
+              ].join('. ')}
             />
 
             {activeVerse && (
@@ -303,13 +339,26 @@ export function BibleReader({ user, onUserChange }: Props) {
             )}
           </>
         )}
+        {!loading && !error && !content && (
+          <p className="muted center">No passage available for this chapter.</p>
+        )}
       </div>
 
       <div className="session-actions sticky-reader">
-        <button className="btn ghost-outline" onClick={prevChapter}>
+        <button
+          type="button"
+          className="btn ghost-outline"
+          onClick={prevChapter}
+          disabled={!canPrev}
+        >
           Previous
         </button>
-        <button className="btn primary" onClick={nextChapter}>
+        <button
+          type="button"
+          className="btn primary"
+          onClick={nextChapter}
+          disabled={!canNext}
+        >
           Keep reading
         </button>
       </div>

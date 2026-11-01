@@ -65,6 +65,18 @@ function validateBlock(block: ContentBlock, path: string): string[] {
       if (!isNonEmptyString(block.note)) errors.push(`${path}: attribution note required`)
       if (!isNonEmptyString(block.work)) errors.push(`${path}: attribution work required`)
       break
+    case 'primary_source':
+      if (!isNonEmptyString(block.authorOrBody))
+        errors.push(`${path}: primary_source authorOrBody required`)
+      if (!isNonEmptyString(block.work)) errors.push(`${path}: primary_source work required`)
+      if (!isNonEmptyString(block.approxDate))
+        errors.push(`${path}: primary_source approxDate required`)
+      if (!isNonEmptyString(block.context)) errors.push(`${path}: primary_source context required`)
+      if (!isNonEmptyString(block.significance))
+        errors.push(`${path}: primary_source significance required`)
+      if (!isNonEmptyString(block.rightsNote))
+        errors.push(`${path}: primary_source rightsNote required`)
+      break
     default:
       errors.push(`${path}: unknown content block kind`)
   }
@@ -136,6 +148,16 @@ export function validateCurriculumTopic(topic: CurriculumTopic): string[] {
   if (!isNonEmptyString(topic.title)) errors.push('topic.title required')
   if (!isNonEmptyString(topic.description)) errors.push('topic.description required')
   if (topic.framework !== 'reformed') errors.push('topic.framework must be reformed')
+  if (
+    topic.domain != null &&
+    topic.domain !== 'theology' &&
+    topic.domain !== 'church-history' &&
+    topic.domain !== 'evangelism-apologetics'
+  ) {
+    errors.push(
+      'topic.domain must be theology, church-history, or evangelism-apologetics when set',
+    )
+  }
   if (!topic.objectives?.length) errors.push('topic.objectives required')
   if (!topic.estimatedMinutes || topic.estimatedMinutes < 1) {
     errors.push('topic.estimatedMinutes required')

@@ -76,7 +76,7 @@ export function GuidedTour({ open, onNavigate, onComplete, onFinishGoRead }: Pro
         }}
       >
         <div className="guided-tour-ari">
-          <AriMark expression={step.expression} size={64} animate />
+          <AriMark expression={step.expression} pose="guide" size={72} animate motion="idle" />
           <span className="guided-tour-name">{MASCOT_NAME}</span>
         </div>
         <div className="guided-tour-copy">

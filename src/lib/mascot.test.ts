@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
   ARI_EXPRESSIONS,
+  ARI_POSES,
   expressionForContext,
   mascotLineFor,
   normalizeExpression,
+  normalizePose,
+  poseForExpression,
+  reactionForAnswer,
+  streakMilestoneFrom,
 } from './mascot'
 import { createInitialState } from './types'
 
@@ -25,6 +30,59 @@ describe('Ari expressions', () => {
     expect(normalizeExpression('empty')).toBe('thinking')
     expect(normalizeExpression('nope')).toBe('neutral')
     expect(normalizeExpression(undefined)).toBe('neutral')
+  })
+})
+
+describe('Ari poses', () => {
+  it('lists poses and maps expressions to defaults', () => {
+    expect(ARI_POSES).toContain('idle')
+    expect(ARI_POSES).toContain('celebrate')
+    expect(ARI_POSES).toContain('guide')
+    expect(normalizePose('jump')).toBe('jump')
+    expect(normalizePose('nope')).toBe('idle')
+    expect(normalizePose(undefined)).toBe('idle')
+    expect(poseForExpression('celebrating')).toBe('celebrate')
+    expect(poseForExpression('thinking')).toBe('think')
+    expect(poseForExpression('welcome')).toBe('guide')
+    expect(poseForExpression('encouraging')).toBe('encourage')
+  })
+
+  it('mascot lines carry intentional poses for celebrate contexts', () => {
+    const user = createInitialState('A', 'year')
+    expect(mascotLineFor('celebrate', user, { leveledUp: true }).pose).toBe('celebrate')
+    expect(mascotLineFor('celebrate', user, { streakMilestone: 7 }).pose).toBe('jump')
+    expect(mascotLineFor('learn', user).pose).toBe('think')
+    expect(mascotLineFor('tour', user).pose).toBe('guide')
+  })
+})
+
+describe('streakMilestoneFrom', () => {
+  it('prefers newly unlocked streak achievements', () => {
+    expect(streakMilestoneFrom(7, ['streak_7'])).toBe(7)
+    expect(streakMilestoneFrom(30, ['streak_7', 'streak_30'])).toBe(30)
+    expect(streakMilestoneFrom(14, ['streak_14'])).toBe(14)
+  })
+
+  it('falls back to exact streak day when it is a milestone', () => {
+    expect(streakMilestoneFrom(7, [])).toBe(7)
+    expect(streakMilestoneFrom(14, [])).toBe(14)
+    expect(streakMilestoneFrom(30, [])).toBe(30)
+    expect(streakMilestoneFrom(8, [])).toBeUndefined()
+    expect(streakMilestoneFrom(3, [])).toBeUndefined()
+  })
+})
+
+describe('reactionForAnswer', () => {
+  it('returns proud celebrate for correct and comforting encourage for incorrect', () => {
+    const ok = reactionForAnswer(true)
+    expect(ok.expression).toBe('proud')
+    expect(ok.pose).toBe('celebrate')
+    expect(ok.body.toLowerCase()).not.toMatch(/\+\d+\s*xp/)
+
+    const miss = reactionForAnswer(false)
+    expect(miss.expression).toBe('comforting')
+    expect(miss.pose).toBe('encourage')
+    expect(miss.title.toLowerCase()).toMatch(/keep/)
   })
 })
 

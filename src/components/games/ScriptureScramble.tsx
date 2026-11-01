@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from 'react'
 import type { GameSessionProps } from '../../games/types'
 import { selectPlayableVerses, shuffleWords, tokenizeVerse, wordsMatch } from '../../games/verseUtils'
+import { AriReactionCue } from '../AriReactionCue'
 import { GameChrome } from './GameChrome'
 
 export function ScriptureScramble({ user, difficulty, onComplete, onBack }: GameSessionProps) {
@@ -125,6 +126,7 @@ export function ScriptureScramble({ user, difficulty, onComplete, onBack }: Game
           </button>
         ))}
       </div>
+      {checked && <AriReactionCue active correct={lastOk} />}
       {feedback && <p className={`nudge ${lastOk ? 'good' : 'risk'}`}>{feedback}</p>}
     </GameChrome>
   )

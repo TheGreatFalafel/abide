@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   assembleCurriculumQuestions,
   curriculumPrimaryPassagesReady,
@@ -10,6 +10,7 @@ import type { ContentBlock } from '../data/curriculum/types'
 import { fetchPassage, type PassageContent } from '../lib/bibleApi'
 import type { LessonResult } from '../lib/progress'
 import { completeCurriculumLesson, touchCurriculumLesson } from '../lib/progress'
+import { useScrollOnChange } from '../lib/useScrollOnChange'
 import type { UserState } from '../lib/types'
 import { EsvAttribution } from './EsvAttribution'
 
@@ -79,7 +80,19 @@ function BlockView({ block }: { block: ContentBlock }) {
                 ? 'Wayne Grudem'
                 : block.teacherId === 'sproul'
                   ? 'R.C. Sproul'
-                  : 'John MacArthur'}
+                  : block.teacherId === 'macarthur'
+                    ? 'John MacArthur'
+                    : block.teacherId === 'schaff'
+                      ? 'Philip Schaff'
+                      : block.teacherId === 'needham'
+                        ? 'Nick Needham'
+                        : block.teacherId === 'gonzalez'
+                          ? 'Justo L. González'
+                          : block.teacherId === 'packer'
+                            ? 'J.I. Packer'
+                            : block.teacherId === 'frame'
+                              ? 'John M. Frame'
+                              : block.teacherId}
             </strong>{' '}
             (<em>{block.work}</em>): {block.note}
           </p>
@@ -111,6 +124,11 @@ export function CurriculumLessonSession({
   const [openText, setOpenText] = useState('')
   const [reflectText, setReflectText] = useState('')
   const [reflectIndex, setReflectIndex] = useState(0)
+  const sessionTopRef = useRef<HTMLElement>(null)
+
+  useScrollOnChange(sessionTopRef, [lessonId, phase, step, reflectIndex], {
+    windowTop: true,
+  })
 
   const questions = useMemo(
     () => (found ? assembleCurriculumQuestions(found.topic, found.lesson) : []),
@@ -232,7 +250,7 @@ export function CurriculumLessonSession({
 
   return (
     <div className="screen session curriculum-session">
-      <header className="session-top">
+      <header className="session-top" ref={sessionTopRef}>
         <button type="button" className="btn ghost" onClick={onBack}>
           ← Learn
         </button>

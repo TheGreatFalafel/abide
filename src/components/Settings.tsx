@@ -593,7 +593,7 @@ export function SettingsView({
           <div className="settings-acc-body">
             <section className="settings-block tight">
               <div className="settings-profile-avatar">
-                <AbideAvatar user={user} size="md" />
+                <AbideAvatar user={user} size="md" animate interactive />
                 <div>
                   <p className="muted">
                     Hi, {user.name}. Customize your look and buy cosmetics in the shop — they never

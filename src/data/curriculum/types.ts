@@ -1,18 +1,41 @@
 import type { PassageRef } from '../books'
 import type { QuizQuestion } from '../planQuizzes'
+import type { BiteExercise } from '../../lib/biteSized/types'
 
-/** Teachers whose published frameworks organize or supplement topics. */
-export type CurriculumTeacherId = 'grudem' | 'sproul' | 'macarthur'
+/** Teachers / historians whose published frameworks organize or supplement topics. */
+export type CurriculumTeacherId =
+  | 'grudem'
+  | 'sproul'
+  | 'macarthur'
+  | 'schaff'
+  | 'needham'
+  | 'gonzalez'
+  | 'packer'
+  | 'frame'
+
+/** Learn catalog domain — theology, church history, or evangelism & apologetics. */
+export type CurriculumDomain = 'theology' | 'church-history' | 'evangelism-apologetics'
+
+export type ChurchHistoryEra =
+  | 'early'
+  | 'medieval'
+  | 'reformation'
+  | 'post-reformation'
+  | 'modern'
 
 export type CurriculumSource = {
   teacherId: CurriculumTeacherId
-  /** Public display name */
+  /** Public display name (or issuing body for some history stubs) */
   teacher: string
-  /** Published work title (attribution only — never reproduce chapters) */
+  /** Published work title (attribution only — never reproduce copyrighted chapters) */
   work: string
   role: 'organizational' | 'supplementary'
   /** Original summary of how this source shapes the topic — not a quotation */
   note: string
+  /** Optional dating hint for historical works */
+  approxDate?: string
+  /** Copyright / public-domain status for any cited edition */
+  rightsNote?: string
 }
 
 /**
@@ -56,12 +79,32 @@ export type ContentAttribution = {
   work: string
 }
 
+/**
+ * Primary historical document display — prefer verified public-domain excerpts.
+ * If `excerpt` is omitted, show summary/significance only (no fabricated quotes).
+ */
+export type ContentPrimarySource = {
+  kind: 'primary_source'
+  authorOrBody: string
+  work: string
+  approxDate: string
+  /** Historical setting for the document */
+  context: string
+  /** Verified public-domain excerpt only; omit when summarizing */
+  excerpt?: string
+  significance: string
+  rightsNote: string
+  /** Where a learner can find a reliable full text */
+  reference?: string
+}
+
 export type ContentBlock =
   | ContentTeaching
   | ContentConcept
   | ContentDistinction
   | ContentScriptureFocus
   | ContentAttribution
+  | ContentPrimarySource
 
 export type CurriculumLesson = {
   /** Stable id — never rename; add new lessons instead */
@@ -76,6 +119,11 @@ export type CurriculumLesson = {
   content: ContentBlock[]
   /** Comprehension / identification / theological MC + open questions */
   questions: QuizQuestion[]
+  /**
+   * Extra bite exercises (timeline order, matching figures/documents, etc.).
+   * Compiled into practice steps alongside capped MC from the quiz bank.
+   */
+  interactiveExercises?: BiteExercise[]
   /** Free-response reflection prompts (completion-gated, not auto-graded) */
   reflectionPrompts: string[]
   furtherStudy?: string[]
@@ -92,10 +140,26 @@ export type CurriculumTopic = {
   /** Topic ids that should be completed first (empty for foundations) */
   prerequisites: string[]
   framework: 'reformed'
+  /** Defaults to theology when omitted (legacy topics). */
+  domain?: CurriculumDomain
+  /** Church History era bucket (ignored for theology topics). */
+  era?: ChurchHistoryEra
+  /** Learner-facing era label, e.g. "Early Church (c. 30–500)" */
+  eraLabel?: string
   sources: CurriculumSource[]
   lessons: CurriculumLesson[]
   /** Bump when lesson ids or completion semantics change incompatibly */
   version: number
+}
+
+/** In-progress bite-sized session (cleared on complete). */
+export type CurriculumLessonDraft = {
+  lessonId: string
+  subject: 'curriculum'
+  stepIndex: number
+  correct: number
+  total: number
+  updatedAt: string
 }
 
 /** Persisted on UserState — independent of reading-plan days and memory FSRS. */
@@ -109,10 +173,12 @@ export type CurriculumProgress = {
     string,
     { correctMc: number; totalMc: number; completedAt: string }
   >
+  /** Partial bite-sized lesson resume */
+  draft?: CurriculumLessonDraft | null
 }
 
 /** Bump when catalog membership or completion semantics change; completions are preserved. */
-export const CURRICULUM_CATALOG_VERSION = 2
+export const CURRICULUM_CATALOG_VERSION = 6
 
 export function emptyCurriculumProgress(
   catalogVersion = CURRICULUM_CATALOG_VERSION,
@@ -122,5 +188,6 @@ export function emptyCurriculumProgress(
     completedLessonIds: [],
     lastLessonId: null,
     lessonScores: {},
+    draft: null,
   }
 }

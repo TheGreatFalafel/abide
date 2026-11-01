@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from 'react'
 import { nextChapterRef, type PlanDay, type PassageRef } from '../data/bible'
 import { fetchPassage, type PassageContent, type Verse } from '../lib/bibleApi'
 import { reflectionForPassages } from '../lib/reflections'
-import type { TranslationId } from '../data/translations'
 import { addMemoryVerse } from '../lib/progress'
+import { resetElementScroll } from '../lib/scroll'
+import { useScrollOnChange } from '../lib/useScrollOnChange'
 import type { UserState } from '../lib/types'
 import { ConnectivityBanner } from './ConnectivityBanner'
 import { EsvAttribution } from './EsvAttribution'
@@ -32,16 +33,19 @@ export function ReadingSession({ day, user, onUserChange, onComplete, onBack }: 
   const [memoryNote, setMemoryNote] = useState<string | null>(null)
   const [activeVerse, setActiveVerse] = useState<Verse | null>(null)
   const [extraMode, setExtraMode] = useState(false)
+  const [loadNonce, setLoadNonce] = useState(0)
   const [reflectSeed] = useState(() => Date.now())
   const readerTopRef = useRef<HTMLDivElement>(null)
+  const versesRef = useRef<HTMLElement>(null)
   const reflection = reflectionForPassages(day.passages, day.day, reflectSeed)
 
   const translation = user.translationId
   const esvApiKey = user.esvApiKey
 
-  useEffect(() => {
-    readerTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, [passageIndex, phase])
+  useScrollOnChange(readerTopRef, [passageIndex, phase, day.day], {
+    nestedRef: versesRef,
+    windowTop: true,
+  })
 
   useEffect(() => {
     let cancelled = false
@@ -51,25 +55,26 @@ export function ReadingSession({ day, user, onUserChange, onComplete, onBack }: 
     setRefs(day.passages)
     setExtraMode(false)
     setActiveVerse(null)
-    Promise.all(
-      day.passages.map((p) => fetchPassage(p, { translation, esvApiKey })),
-    )
+    setPassages([])
+
+    Promise.all(day.passages.map((p) => fetchPassage(p, { translation, esvApiKey })))
       .then((data) => {
-        if (!cancelled) {
-          setPassages(data)
-          setLoading(false)
-        }
+        if (cancelled) return
+        setPassages(data)
+        setError(null)
+        setLoading(false)
       })
       .catch((err: Error) => {
-        if (!cancelled) {
-          setError(err.message || 'Could not load reading')
-          setLoading(false)
-        }
+        if (cancelled) return
+        setPassages([])
+        setError(err.message || 'Could not load reading')
+        setLoading(false)
       })
+
     return () => {
       cancelled = true
     }
-  }, [day, translation, esvApiKey])
+  }, [day, translation, esvApiKey, loadNonce])
 
   const current = passages[passageIndex]
   const currentRef = refs[passageIndex]
@@ -109,15 +114,6 @@ export function ReadingSession({ day, user, onUserChange, onComplete, onBack }: 
     if (!current || !currentRef) return
 
     if (current.hasMoreInChapter && current.fullChapterVerses) {
-      const next: PassageContent = {
-        ...current,
-        reference: current.reference.replace(/ \(first half\)/, '') + ' (rest of chapter)',
-        verses: current.fullChapterVerses.slice(
-          current.verses.length,
-          current.fullChapterVerses.length,
-        ),
-        hasMoreInChapter: false,
-      }
       const nextPassages = [...passages]
       nextPassages[passageIndex] = {
         ...current,
@@ -125,10 +121,9 @@ export function ReadingSession({ day, user, onUserChange, onComplete, onBack }: 
         reference: current.reference.replace(/ \(first half\)/, ''),
         hasMoreInChapter: false,
       }
-      // Show rest by expanding in place
       setPassages(nextPassages)
       setMemoryNote('Showing the rest of this chapter.')
-      void next
+      resetElementScroll(versesRef.current)
       return
     }
 
@@ -142,6 +137,7 @@ export function ReadingSession({ day, user, onUserChange, onComplete, onBack }: 
       return
     }
     setLoading(true)
+    setError(null)
     try {
       const content = await fetchPassage(nextRef, { translation, esvApiKey })
       setRefs((prev) => [...prev, nextRef])
@@ -184,9 +180,13 @@ export function ReadingSession({ day, user, onUserChange, onComplete, onBack }: 
                 : null
             }
           />
-          {loading && <p className="muted center">Gathering the passage…</p>}
+          {loading && (
+            <p className="muted center passage-loading" role="status" aria-live="polite">
+              Gathering the passage…
+            </p>
+          )}
           {error && (
-            <div className="error-box">
+            <div className="error-box" role="alert">
               <p>{error}</p>
               {translation === 'esv' ? (
                 <p className="muted">
@@ -196,9 +196,18 @@ export function ReadingSession({ day, user, onUserChange, onComplete, onBack }: 
               ) : (
                 <p className="muted">Check your connection, then try again.</p>
               )}
-              <button className="btn primary" onClick={onBack}>
-                Back to path
-              </button>
+              <div className="session-actions">
+                <button
+                  type="button"
+                  className="btn primary"
+                  onClick={() => setLoadNonce((n) => n + 1)}
+                >
+                  Retry
+                </button>
+                <button type="button" className="btn ghost-outline" onClick={onBack}>
+                  Back to path
+                </button>
+              </div>
             </div>
           )}
           {!loading && !error && current && currentRef && (
@@ -217,7 +226,7 @@ export function ReadingSession({ day, user, onUserChange, onComplete, onBack }: 
                 )}
               </p>
               {memoryNote && <p className="nudge good">{memoryNote}</p>}
-              <article className="verses">
+              <article className="verses" ref={versesRef}>
                 {current.verses.map((v) => (
                   <div key={v.number}>
                     {v.heading && <h3 className="section-heading">{v.heading}</h3>}

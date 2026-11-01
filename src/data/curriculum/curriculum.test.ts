@@ -15,7 +15,9 @@ import {
   isLessonUnlocked,
   isTopicFullyComplete,
   isTopicUnlocked,
+  curriculumTopicsById,
   listCurriculumTopics,
+  listCurriculumTopicsByDomain,
   migrateCurriculumProgress,
   mergeCurriculumProgress,
   nextLessonId,
@@ -36,7 +38,17 @@ import { computeEventXp } from '../../lib/progressEvents'
 import { XP } from '../../lib/types'
 
 describe('curriculum catalog', () => {
-  it('publishes the expanded catalog with seven valid topics', () => {
+  it('splits theology, church-history, and evangelism domains', () => {
+    const theology = listCurriculumTopicsByDomain('theology')
+    const history = listCurriculumTopicsByDomain('church-history')
+    const witness = listCurriculumTopicsByDomain('evangelism-apologetics')
+    expect(theology.every((t) => (t.domain ?? 'theology') === 'theology')).toBe(true)
+    expect(history.map((t) => t.id)).toEqual(['early-church'])
+    expect(witness.length).toBe(5)
+    expect(theology.length + history.length + witness.length).toBe(listCurriculumTopics().length)
+  })
+
+  it('publishes theology, Early Church, and evangelism topics', () => {
     const topics = listCurriculumTopics()
     expect(topics.map((t) => t.id)).toEqual([
       'doctrine-of-scripture',
@@ -46,12 +58,114 @@ describe('curriculum catalog', () => {
       'doctrine-of-salvation',
       'doctrine-of-church',
       'doctrine-of-last-things',
+      'early-church',
+      'gospel-foundations',
+      'christian-apologetics',
+      'sharing-your-faith',
+      'worldview-atheism',
+      'understanding-islam',
     ])
     for (const topic of topics) {
       expect(validateCurriculumTopic(topic)).toEqual([])
-      expect(topic.lessons.length).toBeGreaterThanOrEqual(4)
-      expect(topic.lessons.length).toBeLessThanOrEqual(6)
+      expect(topic.lessons.length).toBeGreaterThanOrEqual(3)
+      expect(topic.lessons.length).toBeLessThanOrEqual(10)
     }
+    const early = topics.find((t) => t.id === 'early-church')!
+    expect(early.domain).toBe('church-history')
+    expect(early.era).toBe('early')
+    expect(early.lessons.some((l) => l.content.some((b) => b.kind === 'primary_source'))).toBe(
+      true,
+    )
+    expect(early.lessons.some((l) => (l.interactiveExercises?.length ?? 0) > 0)).toBe(true)
+
+    const witness = listCurriculumTopicsByDomain('evangelism-apologetics')
+    expect(witness.map((t) => t.id)).toEqual([
+      'gospel-foundations',
+      'christian-apologetics',
+      'sharing-your-faith',
+      'worldview-atheism',
+      'understanding-islam',
+    ])
+    expect(
+      witness.some((t) =>
+        t.lessons.some((l) =>
+          l.interactiveExercises?.some((ex) => ex.kind === 'conversation'),
+        ),
+      ),
+    ).toBe(true)
+  })
+
+  it('registers Understanding Islam with ten sections, sources, and conversations', () => {
+    const topic = listCurriculumTopics().find((t) => t.id === 'understanding-islam')
+    expect(topic).toBeTruthy()
+    expect(topic!.domain).toBe('evangelism-apologetics')
+    expect(topic!.prerequisites).toEqual(['gospel-foundations'])
+    expect(orderedLessons(topic!).map((l) => l.id)).toEqual([
+      'islam-introduction-origins',
+      'islam-quran-sources',
+      'islam-allah-monotheism',
+      'islam-jesus',
+      'islam-salvation-afterlife',
+      'islam-five-pillars',
+      'islam-differences-christianity',
+      'islam-diversity-sunni-shia',
+      'islam-common-questions',
+      'islam-sharing-gospel',
+    ])
+    expect(topic!.lessons.some((l) => l.content.some((b) => b.kind === 'primary_source'))).toBe(
+      true,
+    )
+    const convoLessons = topic!.lessons.filter((l) =>
+      l.interactiveExercises?.some((ex) => ex.kind === 'conversation'),
+    )
+    expect(convoLessons.map((l) => l.id)).toEqual([
+      'islam-jesus',
+      'islam-differences-christianity',
+      'islam-common-questions',
+      'islam-sharing-gospel',
+    ])
+    const byId = curriculumTopicsById()
+    expect(isTopicUnlocked(topic!, emptyCurriculumProgress(), byId)).toBe(false)
+    const afterGospel = emptyCurriculumProgress()
+    afterGospel.completedLessonIds = orderedLessons(
+      listCurriculumTopics().find((t) => t.id === 'gospel-foundations')!,
+    ).map((l) => l.id)
+    expect(isTopicUnlocked(topic!, afterGospel, byId)).toBe(true)
+  })
+
+  it('registers Christian Apologetics with eight sections and conversations', () => {
+    const topic = listCurriculumTopics().find((t) => t.id === 'christian-apologetics')
+    expect(topic).toBeTruthy()
+    expect(topic!.domain).toBe('evangelism-apologetics')
+    expect(topic!.prerequisites).toEqual(['gospel-foundations'])
+    expect(orderedLessons(topic!).map((l) => l.id)).toEqual([
+      'apologetics-god-exists',
+      'apologetics-trust-bible',
+      'apologetics-resurrection',
+      'apologetics-problem-of-evil',
+      'apologetics-science-faith',
+      'apologetics-morality-dignity',
+      'apologetics-exclusivity',
+      'apologetics-difficult-objections',
+    ])
+    expect(topic!.lessons.some((l) => l.content.some((b) => b.kind === 'primary_source'))).toBe(
+      true,
+    )
+    const convoLessons = topic!.lessons.filter((l) =>
+      l.interactiveExercises?.some((ex) => ex.kind === 'conversation'),
+    )
+    expect(convoLessons.map((l) => l.id)).toEqual([
+      'apologetics-problem-of-evil',
+      'apologetics-exclusivity',
+      'apologetics-difficult-objections',
+    ])
+    const byId = curriculumTopicsById()
+    expect(isTopicUnlocked(topic!, emptyCurriculumProgress(), byId)).toBe(false)
+    const afterGospel = emptyCurriculumProgress()
+    afterGospel.completedLessonIds = orderedLessons(
+      listCurriculumTopics().find((t) => t.id === 'gospel-foundations')!,
+    ).map((l) => l.id)
+    expect(isTopicUnlocked(topic!, afterGospel, byId)).toBe(true)
   })
 
   it('keeps Nature of Man lessons ordered with stable ids', () => {

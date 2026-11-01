@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 import { ACHIEVEMENTS, titleForLevel, type AchievementId, type UserState } from '../lib/types'
-import { mascotLineFor } from '../lib/mascot'
+import { mascotLineFor, streakMilestoneFrom } from '../lib/mascot'
 import { MascotBanner } from './MascotBanner'
 
 type Props = {
@@ -48,10 +48,12 @@ export function Celebration({
   const [show, setShow] = useState(false)
   const [stage, setStage] = useState(0)
   const xpShown = useCountUp(earnedXp, show)
+  const streakMilestone = streakMilestoneFrom(streak, newAchievements)
   const ari = mascotLineFor('celebrate', user, {
     leveledUp,
     newAchievements: newAchievements.length,
     earnedXp,
+    streakMilestone,
   })
 
   useEffect(() => {

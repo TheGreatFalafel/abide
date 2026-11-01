@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import type { PassageRef } from '../data/books'
 import { buildChapterQuiz } from '../data/chapterQuizzes'
 import type { SectionQuiz } from '../data/planQuizzes'
 import { PLAN_QUIZZES } from '../data/planQuizzes'
 import { pickQuizQuestions } from '../lib/quizCycle'
+import { useScrollOnChange } from '../lib/useScrollOnChange'
 
 type Props = {
   planId: string
@@ -60,6 +61,9 @@ export function SectionQuizSession({
   const [picked, setPicked] = useState<number | null>(null)
   const [checked, setChecked] = useState(false)
   const [openText, setOpenText] = useState('')
+  const sessionTopRef = useRef<HTMLElement>(null)
+
+  useScrollOnChange(sessionTopRef, [step, quizId ?? quizIndex], { windowTop: true })
 
   if (!quiz || !questions.length) {
     return (
@@ -98,7 +102,7 @@ export function SectionQuizSession({
 
   return (
     <div className="screen session">
-      <header className="session-bar">
+      <header className="session-bar" ref={sessionTopRef}>
         <button className="btn ghost" onClick={onBack}>
           ←
         </button>

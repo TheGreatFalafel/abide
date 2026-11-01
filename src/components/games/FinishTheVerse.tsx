@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from 'react'
 import type { GameSessionProps } from '../../games/types'
 import { selectPlayableVerses, splitForFinish, textMatches } from '../../games/verseUtils'
+import { AriReactionCue } from '../AriReactionCue'
 import { GameChrome } from './GameChrome'
 
 export function FinishTheVerse({ user, difficulty, onComplete, onBack }: GameSessionProps) {
@@ -109,6 +110,7 @@ export function FinishTheVerse({ user, difficulty, onComplete, onBack }: GameSes
           />
         </label>
       )}
+      {checked && <AriReactionCue active correct={lastOk} />}
       {feedback && <p className={`nudge ${lastOk ? 'good' : 'risk'}`}>{feedback}</p>}
     </GameChrome>
   )

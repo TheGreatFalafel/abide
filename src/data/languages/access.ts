@@ -98,6 +98,21 @@ function migrateTrack(raw: Partial<LanguageTrackProgress> | null | undefined): L
     lessonScores,
     vocabCards,
     alphabetMastered: Boolean(raw.alphabetMastered),
+    draft: (() => {
+      const draftRaw = (raw as { draft?: unknown }).draft
+      if (!draftRaw || typeof draftRaw !== 'object') return null
+      const d = draftRaw as Record<string, unknown>
+      if (typeof d.lessonId !== 'string' || typeof d.stepIndex !== 'number') return null
+      return {
+        lessonId: d.lessonId,
+        subject: 'language' as const,
+        track: d.track === 'greek' || d.track === 'hebrew' ? d.track : undefined,
+        stepIndex: Math.max(0, Math.floor(d.stepIndex)),
+        correct: typeof d.correct === 'number' ? Math.max(0, Math.floor(d.correct)) : 0,
+        total: typeof d.total === 'number' ? Math.max(0, Math.floor(d.total)) : 0,
+        updatedAt: typeof d.updatedAt === 'string' ? d.updatedAt : new Date().toISOString(),
+      }
+    })(),
   }
 }
 
@@ -161,6 +176,16 @@ function mergeTrack(a: LanguageTrackProgress, b: LanguageTrackProgress): Languag
     lessonScores,
     vocabCards: mergeVocabCards(a.vocabCards, b.vocabCards),
     alphabetMastered: a.alphabetMastered || b.alphabetMastered,
+    draft: (() => {
+      const aAt = a.draft?.updatedAt ?? ''
+      const bAt = b.draft?.updatedAt ?? ''
+      if (a.draft && b.draft && a.draft.lessonId === b.draft.lessonId) {
+        return aAt >= bAt ? a.draft : b.draft
+      }
+      if (a.draft && !b.draft) return a.draft
+      if (b.draft && !a.draft) return b.draft
+      return a.draft ?? b.draft ?? null
+    })(),
   }
 }
 

@@ -147,11 +147,15 @@ Signed-in or anonymous Next deployments can call `POST /api/bible/esv` with `X-E
 - Progress lives in `UserState.curriculum` (stable lesson ids) and syncs with the rest of `state_json`.
 - XP uses `curriculum_lesson` progress events only after quiz + reflection — not for opening a lesson.
 - Topics: Doctrine of Scripture, Doctrine of God, The Nature of Man, Doctrine of Christ, Doctrine of Salvation, Doctrine of the Church, Doctrine of Last Things (Reformed; Grudem-organized; Sproul/MacArthur supplementary attribution). Catalog version 2 preserves prior completions.
+- **Bite-sized lessons:** catalog content compiles into stepped sessions (`src/lib/biteSized/`, `BiteSizedLessonSession`) — intro → teach → scripture → practice → apply → deeper → review. Partial progress resumes via `curriculum.draft` (cleared on complete). See `docs/phase3-bite-sized.md`.
+- **Church History (Phase 4):** Learn → **History** tab. First era: Early Church (`early-church`, five lessons) using the same bite engine, plus `primary_source` blocks and timeline/match practice. See `docs/phase4-church-history.md`.
+- **Evangelism & Apologetics (Phase 5–7):** Learn → **Witness** tab. Gospel foundations, Christian Apologetics, sharing your faith, worldviews (**Atheism**, **Understanding Islam**). Catalog version 6. See `docs/phase5-evangelism-apologetics.md`, `docs/phase6-christian-apologetics.md`, and `docs/phase7-understanding-islam.md`.
 
 ### Biblical Greek & Hebrew
 - Learn tab tracks for **Biblical Greek** and **Biblical Hebrew** (`src/data/languages/`) — 8 lessons each from alphabet through guided passage reading.
 - Progress in `UserState.languages` with per-track lesson completion and **separate FSRS vocab decks** (never mixed with Scripture `memoryVerses`).
 - XP/gems via `language_lesson` / `language_vocab_review` (and matching gem events); replay does not re-award.
+- Same bite-sized session UI as theology; alphabet drills expand into capped recognition rounds; Hebrew practice uses RTL rendering (`dir="rtl"`). Draft resume on `languages[track].draft`.
 
 ### Progressive Web App (Phase 4)
 - Installable via `public/manifest.webmanifest` + brand icons in `public/icons/`.
@@ -164,7 +168,7 @@ Signed-in or anonymous Next deployments can call `POST /api/bible/esv` with `X-E
 - Gems are a separate currency from XP with a server ledger (`gem_events`, migration `0002_phase5_gems`).
 - Earn from meaningful first-time study (lessons, curriculum, scheduled reviews, quests, daily goal); daily earn cap applies.
 - Shop (More → Shop) sells cosmetic avatar items only — no pay-to-win, no paid currency.
-- Mascot **Ari** (a playful, refined lion) offers quiet encouragement on Home, Games, and celebrations.
+- Mascot **Ari** (a full-body illustrated lion) offers quiet encouragement on Home, Learn, Memory, Shop, Circle, Games, the guided tour, and celebrations. He reacts to lesson completions, streak milestones, and in-game answers. The **human learner avatar** is separately customizable (appearance + gem cosmetics) with subtle idle/blink motion.
 
 ### Bible games (Phase 6)
 - **Game Center** under More hosts a modular registry of educational games.
