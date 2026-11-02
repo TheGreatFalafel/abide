@@ -29,7 +29,7 @@ Files in `docs/phase-c/mockups/`:
 | **C — Playful Courage** | `ari-direction-c-playful.jpg` | Brighter game-art energy, copper-tipped mane, cheer stance |
 | Avatar (A) | `avatar-direction-a-storybook.jpg` | Matching human learner illustration |
 | Home UI (A) | `ui-home-direction-a.jpg` | Path home mock using Storybook Warmth |
-| Rive idle frame | `ari-rive-idle.png` | Compiled vector Ari from `rive/ari` |
+| Rive idle frame | `ari-rive-painted-idle.png` | Compiled **painted** Ari from `rive/ari` (ImageAssets) |
 
 ### Recommendation: **Direction A — Storybook Warmth** (revised)
 
@@ -46,7 +46,9 @@ Updated mockups:
 |------|---------|
 | `ari-quad-idle-sit.jpg` | Sitting quadruped Ari (A style) |
 | `ari-quad-expressions.jpg` | Face sheet with C-level emotion clarity |
-| `ari-rive-quad-idle.png` | Compiled Rive idle frame |
+| `ari-rive-painted-idle.png` | Compiled Rive idle (painted ImageAssets — current runtime look) |
+
+**Runtime art approach:** `rive/ari` embeds Storybook Warmth **painted** PNGs (`assets/sit-*.png`, `walk.png`) and swaps them via a Solo + root motion timelines. The early ellipse/vector stand-in looked like SVG on purpose as a placeholder and is retired. SVG `AriMark` remains fallback only.
 
 Direction B remains a marketing alternate. Direction C’s body language is not used; only its facial expressiveness.
 
