@@ -7,7 +7,7 @@ import {
   type TourStep,
 } from '../lib/ariTour'
 import { MASCOT_NAME } from '../lib/mascot'
-import { AriMark } from './MascotBanner'
+import { AriRive } from './MascotBanner'
 
 type Props = {
   open: boolean
@@ -76,7 +76,11 @@ export function GuidedTour({ open, onNavigate, onComplete, onFinishGoRead }: Pro
         }}
       >
         <div className="guided-tour-ari">
-          <AriMark expression={step.expression} pose="guide" size={72} animate motion="idle" />
+          <AriRive
+            characterState="guide"
+            size={72}
+            fallbackProps={{ expression: step.expression, pose: 'guide', motion: 'idle', animate: true }}
+          />
           <span className="guided-tour-name">{MASCOT_NAME}</span>
         </div>
         <div className="guided-tour-copy">

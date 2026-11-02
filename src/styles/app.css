@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Nunito:wght@500;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap');
 
 :root {
+  /* Phase C — Storybook Warmth tokens (extends existing Abide palette) */
   --ink: #1a2e2a;
   --ink-soft: #3d5650;
   --mist: #dce8e4;
@@ -10,13 +11,25 @@
   --teal-deep: #0a4f42;
   --ember: #d4652f;
   --gold: #c9a227;
+  --honey: #e8b84a;
+  --mane: #8b5a2b;
+  --sage: #e7f1ed;
+  --cream: #f7f3ea;
   --good: #1f8a5b;
   --danger: #a33b2d;
   --shadow: 0 18px 50px rgba(15, 55, 45, 0.12);
   --radius: 22px;
+  --radius-sm: 14px;
+  --space-1: 0.35rem;
+  --space-2: 0.65rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
   --font-brand: 'Fraunces', Georgia, serif;
   --font-ui: 'Nunito', system-ui, sans-serif;
   --font-read: 'Source Serif 4', Georgia, serif;
+  /* Quadruped Ari artboard 520×400 → wide slot */
+  --ari-slot-w: 88px;
+  --ari-slot-h: 68px;
 }
 
 *,
@@ -2665,6 +2678,25 @@ a.btn {
   overflow: visible;
 }
 
+.ari-rive {
+  flex-shrink: 0;
+  min-width: var(--ari-slot-w);
+  min-height: calc(var(--ari-slot-w) * 400 / 520);
+  overflow: hidden;
+}
+
+.mascot-banner .ari-rive {
+  width: var(--ari-slot-w);
+  height: var(--ari-slot-h);
+}
+
+.mascot-banner.compact .ari-rive {
+  width: 72px;
+  height: 56px;
+  min-width: 72px;
+  min-height: 56px;
+}
+
 .mascot-banner .mascot-mark.ari-full {
   margin-top: 0.1rem;
 }
@@ -2727,6 +2759,20 @@ a.btn {
 
 .mascot-mark.mascot-anim.pose-walk .ari-leg-r {
   animation-delay: 0.35s;
+}
+
+/* run = faster walk (same limbs; product state `run` → pose-walk + pose-run) */
+.mascot-mark.mascot-anim.pose-walk.pose-run .ari-leg-l,
+.mascot-mark.mascot-anim.pose-walk.pose-run .ari-leg-r {
+  animation-duration: 0.38s;
+}
+
+.mascot-mark.mascot-anim.pose-walk.pose-run .ari-leg-r {
+  animation-delay: 0.19s;
+}
+
+.mascot-mark.mascot-anim.pose-walk.pose-run .ari-body {
+  animation: ari-breathe 2.4s ease-in-out infinite;
 }
 
 .mascot-mark.mascot-anim.pose-fly .ari-body {

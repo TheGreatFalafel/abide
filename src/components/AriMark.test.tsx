@@ -11,7 +11,7 @@ function svgClass(el: Element | null): string {
 }
 
 describe('AriMark', () => {
-  it('renders full-body mark with expression and pose classes', () => {
+  it('renders quadruped mark with expression and pose classes', () => {
     const { container } = render(
       <AriMark expression="celebrating" pose="celebrate" size={48} animate />,
     )
@@ -19,11 +19,12 @@ describe('AriMark', () => {
     expect(svg).toBeTruthy()
     const cls = svgClass(svg)
     expect(cls).toContain('ari-full')
+    expect(cls).toContain('ari-quad')
     expect(cls).toContain('expr-celebrating')
     expect(cls).toContain('pose-celebrate')
     expect(cls).toContain('mascot-anim')
     expect(container.querySelector('.ari-torso')).toBeTruthy()
-    expect(container.querySelector('.ari-legs')).toBeTruthy()
+    expect(container.querySelector('.ari-leg-l')).toBeTruthy()
     expect(container.querySelector('.ari-tail')).toBeTruthy()
   })
 
@@ -33,6 +34,33 @@ describe('AriMark', () => {
     const cls = svgClass(svg)
     expect(cls).toContain('pose-think')
     expect(cls).not.toContain('mascot-anim')
+  })
+
+  it('resolves characterState through the animation machine', () => {
+    const { container } = render(<AriMark characterState="correct" size={40} />)
+    const svg = container.querySelector('svg.mascot-mark')
+    const cls = svgClass(svg)
+    expect(cls).toContain('ari-state-correct')
+    expect(cls).toContain('expr-proud')
+    expect(cls).toContain('pose-celebrate')
+    expect(cls).toContain('ari-react')
+    expect(svg?.getAttribute('data-ari-state')).toBe('correct')
+  })
+
+  it('applies pose-run modifier for run state', () => {
+    const { container } = render(<AriMark characterState="run" />)
+    expect(svgClass(container.querySelector('svg.mascot-mark'))).toContain('pose-run')
+    expect(svgClass(container.querySelector('svg.mascot-mark'))).toContain('pose-walk')
+  })
+
+  it('falls back to static mark when reduceMotion is set', () => {
+    const { container } = render(
+      <AriMark characterState="celebrate" reduceMotion />,
+    )
+    const cls = svgClass(container.querySelector('svg.mascot-mark'))
+    expect(cls).toContain('expr-celebrating')
+    expect(cls).not.toContain('mascot-anim')
+    expect(cls).not.toContain('ari-react')
   })
 })
 
@@ -44,10 +72,16 @@ describe('AriReactionCue', () => {
     const ok = render(<AriReactionCue active correct />)
     expect(ok.getByText(/nice catch/i)).toBeTruthy()
     expect(ok.container.querySelector('.ari-reaction-cue.good')).toBeTruthy()
+    expect(ok.container.querySelector('svg.mascot-mark')?.getAttribute('data-ari-state')).toBe(
+      'correct',
+    )
 
     const miss = render(<AriReactionCue active correct={false} />)
     expect(miss.getByText(/keep going/i)).toBeTruthy()
     expect(miss.container.querySelector('.ari-reaction-cue.risk')).toBeTruthy()
+    expect(miss.container.querySelector('svg.mascot-mark')?.getAttribute('data-ari-state')).toBe(
+      'encourage',
+    )
   })
 })
 
