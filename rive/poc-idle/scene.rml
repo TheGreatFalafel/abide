@@ -1,0 +1,100 @@
+<Rive version="1" kind="fragment">
+    <!--
+      Isolated proof of concept. Not the production Ari file.
+      Artboard PocIdle, state machine PocSM.
+      PNG is a copy of rive/ari/assets/sit-idle.png.
+      Triggers idle and bounce match the state-machine input style
+      RiveCharacter already fires. Do not copy this .riv over public/rive/ari.riv.
+    -->
+    <ImageAsset file="assets/sit-idle.png" name="sitIdle" id="0:60"/>
+
+    <Artboard
+        defaultStateMachineId="0:7"
+        styleId="0:5"
+        width="520"
+        height="400"
+        name="PocIdle"
+        id="0:2"
+    >
+        <LayoutComponentStyle name="Artboard Style" id="0:5"/>
+        <Fill name="Background">
+            <SolidColor colorValue="FFF4EFE6" name="Color"/>
+        </Fill>
+
+        <Image
+            x="260"
+            y="200"
+            originX="0.5"
+            originY="0.5"
+            assetId="0:60"
+            name="Lion"
+            id="0:20"
+        />
+
+        <Shape x="260" y="200" name="Hit" id="0:30">
+            <Rectangle originX="0.5" originY="0.5" width="520" height="400" name="Path"/>
+            <Fill name="Fill">
+                <SolidColor colorValue="00000000" name="Color"/>
+            </Fill>
+        </Shape>
+
+        <StateMachine name="PocSM" id="0:7">
+            <StateMachineTrigger name="idle" id="0:40"/>
+            <StateMachineTrigger name="bounce" id="0:41"/>
+
+            <StateMachineListenerSingle targetId="0:30" listenerTypeValue="click" name="BounceClick" id="0:50">
+                <ListenerTriggerChange inputId="0:41"/>
+            </StateMachineListenerSingle>
+
+            <StateMachineLayer name="Main" id="0:8">
+                <AnyState x="720" y="-120" id="0:9">
+                    <StateTransition stateToId="0:12" duration="120">
+                        <TransitionTriggerCondition inputId="0:40"/>
+                    </StateTransition>
+                    <StateTransition stateToId="0:13" duration="80">
+                        <TransitionTriggerCondition inputId="0:41"/>
+                    </StateTransition>
+                </AnyState>
+                <ExitState x="960" y="-120" id="0:10"/>
+                <EntryState x="0" y="80" id="0:11">
+                    <StateTransition stateToId="0:12"/>
+                </EntryState>
+                <AnimationState x="200" y="80" animationId="0:70" id="0:12"/>
+                <AnimationState x="460" y="80" animationId="0:71" reset="true" id="0:13">
+                    <StateTransition
+                        stateToId="0:12"
+                        duration="120"
+                        enableExitTime="true"
+                        exitTimeIsPercetange="true"
+                        exitTime="100"
+                    />
+                </AnimationState>
+            </StateMachineLayer>
+        </StateMachine>
+
+        <LinearAnimation loopValue="loop" duration="120" name="idle" id="0:70">
+            <KeyedObject objectId="0:20">
+                <KeyedProperty property="scaleY">
+                    <KeyFrameDouble value="1" interpolationType="cubic"/>
+                    <KeyFrameDouble value="1.06" interpolationType="cubic" frame="60"/>
+                    <KeyFrameDouble value="1" interpolationType="cubic" frame="120"/>
+                </KeyedProperty>
+                <KeyedProperty property="scaleX">
+                    <KeyFrameDouble value="1" interpolationType="cubic"/>
+                    <KeyFrameDouble value="1.03" interpolationType="cubic" frame="60"/>
+                    <KeyFrameDouble value="1" interpolationType="cubic" frame="120"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <LinearAnimation loopValue="oneShot" duration="36" name="bounce" id="0:71">
+            <KeyedObject objectId="0:20">
+                <KeyedProperty property="y">
+                    <KeyFrameDouble value="200" interpolationType="cubic"/>
+                    <KeyFrameDouble value="120" interpolationType="cubic" frame="14"/>
+                    <KeyFrameDouble value="200" interpolationType="cubic" frame="36"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+    </Artboard>
+</Rive>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>POC idle runtime check</title>
+  </head>
+  <body>
+    <canvas id="c" width="520" height="400"></canvas>
+    <pre id="out">loading</pre>
+    <script src="/vendor/rive.js"></script>
+    <script>
+      const runtime = window.rive
+      runtime.RuntimeLoader.setWasmUrl('/vendor/rive.wasm')
+      runtime.RuntimeLoader.setWasmFallbackUrl(null)
+      const canvas = document.getElementById('c')
+      const out = document.getElementById('out')
+      const inst = new runtime.Rive({
+        src: '/poc-idle.riv',
+        canvas,
+        artboard: 'PocIdle',
+        stateMachines: 'PocSM',
+        autoplay: true,
+        onLoad: () => {
+          inst.resizeDrawingSurfaceToCanvas()
+          const inputs = inst.stateMachineInputs('PocSM') || []
+          const bounce = inputs.find((input) => input.name === 'bounce')
+          let fired = false
+          let fireError = null
+          try {
+            if (!bounce) throw new Error('bounce input missing')
+            bounce.fire()
+            fired = true
+          } catch (error) {
+            fireError = String(error)
+          }
+          const report = {
+            runtime: '2.48.0',
+            package: '@rive-app/canvas',
+            activeArtboard: inst.activeArtboard,
+            stateMachines: inst.stateMachineNames,
+            animations: inst.animationNames,
+            inputs: inputs.map((input) => ({ name: input.name, type: input.type })),
+            fired,
+            fireError,
+          }
+          out.textContent = JSON.stringify(report, null, 2)
+          window.__poc = report
+        },
+        onLoadError: (error) => {
+          const report = { ok: false, error: String(error) }
+          out.textContent = JSON.stringify(report, null, 2)
+          window.__poc = report
+        },
+      })
+    </script>
+  </body>
+</html>

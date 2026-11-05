@@ -1,0 +1,221 @@
+<Rive version="1" kind="fragment">
+    <!--
+      Isolated image-animation experiment. Not production Ari.
+      Artboard: PocImageAnim. State machine: PocImageSM.
+      Placeholder paintings are copies of rive/ari/assets/*.png.
+      Demonstrates:
+        1) Controllable idle breathe on a root Node.
+        2) Soft pose change: two layered Images, opacity blended by
+           state-machine transition duration (documented property blend).
+        3) Hard frame swaps: Solo + KeyFrameId hold (no mid-id blend).
+      Image.assetId is not animatable on CLI 1.8.0 — one Image cannot
+      retarget its bitmap on a timeline. Use multiple Image drawables.
+    -->
+    <ImageAsset file="assets/sit-idle.png" name="sitIdle" id="0:60"/>
+    <ImageAsset file="assets/sit-happy.png" name="sitHappy" id="0:61"/>
+    <ImageAsset file="assets/sit-think.png" name="sitThink" id="0:62"/>
+    <ImageAsset file="assets/sit-curious.png" name="sitCurious" id="0:63"/>
+
+    <Artboard
+        defaultStateMachineId="0:7"
+        styleId="0:5"
+        width="520"
+        height="400"
+        name="PocImageAnim"
+        id="0:2"
+    >
+        <LayoutComponentStyle name="Artboard Style" id="0:5"/>
+        <Fill name="Background">
+            <SolidColor colorValue="FFF4EFE6" name="Color"/>
+        </Fill>
+
+        <Node x="260" y="200" name="Root" id="0:20">
+            <!-- Soft morph pair: both drawn; opacities crossfade -->
+            <Image
+                x="0"
+                y="0"
+                originX="0.5"
+                originY="0.5"
+                assetId="0:60"
+                opacity="1"
+                name="SoftIdle"
+                id="0:21"
+            />
+            <Image
+                x="0"
+                y="0"
+                originX="0.5"
+                originY="0.5"
+                assetId="0:61"
+                opacity="0"
+                name="SoftHappy"
+                id="0:22"
+            />
+
+            <!-- Hard sequence: Solo shows exactly one child -->
+            <Solo activeComponentId="0:31" opacity="0" name="HardSolo" id="0:30">
+                <Image
+                    x="0"
+                    y="0"
+                    originX="0.5"
+                    originY="0.5"
+                    assetId="0:62"
+                    name="Think"
+                    id="0:31"
+                />
+                <Image
+                    x="0"
+                    y="0"
+                    originX="0.5"
+                    originY="0.5"
+                    assetId="0:63"
+                    name="Curious"
+                    id="0:32"
+                />
+            </Solo>
+        </Node>
+
+        <!-- Left half fires softPose; right half fires frames (headless capture). -->
+        <Shape x="130" y="200" name="HitSoft" id="0:40">
+            <Rectangle originX="0.5" originY="0.5" width="260" height="400" name="Path"/>
+            <Fill name="Fill">
+                <SolidColor colorValue="00000000" name="Color"/>
+            </Fill>
+        </Shape>
+        <Shape x="390" y="200" name="HitFrames" id="0:41">
+            <Rectangle originX="0.5" originY="0.5" width="260" height="400" name="Path"/>
+            <Fill name="Fill">
+                <SolidColor colorValue="00000000" name="Color"/>
+            </Fill>
+        </Shape>
+
+        <StateMachine name="PocImageSM" id="0:7">
+            <StateMachineTrigger name="idle" id="0:50"/>
+            <StateMachineTrigger name="softPose" id="0:51"/>
+            <StateMachineTrigger name="frames" id="0:52"/>
+
+            <StateMachineListenerSingle targetId="0:40" listenerTypeValue="click" name="SoftClick" id="0:55">
+                <ListenerTriggerChange inputId="0:51"/>
+            </StateMachineListenerSingle>
+            <StateMachineListenerSingle targetId="0:41" listenerTypeValue="click" name="FramesClick" id="0:56">
+                <ListenerTriggerChange inputId="0:52"/>
+            </StateMachineListenerSingle>
+
+            <StateMachineLayer name="Main" id="0:8">
+                <AnyState x="900" y="-120" id="0:9">
+                    <StateTransition stateToId="0:12" duration="250">
+                        <TransitionTriggerCondition inputId="0:50"/>
+                    </StateTransition>
+                    <StateTransition stateToId="0:13" duration="280">
+                        <TransitionTriggerCondition inputId="0:51"/>
+                    </StateTransition>
+                    <StateTransition stateToId="0:14" duration="120">
+                        <TransitionTriggerCondition inputId="0:52"/>
+                    </StateTransition>
+                </AnyState>
+                <ExitState x="1100" y="-120" id="0:10"/>
+                <EntryState x="0" y="80" id="0:11">
+                    <StateTransition stateToId="0:12"/>
+                </EntryState>
+
+                <AnimationState x="200" y="80" animationId="0:70" id="0:12"/>
+                <AnimationState x="460" y="80" animationId="0:71" id="0:13"/>
+                <AnimationState x="720" y="80" animationId="0:72" id="0:14"/>
+            </StateMachineLayer>
+        </StateMachine>
+
+        <!-- Controllable idle: soft idle painting + root breathe -->
+        <LinearAnimation loopValue="loop" duration="120" name="idle" id="0:70">
+            <KeyedObject objectId="0:21">
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble value="1" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:22">
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble value="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:30">
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble value="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:20">
+                <KeyedProperty property="scaleY">
+                    <KeyFrameDouble value="1" interpolationType="cubic"/>
+                    <KeyFrameDouble value="1.05" interpolationType="cubic" frame="60"/>
+                    <KeyFrameDouble value="1" interpolationType="cubic" frame="120"/>
+                </KeyedProperty>
+                <KeyedProperty property="scaleX">
+                    <KeyFrameDouble value="1" interpolationType="cubic"/>
+                    <KeyFrameDouble value="1.02" interpolationType="cubic" frame="60"/>
+                    <KeyFrameDouble value="1" interpolationType="cubic" frame="120"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <!-- Soft pose: opacities that SM transition duration can blend -->
+        <LinearAnimation loopValue="loop" duration="90" name="softPose" id="0:71">
+            <KeyedObject objectId="0:21">
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble value="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:22">
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble value="1" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:30">
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble value="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:20">
+                <KeyedProperty property="scaleY">
+                    <KeyFrameDouble value="1" interpolationType="cubic"/>
+                    <KeyFrameDouble value="1.04" interpolationType="cubic" frame="45"/>
+                    <KeyFrameDouble value="1" interpolationType="cubic" frame="90"/>
+                </KeyedProperty>
+                <KeyedProperty property="y">
+                    <KeyFrameDouble value="200" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <!-- Hard frame-by-frame: Solo hold keys (discrete, not interpolated) -->
+        <LinearAnimation loopValue="loop" duration="90" name="frames" id="0:72">
+            <KeyedObject objectId="0:21">
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble value="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:22">
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble value="0" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:30">
+                <KeyedProperty property="opacity">
+                    <KeyFrameDouble value="1" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:30">
+                <KeyedProperty property="activeComponentId">
+                    <KeyFrameId value="0:31" interpolationType="hold"/>
+                    <KeyFrameId value="0:32" interpolationType="hold" frame="45"/>
+                    <KeyFrameId value="0:31" interpolationType="hold" frame="90"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:20">
+                <KeyedProperty property="scaleY">
+                    <KeyFrameDouble value="1" interpolationType="hold"/>
+                </KeyedProperty>
+                <KeyedProperty property="scaleX">
+                    <KeyFrameDouble value="1" interpolationType="hold"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+    </Artboard>
+</Rive>
