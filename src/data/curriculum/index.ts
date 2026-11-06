@@ -6,16 +6,27 @@ import { DOCTRINE_OF_SALVATION } from './topics/doctrine-of-salvation'
 import { DOCTRINE_OF_CHURCH } from './topics/doctrine-of-church'
 import { DOCTRINE_OF_LAST_THINGS } from './topics/doctrine-of-last-things'
 import { EARLY_CHURCH } from './topics/early-church'
+import { MEDIEVAL_CHURCH } from './topics/medieval-church'
+import { REFORMATION } from './topics/reformation'
+import { MODERN_CHRISTIANITY } from './topics/modern-christianity'
 import { GOSPEL_FOUNDATIONS } from './topics/gospel-foundations'
 import { CHRISTIAN_APOLOGETICS } from './topics/christian-apologetics'
 import { SHARING_YOUR_FAITH } from './topics/sharing-your-faith'
-import { WORLDVIEW_ATHEISM } from './topics/worldview-atheism'
+import { ATHEISM_NATURALISM } from './topics/atheism-naturalism'
+import { MORMONISM } from './topics/mormonism'
+import { ROMAN_CATHOLICISM } from './topics/roman-catholicism'
+import { EASTERN_ORTHODOXY } from './topics/eastern-orthodoxy'
 import { UNDERSTANDING_ISLAM } from './topics/understanding-islam'
+import { JEHOVAHS_WITNESSES } from './topics/jehovahs-witnesses'
+import { EASTERN_RELIGIONS_NEW_AGE } from './topics/eastern-religions-new-age'
+import { JUDAISM } from './topics/judaism'
+import { OTHER_GROUPS } from './topics/other-groups'
 import { assertValidTopic } from './validate'
 import type { CurriculumDomain, CurriculumLesson, CurriculumTopic } from './types'
 import { CURRICULUM_CATALOG_VERSION } from './types'
 
 export * from './types'
+export * from './difficulty'
 export * from './access'
 export { assembleCurriculumQuestions } from './quizBank'
 export { curriculumPrimaryPassagesReady } from './scriptureGate'
@@ -35,11 +46,21 @@ export const CURRICULUM_TOPICS: CurriculumTopic[] = [
   DOCTRINE_OF_CHURCH,
   DOCTRINE_OF_LAST_THINGS,
   EARLY_CHURCH,
+  MEDIEVAL_CHURCH,
+  REFORMATION,
+  MODERN_CHRISTIANITY,
   GOSPEL_FOUNDATIONS,
   CHRISTIAN_APOLOGETICS,
   SHARING_YOUR_FAITH,
-  WORLDVIEW_ATHEISM,
+  ATHEISM_NATURALISM,
+  MORMONISM,
+  ROMAN_CATHOLICISM,
+  EASTERN_ORTHODOXY,
   UNDERSTANDING_ISLAM,
+  JEHOVAHS_WITNESSES,
+  EASTERN_RELIGIONS_NEW_AGE,
+  JUDAISM,
+  OTHER_GROUPS,
 ]
 
 const byId = new Map<string, CurriculumTopic>()

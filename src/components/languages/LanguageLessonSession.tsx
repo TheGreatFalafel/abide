@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   getLanguageLesson,
+  hearItUrl,
   type LanguageContentBlock,
   type LanguageExercise,
   type LanguageTrackId,
@@ -219,6 +220,51 @@ export function LanguageLessonSession({
           {lesson.content.map((block, i) => (
             <BlockView key={i} block={block} rtl={rtl} />
           ))}
+          {lesson.introduceVocabIds?.length ? (
+            <section className="curr-block">
+              <h3>Vocabulary</h3>
+              <ul className="lang-vocab-hear">
+                {lesson.introduceVocabIds.map((vid) => {
+                  const entry = course.vocabulary.find((v) => v.id === vid)
+                  if (!entry) return null
+                  const hear = hearItUrl(entry)
+                  return (
+                    <li key={vid}>
+                      <span
+                        className={rtl ? 'rtl' : 'ltr'}
+                        lang={rtl ? 'he' : 'el'}
+                        dir={rtl ? 'rtl' : 'ltr'}
+                      >
+                        {entry.lemma}
+                      </span>{' '}
+                      <span className="muted">
+                        ({entry.transliteration}) — {entry.gloss}
+                      </span>
+                      {hear ? (
+                        <>
+                          {' '}
+                          <a
+                            className="btn ghost tiny"
+                            href={hear}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Hear it
+                          </a>
+                          <span className="muted tiny"> Blue Letter Bible lexicon</span>
+                        </>
+                      ) : entry.strongs ? (
+                        <span className="muted tiny">
+                          {' '}
+                          (Hear it pending Strong&apos;s verification)
+                        </span>
+                      ) : null}
+                    </li>
+                  )
+                })}
+              </ul>
+            </section>
+          ) : null}
           <button
             type="button"
             className="btn primary sticky-cta"

@@ -32,10 +32,13 @@ export function BiblicalTimeline({ difficulty, onComplete, onBack }: GameSession
     set ? shuffle(set.events, seed) : [],
   )
   const [checked, setChecked] = useState(false)
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [overId, setOverId] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   if (!set) {
     return (
-      <GameChrome title="Biblical Timeline" stepLabel="Unavailable" onBack={onBack}>
+      <GameChrome gameId="biblical-timeline" title="Biblical Timeline" stepLabel="Unavailable" onBack={onBack}>
         <p className="muted">No timeline set for this difficulty.</p>
       </GameChrome>
     )
@@ -45,13 +48,15 @@ export function BiblicalTimeline({ difficulty, onComplete, onBack }: GameSession
   const positionsOk = order.every((e, i) => e.id === correctOrder[i]?.id)
   const correctCount = order.filter((e, i) => e.id === correctOrder[i]?.id).length
 
-  function move(i: number, dir: -1 | 1) {
-    if (checked) return
-    const j = i + dir
-    if (j < 0 || j >= order.length) return
+  function moveId(fromId: string, toId: string) {
+    if (checked || fromId === toId) return
     setOrder((prev) => {
+      const from = prev.findIndex((e) => e.id === fromId)
+      const to = prev.findIndex((e) => e.id === toId)
+      if (from < 0 || to < 0) return prev
       const next = [...prev]
-      ;[next[i], next[j]] = [next[j], next[i]]
+      const [item] = next.splice(from, 1)
+      next.splice(to, 0, item)
       return next
     })
   }
@@ -68,6 +73,7 @@ export function BiblicalTimeline({ difficulty, onComplete, onBack }: GameSession
 
   return (
     <GameChrome
+      gameId="biblical-timeline"
       title="Biblical Timeline"
       stepLabel={set.title}
       onBack={onBack}
@@ -84,36 +90,68 @@ export function BiblicalTimeline({ difficulty, onComplete, onBack }: GameSession
       }
     >
       <p className="muted">
-        Arrange these events from earliest to latest in the biblical narrative (relative order, not
-        disputed absolute dates).
+        Drag tiles to arrange events from earliest to latest (relative biblical order). On touch
+        devices, tap one tile then tap another to move it there.
       </p>
       <ol className="timeline-list">
         {order.map((e, i) => {
           const right = checked && e.id === correctOrder[i]?.id
           const wrong = checked && !right
+          const isDragging = draggingId === e.id
+          const isSelected = selectedId === e.id
+          const isOver = overId === e.id && draggingId && draggingId !== e.id
           return (
-            <li key={e.id} className={`timeline-item ${right ? 'correct' : ''} ${wrong ? 'wrong' : ''}`}>
-              <div className="timeline-controls">
-                <button
-                  type="button"
-                  className="btn ghost sm"
-                  aria-label={`Move ${e.label} earlier`}
-                  disabled={checked || i === 0}
-                  onClick={() => move(i, -1)}
-                >
-                  ↑
-                </button>
-                <button
-                  type="button"
-                  className="btn ghost sm"
-                  aria-label={`Move ${e.label} later`}
-                  disabled={checked || i === order.length - 1}
-                  onClick={() => move(i, 1)}
-                >
-                  ↓
-                </button>
-              </div>
-              <div>
+            <li
+              key={e.id}
+              className={`timeline-item timeline-tile ${right ? 'correct' : ''} ${wrong ? 'wrong' : ''} ${
+                isDragging || isSelected ? 'dragging' : ''
+              } ${isOver ? 'drop-target' : ''}`}
+              draggable={!checked}
+              onClick={() => {
+                if (checked) return
+                if (!selectedId) {
+                  setSelectedId(e.id)
+                  return
+                }
+                if (selectedId === e.id) {
+                  setSelectedId(null)
+                  return
+                }
+                moveId(selectedId, e.id)
+                setSelectedId(null)
+              }}
+              onDragStart={(ev) => {
+                if (checked) {
+                  ev.preventDefault()
+                  return
+                }
+                setSelectedId(null)
+                ev.dataTransfer.setData('text/plain', e.id)
+                ev.dataTransfer.effectAllowed = 'move'
+                setDraggingId(e.id)
+              }}
+              onDragEnd={() => {
+                setDraggingId(null)
+                setOverId(null)
+              }}
+              onDragOver={(ev) => {
+                if (checked || !draggingId) return
+                ev.preventDefault()
+                setOverId(e.id)
+              }}
+              onDragLeave={() => setOverId((cur) => (cur === e.id ? null : cur))}
+              onDrop={(ev) => {
+                ev.preventDefault()
+                const fromId = ev.dataTransfer.getData('text/plain') || draggingId
+                setOverId(null)
+                setDraggingId(null)
+                if (fromId) moveId(fromId, e.id)
+              }}
+            >
+              <span className="timeline-grip" aria-hidden>
+                ⋮⋮
+              </span>
+              <div className="timeline-tile-body">
                 <strong>
                   {i + 1}. {e.label}
                 </strong>
@@ -132,7 +170,7 @@ export function BiblicalTimeline({ difficulty, onComplete, onBack }: GameSession
           {positionsOk
             ? 'Perfect chronological order.'
             : `You placed ${correctCount} of ${order.length} correctly. Correct sequence: ${correctOrder
-                .map((e) => e.label)
+                .map((ev) => ev.label)
                 .join(' → ')}.`}
         </div>
       )}

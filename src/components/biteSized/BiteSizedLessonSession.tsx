@@ -26,6 +26,7 @@ import { useScrollOnChange } from '../../lib/useScrollOnChange'
 import type { UserState } from '../../lib/types'
 import { EsvAttribution } from '../EsvAttribution'
 import { BiteExercisePanel } from './BiteExercisePanel'
+import { StudyResourceList } from './StudyResourceList'
 
 type Props = {
   subject: 'curriculum' | 'language'
@@ -72,10 +73,14 @@ export function BiteSizedLessonSession({
   onBack,
 }: Props) {
   const lesson: BiteLesson | null = useMemo(() => {
-    if (subject === 'curriculum') return resolveCurriculumBiteLesson(lessonId)
+    const opts = {
+      difficulty: user.learnDifficulty ?? 'beginner',
+      challengeUp: true,
+    }
+    if (subject === 'curriculum') return resolveCurriculumBiteLesson(lessonId, opts)
     if (!track) return null
-    return resolveLanguageBiteLesson(track, lessonId)
-  }, [subject, lessonId, track])
+    return resolveLanguageBiteLesson(track, lessonId, opts)
+  }, [subject, lessonId, track, user.learnDifficulty])
 
   const initialDraft = useMemo(() => {
     if (subject === 'curriculum') return readCurriculumDraft(user, lessonId)
@@ -96,7 +101,7 @@ export function BiteSizedLessonSession({
   const [deeperOpen, setDeeperOpen] = useState(false)
   const [passages, setPassages] = useState<Record<string, PassageContent | null>>({})
   const [loadingPassages, setLoadingPassages] = useState(false)
-  const [passageError, setPassageError] = useState<string | null>(null)
+  const [passageErrors, setPassageErrors] = useState<Record<string, string>>({})
   const [loadNonce, setLoadNonce] = useState(0)
   const sessionTopRef = useRef<HTMLElement>(null)
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -166,26 +171,34 @@ export function BiteSizedLessonSession({
     if (!lesson?.prefetchPassages?.length) {
       setPassages({})
       setLoadingPassages(false)
-      setPassageError(null)
+      setPassageErrors({})
       return () => undefined
     }
     let cancelled = false
     setLoadingPassages(true)
-    setPassageError(null)
+    setPassageErrors({})
 
     void (async () => {
       const refs = lesson.prefetchPassages ?? []
       const results = await Promise.all(
         refs.map(async (p) => {
+          const key = passageKey(p)
           try {
             const content = await fetchPassage(p, {
               translation: user.translationId,
               esvApiKey: user.esvApiKey,
             })
-            return { key: passageKey(p), content }
+            if (!content.verses?.length) {
+              return {
+                key,
+                content: null as PassageContent | null,
+                error: `No verses returned for ${p.bookName} ${p.chapter}`,
+              }
+            }
+            return { key, content }
           } catch (err) {
             return {
-              key: passageKey(p),
+              key,
               content: null as PassageContent | null,
               error: err instanceof Error ? err.message : 'Could not load Scripture',
             }
@@ -194,13 +207,13 @@ export function BiteSizedLessonSession({
       )
       if (cancelled) return
       const map: Record<string, PassageContent | null> = {}
-      const errors: string[] = []
+      const errors: Record<string, string> = {}
       for (const r of results) {
         map[r.key] = r.content
-        if (!r.content && 'error' in r && r.error) errors.push(r.error)
+        if (!r.content && 'error' in r && r.error) errors[r.key] = r.error
       }
       setPassages(map)
-      setPassageError(errors.length ? errors.slice(0, 2).join(' · ') : null)
+      setPassageErrors(errors)
       setLoadingPassages(false)
     })()
 
@@ -384,41 +397,50 @@ export function BiteSizedLessonSession({
 
         {step.kind === 'scripture' && step.passage ? (
           <div className="bite-scripture">
-            {loadingPassages && !passages[passageKey(step.passage)] ? (
-              <p className="muted">Loading Scripture…</p>
-            ) : null}
-            {passageError && !passages[passageKey(step.passage)] ? (
-              <div className="nudge risk" role="alert">
-                <p>{passageError}</p>
-                <button
-                  type="button"
-                  className="btn ghost"
-                  onClick={() => setLoadNonce((n) => n + 1)}
-                >
-                  Retry Scripture
-                </button>
-              </div>
-            ) : null}
-            {passages[passageKey(step.passage)] ? (
-              <article className="passage-card">
-                <h3>{passages[passageKey(step.passage)]!.reference}</h3>
-                {passages[passageKey(step.passage)]!.verses.map((v) => (
-                  <p key={v.number}>
-                    <sup>{v.number}</sup> {v.text}
+            {(() => {
+              const key = passageKey(step.passage)
+              const content = passages[key]
+              const stepError = passageErrors[key]
+              if (loadingPassages && !content) {
+                return <p className="muted">Loading Scripture…</p>
+              }
+              if (content?.verses?.length) {
+                return (
+                  <article className="passage-card">
+                    <h3>{content.reference}</h3>
+                    {content.verses.map((v) => (
+                      <p key={v.number}>
+                        <sup>{v.number}</sup> {v.text}
+                      </p>
+                    ))}
+                  </article>
+                )
+              }
+              return (
+                <div className="nudge risk" role="alert">
+                  <p>
+                    {stepError ??
+                      `Could not display ${step.passage.bookName} ${step.passage.chapter}${
+                        step.passage.verseStart != null ? `:${step.passage.verseStart}` : ''
+                      }.`}
                   </p>
-                ))}
-              </article>
-            ) : !loadingPassages ? (
-              <article className="passage-card">
-                <h3>
-                  {step.passage.bookName} {step.passage.chapter}
-                  {step.passage.verseStart != null ? `:${step.passage.verseStart}` : ''}
-                </h3>
-                <p className="muted">Unavailable offline — connect and retry, or continue with the note.</p>
-              </article>
-            ) : null}
+                  <p className="muted tiny">
+                    You can retry, or continue with the teaching note below.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn ghost sm"
+                    onClick={() => setLoadNonce((n) => n + 1)}
+                  >
+                    Retry Scripture
+                  </button>
+                </div>
+              )
+            })()}
             {step.scriptureNote ? <p className="muted">{step.scriptureNote}</p> : null}
-            {user.translationId === 'esv' ? <EsvAttribution compact /> : null}
+            {user.translationId === 'esv' && passages[passageKey(step.passage)]?.verses?.length ? (
+              <EsvAttribution compact />
+            ) : null}
           </div>
         ) : null}
 
@@ -520,11 +542,12 @@ export function BiteSizedLessonSession({
             <summary>Expand deeper study (optional)</summary>
             {step.body ? <p>{step.body}</p> : null}
             {step.deeperItems?.length ? (
-              <ul>
-                {step.deeperItems.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
+              <StudyResourceList
+                items={step.deeperItems}
+                passages={passages}
+                translationId={user.translationId}
+                esvApiKey={user.esvApiKey}
+              />
             ) : null}
           </details>
         ) : null}

@@ -8,6 +8,8 @@ import {
   SOURCE_SPROUL_SUP,
   SOURCE_MACARTHUR_SUP,
 } from './_helpers'
+import { PART17_CHURCH_BY_LESSON } from '../banks/part17-doctrine-christ-salvation-church'
+import { appendOutlineBank } from '../banks/outlineBankHelper'
 
 const L1_QUESTIONS: QuizQuestion[] = [
   mc(
@@ -220,7 +222,8 @@ export const DOCTRINE_OF_CHURCH: CurriculumTopic = {
   estimatedMinutes: 95,
   prerequisites: ['doctrine-of-salvation'],
   framework: 'reformed',
-  version: 1,
+  contentStatus: 'full',
+  version: 2,
   sources: [
     {
       ...SOURCE_GRUDEM_ORG,
@@ -302,7 +305,7 @@ export const DOCTRINE_OF_CHURCH: CurriculumTopic = {
             'Acts 2:42–47 shows a community devoted to apostolic teaching, fellowship, the breaking of bread, and prayer—and the result was both inward growth and outward favor with the watching world. The church exists to glorify God in worship, build up its members toward maturity, and bear witness to the gospel. These purposes belong together; neglecting any one distorts the whole.',
         },
       ],
-      questions: L1_QUESTIONS,
+      questions: appendOutlineBank('church-nature-purpose', L1_QUESTIONS, PART17_CHURCH_BY_LESSON),
       reflectionPrompts: [
         'Name one concrete way you can more fully participate in your church’s teaching, fellowship, Table, or prayer life this month.',
       ],
@@ -381,7 +384,7 @@ export const DOCTRINE_OF_CHURCH: CurriculumTopic = {
             'Supplementary pastoral emphasis: the seriousness of the qualifications in 1 Timothy 3 and Titus 1 underscores that church leadership is a weighty trust, not a reward for ambition. Paraphrased theme only—no sermon text reproduced.',
         },
       ],
-      questions: L2_QUESTIONS,
+      questions: appendOutlineBank('church-leadership', L2_QUESTIONS, PART17_CHURCH_BY_LESSON),
       reflectionPrompts: [
         'Write a short prayer for your church’s elders and deacons, naming a specific quality from 1 Timothy 3 you want God to strengthen in them.',
       ],
@@ -450,9 +453,9 @@ export const DOCTRINE_OF_CHURCH: CurriculumTopic = {
         {
           kind: 'distinction',
           biblical:
-            'At the Last Supper, Jesus said, “This is my body… do this in remembrance of me” (Luke 22:19–20; 1 Cor 11:23–26), and Paul warns against eating and drinking “without discerning the body” (1 Cor 11:27–29).',
+            'At the Last Supper, Jesus said, “This is my body… do this in remembrance of me” (Luke 22:19–20; 1 Cor 11:23–26), and Paul warns against eating and drinking “without discerning the body” (1 Cor 11:27–29). 1 Corinthians 10:16 speaks of a participation (communion) in Christ’s body and blood.',
           interpretation:
-            'Reformed theology, following Calvin, commonly teaches a “spiritual presence” view: believers truly feed on the crucified and risen Christ by faith through the Holy Spirit’s work as they eat and drink, even though the bread and cup do not change in substance. Other evangelical traditions emphasize a “memorial” view, stressing remembrance and proclamation of Christ’s death as the Supper’s central meaning.',
+            'The Lord’s Supper is the commemoration and proclamation of Christ’s death until He comes, always preceded by solemn self-examination (1 Corinthians 11:28-32). The elements are only representative of Christ’s body and blood, yet participating is an actual communion with the risen Christ, who indwells every believer and is present with His people (1 Corinthians 10:16). The app teaches both remembrance/proclamation and real communion — not a new sacrifice, not a regenerating rite, and not a bare symbol with no spiritual significance.',
           disagreement:
             'Reformed, Lutheran, Roman Catholic, and memorialist (often Baptist and free-church) traditions differ on how Christ is present at the Table. This curriculum teaches the Reformed spiritual-presence emphasis as its organizing framework while fairly describing the memorial view many sincere believers also hold.',
         },
@@ -464,7 +467,7 @@ export const DOCTRINE_OF_CHURCH: CurriculumTopic = {
             'Supplementary theme: approaching the Lord’s Table with reverence and self-examination reflects the holiness of the God who gives it. Original paraphrase of a widely known theme, not a quoted sermon.',
         },
       ],
-      questions: L3_QUESTIONS,
+      questions: appendOutlineBank('church-ordinances', L3_QUESTIONS, PART17_CHURCH_BY_LESSON),
       reflectionPrompts: [
         'Before your next observance of the Lord’s Supper, spend a few minutes examining your heart using 1 Corinthians 11:27–29 as a guide.',
       ],
@@ -546,7 +549,7 @@ export const DOCTRINE_OF_CHURCH: CurriculumTopic = {
             'Supplementary pastoral emphasis: taking sin seriously within the church protects both the sinning believer and the church’s witness, while restoration—not exposure—remains the goal. Paraphrased theme only.',
         },
       ],
-      questions: L4_QUESTIONS,
+      questions: appendOutlineBank('church-worship-unity-discipline', L4_QUESTIONS, PART17_CHURCH_BY_LESSON),
       reflectionPrompts: [
         'Where might God be calling you to pursue unity or loving honesty with a fellow believer this week?',
       ],
@@ -607,9 +610,9 @@ export const DOCTRINE_OF_CHURCH: CurriculumTopic = {
           biblical:
             '1 Corinthians 12 lists varied gifts—wisdom, knowledge, faith, healing, miracles, prophecy, tongues, and interpretation—given by one Spirit for the common good; Ephesians 4:11–13 lists apostles, prophets, evangelists, and pastor-teachers given “to equip the saints for the work of ministry.”',
           interpretation:
-            'Reformed continuationists hold that all the gifts described in these passages, including prophecy and tongues in some form, may continue today, always subordinate to the completed, sufficient canon of Scripture. Reformed cessationists hold that the foundational, revelation-giving sign gifts (tied to the apostolic era, cf. Eph 2:20) have ceased, while gifts like teaching, mercy, service, and administration continue.',
+            'The TMS statement distinguishes miraculous gifts of revelation and healing, given temporarily to confirm the apostles’ message, from ministering gifts that equip believers to edify one another. No one possesses the gift of healing today, though God hears and answers the prayer of faith (James 5:13-16). The app teaches cessationism as the seminary’s position. Continuationists hold that some sign gifts may continue in some form, always subordinate to the completed canon.',
           disagreement:
-            'This is a genuine, long-standing debate among faithful Reformed and evangelical believers who equally affirm Scripture’s full authority and sufficiency. Both positions affirm that no new apostles are being appointed and that no revelation today carries Scripture’s authority; they differ chiefly on whether certain sign/revelatory gifts operate in the same way they did in the apostolic era. Abide presents both views fairly without caricature.',
+            'Faithful evangelicals disagree on whether certain sign gifts continue. Both camps affirm the closed canon and that no new revelation carries Scripture’s authority. Abide teaches cessationism and describes continuationism fairly without caricature.',
         },
         {
           kind: 'attribution',
@@ -632,7 +635,7 @@ export const DOCTRINE_OF_CHURCH: CurriculumTopic = {
             'For most believers, mission looks like faithful witness at work, mercy to neighbors, hospitality, prayer, financial support of gospel work, and using whatever gift God has given to build up the church and reach the lost. Every member has a part to play; none is a spectator.',
         },
       ],
-      questions: L5_QUESTIONS,
+      questions: appendOutlineBank('church-mission', L5_QUESTIONS, PART17_CHURCH_BY_LESSON),
       reflectionPrompts: [
         'Name one practical way you will use your gifts or witness for the sake of the church’s mission this month.',
       ],

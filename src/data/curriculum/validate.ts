@@ -1,7 +1,9 @@
 import { BOOKS } from '../books'
 import type {
   ContentBlock,
+  CurriculumFurtherStudy,
   CurriculumLesson,
+  CurriculumLessonVideo,
   CurriculumSource,
   CurriculumTopic,
 } from './types'
@@ -104,7 +106,16 @@ function validateLesson(lesson: CurriculumLesson, path: string): string[] {
   if (!lesson.estimatedMinutes || lesson.estimatedMinutes < 1) {
     errors.push(`${path}: estimatedMinutes required`)
   }
-  if (!lesson.objectives?.length) errors.push(`${path}: at least one objective`)
+  const objectives = lesson.objectives
+  if (Array.isArray(objectives)) {
+    if (!objectives.length) errors.push(`${path}: at least one objective`)
+  } else if (objectives && typeof objectives === 'object') {
+    const tiers = ['beginner', 'intermediate', 'advanced'] as const
+    const any = tiers.some((t) => Array.isArray(objectives[t]) && objectives[t].length > 0)
+    if (!any) errors.push(`${path}: at least one tiered objective`)
+  } else {
+    errors.push(`${path}: at least one objective`)
+  }
   if (!lesson.primaryPassages?.length) errors.push(`${path}: primaryPassages required`)
   for (let i = 0; i < (lesson.primaryPassages?.length ?? 0); i++) {
     errors.push(
@@ -138,6 +149,52 @@ function validateLesson(lesson: CurriculumLesson, path: string): string[] {
       }
     }
   }
+  for (let i = 0; i < (lesson.furtherStudy?.length ?? 0); i++) {
+    const item = lesson.furtherStudy![i]
+    if (typeof item === 'string') {
+      if (!isNonEmptyString(item)) errors.push(`${path}.furtherStudy[${i}]: empty string`)
+      continue
+    }
+    errors.push(...validateFurtherStudy(item, `${path}.furtherStudy[${i}]`))
+  }
+  if (lesson.video) {
+    const videos = Array.isArray(lesson.video) ? lesson.video : [lesson.video]
+    videos.forEach((v, i) => errors.push(...validateLessonVideo(v, `${path}.video[${i}]`)))
+  }
+  if (
+    lesson.status != null &&
+    lesson.status !== 'draft' &&
+    lesson.status !== 'review' &&
+    lesson.status !== 'published'
+  ) {
+    errors.push(`${path}: status must be draft, review, or published when set`)
+  }
+  return errors
+}
+
+function validateFurtherStudy(item: CurriculumFurtherStudy, path: string): string[] {
+  const errors: string[] = []
+  if (!isNonEmptyString(item.author)) errors.push(`${path}: author required`)
+  if (!isNonEmptyString(item.work)) errors.push(`${path}: work required`)
+  if (typeof item.verified !== 'boolean') errors.push(`${path}: verified boolean required`)
+  if (item.verified && item.locator != null && !isNonEmptyString(item.locator)) {
+    errors.push(`${path}: verified locator must be non-empty when provided`)
+  }
+  if (item.url != null && !/^https?:\/\//i.test(item.url)) {
+    errors.push(`${path}: url must be http(s) when provided`)
+  }
+  return errors
+}
+
+function validateLessonVideo(v: CurriculumLessonVideo, path: string): string[] {
+  const errors: string[] = []
+  if (!isNonEmptyString(v.url) || !/^https?:\/\//i.test(v.url)) {
+    errors.push(`${path}: url must be http(s)`)
+  }
+  if (!isNonEmptyString(v.attribution)) errors.push(`${path}: attribution required`)
+  if (v.provider !== 'grace-to-you' && v.provider !== 'ligonier' && v.provider !== 'other') {
+    errors.push(`${path}: provider must be grace-to-you, ligonier, or other`)
+  }
   return errors
 }
 
@@ -157,6 +214,13 @@ export function validateCurriculumTopic(topic: CurriculumTopic): string[] {
     errors.push(
       'topic.domain must be theology, church-history, or evangelism-apologetics when set',
     )
+  }
+  if (
+    topic.contentStatus != null &&
+    topic.contentStatus !== 'full' &&
+    topic.contentStatus !== 'outline'
+  ) {
+    errors.push('topic.contentStatus must be full or outline when set')
   }
   if (!topic.objectives?.length) errors.push('topic.objectives required')
   if (!topic.estimatedMinutes || topic.estimatedMinutes < 1) {

@@ -28,7 +28,7 @@ export function FinishTheVerse({ user, difficulty, onComplete, onBack }: GameSes
 
   if (!verse || !parts) {
     return (
-      <GameChrome title="Finish the Verse" stepLabel="Unavailable" onBack={onBack}>
+      <GameChrome gameId="finish-the-verse" title="Finish the Verse" stepLabel="Unavailable" onBack={onBack}>
         <p className="muted">No verses available. Add memory verses or try again later.</p>
       </GameChrome>
     )
@@ -69,6 +69,7 @@ export function FinishTheVerse({ user, difficulty, onComplete, onBack }: GameSes
 
   return (
     <GameChrome
+      gameId="finish-the-verse"
       title="Finish the Verse"
       stepLabel={`${index + 1} / ${verses.length} · ${verse.reference}`}
       onBack={onBack}

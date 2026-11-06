@@ -2,7 +2,7 @@
 
 | File | Character | Status |
 |------|-----------|--------|
-| `ari.riv` | Ari (golden lion) | **Required** — copy from `rive/ari/build/ari.riv` after CLI build |
+| `ari.riv` | Ari (Gemini pose fades) | **Required** — copy from `rive/ari/build/ari.riv` after CLI build |
 | `avatar.riv` | Customizable human avatar | Optional — omit until authored; UI keeps `AbideAvatar` |
 
 See `docs/rive-characters.md` for state-machine names, `CharacterEvent` → trigger contracts, and replacement steps.

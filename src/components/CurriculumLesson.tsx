@@ -5,6 +5,7 @@ import {
   assembleCurriculumQuestions,
   curriculumPrimaryPassagesReady,
   getCurriculumLesson,
+  objectivesForDifficulty,
 } from '../data/curriculum'
 import type { ContentBlock } from '../data/curriculum/types'
 import { fetchPassage, type PassageContent } from '../lib/bibleApi'
@@ -13,6 +14,7 @@ import { completeCurriculumLesson, touchCurriculumLesson } from '../lib/progress
 import { useScrollOnChange } from '../lib/useScrollOnChange'
 import type { UserState } from '../lib/types'
 import { EsvAttribution } from './EsvAttribution'
+import { StudyResourceList } from './biteSized/StudyResourceList'
 
 type Phase = 'study' | 'quiz' | 'reflect'
 
@@ -82,7 +84,9 @@ function BlockView({ block }: { block: ContentBlock }) {
                   ? 'R.C. Sproul'
                   : block.teacherId === 'macarthur'
                     ? 'John MacArthur'
-                    : block.teacherId === 'schaff'
+                    : block.teacherId === 'hoekema'
+                      ? 'Anthony Hoekema'
+                      : block.teacherId === 'schaff'
                       ? 'Philip Schaff'
                       : block.teacherId === 'needham'
                         ? 'Nick Needham'
@@ -162,20 +166,21 @@ export function CurriculumLessonSession({
       if (cancelled) return
 
       const next: (PassageContent | null)[] = results.map((r) =>
-        r instanceof Error ? null : r,
+        r instanceof Error || !r.verses?.length ? null : r,
       )
       setPassages(next)
 
       const primaryFails = results
         .slice(0, found.lesson.primaryPassages.length)
         .map((r, i) => ({ r, i }))
-        .filter(({ r }) => r instanceof Error)
+        .filter(({ r }) => r instanceof Error || !r.verses?.length)
 
       if (primaryFails.length) {
         const messages = primaryFails.map(({ r, i }) => {
           const ref = found.lesson.primaryPassages[i]
           const label = `${ref.bookName} ${ref.chapter}`
-          return `${label}: ${r instanceof Error ? r.message : 'unavailable'}`
+          if (r instanceof Error) return `${label}: ${r.message}`
+          return `${label}: no verses returned`
         })
         setError(
           `Required Scripture could not be loaded (and is not cached offline). ${messages.join(
@@ -270,7 +275,10 @@ export function CurriculumLessonSession({
           <div className="learn-objectives">
             <strong>Objectives</strong>
             <ul>
-              {lesson.objectives.map((o) => (
+              {objectivesForDifficulty(
+                lesson.objectives,
+                user.learnDifficulty ?? 'beginner',
+              ).map((o) => (
                 <li key={o}>{o}</li>
               ))}
             </ul>
@@ -337,14 +345,36 @@ export function CurriculumLessonSession({
             </details>
           )}
 
+          {lesson.video ? (
+            <section className="curr-block">
+              <h3>Study video</h3>
+              <ul className="curr-video-list">
+                {(Array.isArray(lesson.video) ? lesson.video : [lesson.video]).map((v) => (
+                  <li key={v.url}>
+                    <a href={v.url} target="_blank" rel="noopener noreferrer">
+                      Open video
+                    </a>
+                    <span className="muted"> {v.attribution}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
           {lesson.furtherStudy?.length ? (
             <section className="curr-block">
               <h3>Further study</h3>
-              <ul>
-                {lesson.furtherStudy.map((f) => (
-                  <li key={f}>{f}</li>
-                ))}
-              </ul>
+              <StudyResourceList
+                items={lesson.furtherStudy.map((item) =>
+                  typeof item === 'string'
+                    ? item
+                    : `${item.author}, ${item.work}${
+                        item.verified && item.locator ? ` (${item.locator})` : ''
+                      }${item.url ? ` — ${item.url}` : ''}`,
+                )}
+                translationId={user.translationId}
+                esvApiKey={user.esvApiKey}
+              />
             </section>
           ) : null}
 

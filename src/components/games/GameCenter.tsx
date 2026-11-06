@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { GAME_ART } from '../../games/art'
 import { listGames } from '../../games/registry'
 import type { GameDifficulty, GameId } from '../../games/types'
 import { todayKey, type UserState } from '../../lib/types'
@@ -72,7 +73,8 @@ export function GameCenter({ user, onPlay }: Props) {
           const played = stats?.completedGameIds?.includes(meta.id)
           return (
             <li key={meta.id} className="game-card">
-              <div>
+              <img className="game-emblem" src={GAME_ART[meta.id].emblem} alt="" />
+              <div className="game-card-copy">
                 <strong>{meta.title}</strong>
                 <p>{meta.blurb}</p>
                 <p className="muted tiny">

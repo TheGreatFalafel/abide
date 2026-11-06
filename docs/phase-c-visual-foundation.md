@@ -102,30 +102,35 @@ copy rive\ari\build\ari.riv public\rive\ari.riv
 
 ### Product ↔ Rive mapping
 
-| `AriCharacterState` | Rive trigger |
-|---------------------|--------------|
+Prefer application `CharacterEvent` (see `docs/rive-characters.md`). Legacy `AriCharacterState` still maps:
+
+| `AriCharacterState` / `CharacterEvent` | Rive trigger |
+|----------------------------------------|--------------|
 | `idle`, `blink` | `idle` |
 | `greet` | `greet` |
-| `walk` / `run` / `think` / `guide` | same names |
-| `correct` / `encourage` / `celebrate` / `milestone` | same names |
+| `walk` / `run` / `think` / `guide` / `sleep` | same names |
+| `correct` / `react_correct` | `correct` |
+| `encourage` / `react_incorrect` | `encourage` |
+| `celebrate` / `jump` / `milestone` | same names |
 
-Implemented in `src/lib/animation/riveAri.ts`.
+Implemented in `src/lib/animation/riveAri.ts` + `characterEvents.ts`.
 
 ### React contract
 
 ```ts
-// AriRive
+// Ari (preferred) / AriRive (compat)
 src: '/rive/ari.riv'
 artboard: 'Ari'
 stateMachines: 'AriSM'
-// on characterState change → useStateMachineInput(...).fire()
+// on event / characterState change → useStateMachineInput(...).fire()
+// Shared host: RiveCharacter
 ```
 
 Package: `@rive-app/react-canvas` (official React wrapper; peer React 19 compatible).
 
 **Fallback:** `AriMark` SVG when load error, `prefers-reduced-motion`, Vitest, or missing canvas.
 
-**Human avatar:** Phase C documents Storybook Warmth target art; cosmetics state machine types remain in `avatarMachine.ts`. Full avatar `.riv` is the next incremental asset (same event bridge).
+**Human avatar:** Live UI stays on `AbideAvatar` + cosmetics inventory. `AvatarRive` / `AVATAR_RIVE_CONTRACT` prepare `/rive/avatar.riv` without removing customization.
 
 ---
 

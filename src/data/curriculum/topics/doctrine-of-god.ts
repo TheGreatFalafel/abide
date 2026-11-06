@@ -8,6 +8,8 @@ import {
   SOURCE_SPROUL_SUP,
   SOURCE_MACARTHUR_SUP,
 } from './_helpers'
+import { PART17_GOD_BY_LESSON } from '../banks/part17-doctrine-god'
+import { appendOutlineBank } from '../banks/outlineBankHelper'
 
 const L1_QUESTIONS: QuizQuestion[] = [
   mc(
@@ -157,6 +159,14 @@ const L3_QUESTIONS: QuizQuestion[] = [
     'Tritheism so separates the persons that it effectively denies the unity of the one God affirmed in Deuteronomy 6:4 and John 10:30.',
   ),
   mc(
+    'god-trin-filioque',
+    "The seminary's statement says the Holy Spirit eternally proceeds from:",
+    ['The Father alone', 'The Father and the Son', 'The Son alone', 'The church'],
+    1,
+    'TMS affirms the filioque: the Spirit proceeds from the Father and the Son. Eastern Orthodoxy rejects that Western addition; the app teaches the seminary position and describes the Orthodox view.',
+    'advanced',
+  ),
+  mc(
     'god-trin-baptism',
     'Which passage most clearly shows all three persons of the Trinity distinctly present at the same moment?',
     [
@@ -300,7 +310,8 @@ export const DOCTRINE_OF_GOD: CurriculumTopic = {
   estimatedMinutes: 96,
   prerequisites: ['doctrine-of-scripture'],
   framework: 'reformed',
-  version: 1,
+  contentStatus: 'full',
+  version: 2,
   sources: [
     {
       ...SOURCE_GRUDEM_ORG,
@@ -397,7 +408,7 @@ export const DOCTRINE_OF_GOD: CurriculumTopic = {
             'Supplementary emphasis: true knowledge of God is never merely academic; it leads to reverence and worship, since the God who can be known is also utterly holy. Original paraphrase of a widely known public theme.',
         },
       ],
-      questions: L1_QUESTIONS,
+      questions: appendOutlineBank('god-existence-knowability', L1_QUESTIONS, PART17_GOD_BY_LESSON),
       reflectionPrompts: [
         'Spend a few minutes outside or looking at the sky, and let Psalm 19:1\u20134 shape a short prayer of praise for what creation reveals about God.',
       ],
@@ -487,7 +498,7 @@ export const DOCTRINE_OF_GOD: CurriculumTopic = {
             'It is possible to emphasize one attribute (love, or justice, or sovereignty) until it distorts the rest. Faithful worship holds God\u2019s holiness and love, his justice and mercy, together \u2014 just as Exodus 34:6\u20137 does in a single breath.',
         },
       ],
-      questions: L2_QUESTIONS,
+      questions: appendOutlineBank('god-attributes', L2_QUESTIONS, PART17_GOD_BY_LESSON),
       reflectionPrompts: [
         'Choose one incommunicable attribute (such as omniscience or immutability) and write a short prayer of praise that applies it to a current worry.',
       ],
@@ -537,6 +548,12 @@ export const DOCTRINE_OF_GOD: CurriculumTopic = {
             'Interpretation: Jesus commands baptism "in the name" (singular) "of the Father and of the Son and of the Holy Spirit" \u2014 one shared name/essence, three distinctly named persons.',
         },
         {
+          kind: 'teaching',
+          title: 'Eternal generation and the filioque',
+          body:
+            'The Father is of none, neither begotten nor proceeding. The Son is eternally begotten of the Father (John 1:14, 18; 3:16; 5:26; Psalm 2:7), and the Holy Spirit eternally proceeds from the Father and the Son (John 15:26). The seminary affirms the filioque (“and the Son”), which the Eastern Orthodox churches reject. The app teaches the filioque and describes the Orthodox view as another view.',
+        },
+        {
           kind: 'concept',
           term: 'Trinity',
           explanation:
@@ -578,7 +595,7 @@ export const DOCTRINE_OF_GOD: CurriculumTopic = {
             'Supplementary emphasis: the Trinity is not a problem to be solved by clever analogies but a revealed mystery to be worshipped, since finite minds should expect the infinite, triune God to exceed full comprehension. Original paraphrase of a widely known public theme.',
         },
       ],
-      questions: L3_QUESTIONS,
+      questions: appendOutlineBank('god-trinity', L3_QUESTIONS, PART17_GOD_BY_LESSON),
       reflectionPrompts: [
         'Try praying in explicitly Trinitarian shape this week \u2014 to the Father, through the Son, by the power of the Spirit \u2014 and note how it shapes your prayer.',
       ],
@@ -663,7 +680,7 @@ export const DOCTRINE_OF_GOD: CurriculumTopic = {
             'Romans 8:28 promises that God works all things for the good of those who love him \u2014 not that every individual event is pleasant, or that believers can always identify the specific purpose behind a trial. Pastoral application of providence counsels humble trust, not confident speculation about "why this happened to me."',
         },
       ],
-      questions: L4_QUESTIONS,
+      questions: appendOutlineBank('god-sovereignty-providence', L4_QUESTIONS, PART17_GOD_BY_LESSON),
       reflectionPrompts: [
         'Name a current trial. What would it look like this week to entrust the parts you cannot control to God\u2019s sovereign care, while still acting responsibly in the parts you can?',
       ],
@@ -754,7 +771,7 @@ export const DOCTRINE_OF_GOD: CurriculumTopic = {
             'This topic has traced who God is: existing, knowable, richly attributed, triune, sovereign, and both transcendent and near. Every later doctrine \u2014 sin, salvation, the church, the future \u2014 builds on this foundation. A right view of God is not the end of theology; it is where faithful theology always begins.',
         },
       ],
-      questions: L5_QUESTIONS,
+      questions: appendOutlineBank('god-creation-relation', L5_QUESTIONS, PART17_GOD_BY_LESSON),
       reflectionPrompts: [
         'Write a short prayer that intentionally addresses both God\u2019s transcendence (his greatness, above you) and his immanence (his nearness, with you) in your current circumstances.',
       ],

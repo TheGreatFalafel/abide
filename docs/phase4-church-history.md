@@ -20,10 +20,9 @@ Theology topics remain untouched in content and completion IDs.
 | Era | Topic id (planned) | Status |
 | --- | --- | --- |
 | Early Church (c. 30–500) | `early-church` | **Shipped (5 lessons)** |
-| Medieval Church (c. 500–1500) | `medieval-church` | Planned; prereq `early-church` |
-| Protestant Reformation (c. 1500–1650) | `reformation` | Planned |
-| Post-Reformation & Revival (c. 1650–1900) | `post-reformation` | Planned |
-| Modern Christianity (1900–present) | `modern-christianity` | Planned |
+| Medieval Church (c. 400–1400) | `medieval-church` | **Shipped (5 lessons)**; prereq `early-church` |
+| Protestant Reformation (c. 1517–1650) | `reformation` | **Shipped (5 lessons)** |
+| Modern Church (c. 1650–today) | `modern-christianity` | **Shipped (5 lessons)** (pack merges post-Reformation into modern) |
 
 ### Early Church lessons
 

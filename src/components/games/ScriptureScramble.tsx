@@ -6,6 +6,10 @@ import { selectPlayableVerses, shuffleWords, tokenizeVerse, wordsMatch } from '.
 import { AriReactionCue } from '../AriReactionCue'
 import { GameChrome } from './GameChrome'
 
+type Slot =
+  | { kind: 'empty' }
+  | { kind: 'filled'; bankIndex: number; word: string }
+
 export function ScriptureScramble({ user, difficulty, onComplete, onBack }: GameSessionProps) {
   const seed = useMemo(() => Date.now(), [])
   const verses = useMemo(
@@ -15,11 +19,12 @@ export function ScriptureScramble({ user, difficulty, onComplete, onBack }: Game
   const scoreRef = useRef(0)
   const [index, setIndex] = useState(0)
   const [score, setScore] = useState(0)
-  const [picked, setPicked] = useState<string[]>([])
-  const [used, setUsed] = useState<number[]>([])
+  const [slots, setSlots] = useState<Slot[]>([])
   const [feedback, setFeedback] = useState<string | null>(null)
   const [checked, setChecked] = useState(false)
   const [lastOk, setLastOk] = useState(false)
+  const [draggingBank, setDraggingBank] = useState<number | null>(null)
+  const [dragOverSlot, setDragOverSlot] = useState<number | null>(null)
 
   const verse = verses[index]
   const words = useMemo(() => (verse ? tokenizeVerse(verse.text) : []), [verse])
@@ -28,30 +33,74 @@ export function ScriptureScramble({ user, difficulty, onComplete, onBack }: Game
     [verse, words, seed, index],
   )
 
+  // Keep slot count aligned with the current verse.
+  const activeSlots =
+    slots.length === words.length
+      ? slots
+      : words.map((): Slot => ({ kind: 'empty' }))
+
   if (!verse) {
     return (
-      <GameChrome title="Scripture Scramble" stepLabel="Unavailable" onBack={onBack}>
+      <GameChrome gameId="scripture-scramble" title="Scripture Scramble" stepLabel="Unavailable" onBack={onBack}>
         <p className="muted">No verses available. Add memory verses or try again later.</p>
       </GameChrome>
     )
   }
 
-  const available = bank.map((w, i) => ({ w, i })).filter(({ i }) => !used.includes(i))
+  const usedBank = new Set(
+    activeSlots.filter((s): s is Extract<Slot, { kind: 'filled' }> => s.kind === 'filled').map((s) => s.bankIndex),
+  )
+  const nextEmpty = activeSlots.findIndex((s) => s.kind === 'empty')
+  const filledCount = activeSlots.filter((s) => s.kind === 'filled').length
 
-  function addWord(i: number, w: string) {
+  function ensureSlots(prev: Slot[]): Slot[] {
+    if (prev.length === words.length) return prev
+    return words.map((): Slot => ({ kind: 'empty' }))
+  }
+
+  function placeFromBank(bankIndex: number, slotIndex?: number) {
+    if (checked || usedBank.has(bankIndex)) return
+    const word = bank[bankIndex]
+    if (!word) return
+    setSlots((prev) => {
+      const next = ensureSlots(prev)
+      const target = slotIndex ?? next.findIndex((s) => s.kind === 'empty')
+      if (target < 0 || target >= next.length) return next
+      // If target already filled, return that word to the bank by clearing first.
+      const copy = [...next]
+      copy[target] = { kind: 'filled', bankIndex, word }
+      return copy
+    })
+  }
+
+  function clearSlot(slotIndex: number) {
     if (checked) return
-    setUsed((u) => [...u, i])
-    setPicked((p) => [...p, w])
+    setSlots((prev) => {
+      const next = ensureSlots(prev)
+      const copy = [...next]
+      copy[slotIndex] = { kind: 'empty' }
+      return copy
+    })
   }
 
   function undo() {
-    if (checked || !picked.length) return
-    setUsed((u) => u.slice(0, -1))
-    setPicked((p) => p.slice(0, -1))
+    if (checked) return
+    setSlots((prev) => {
+      const next = ensureSlots(prev)
+      for (let i = next.length - 1; i >= 0; i--) {
+        if (next[i]?.kind === 'filled') {
+          const copy = [...next]
+          copy[i] = { kind: 'empty' }
+          return copy
+        }
+      }
+      return next
+    })
   }
 
   function check() {
-    const ok = wordsMatch(picked, words)
+    const answer = activeSlots.map((s) => (s.kind === 'filled' ? s.word : ''))
+    const ok = wordsMatch(answer, words)
     setLastOk(ok)
     setChecked(true)
     setFeedback(
@@ -77,28 +126,30 @@ export function ScriptureScramble({ user, difficulty, onComplete, onBack }: Game
       return
     }
     setIndex((i) => i + 1)
-    setPicked([])
-    setUsed([])
+    setSlots([])
     setFeedback(null)
     setChecked(false)
     setLastOk(false)
+    setDraggingBank(null)
+    setDragOverSlot(null)
   }
 
   return (
     <GameChrome
+      gameId="scripture-scramble"
       title="Scripture Scramble"
       stepLabel={`${index + 1} / ${verses.length} · ${verse.reference}`}
       onBack={onBack}
       footer={
         !checked ? (
           <div className="game-actions">
-            <button type="button" className="btn ghost" onClick={undo} disabled={!picked.length}>
+            <button type="button" className="btn ghost" onClick={undo} disabled={!filledCount}>
               Undo
             </button>
             <button
               type="button"
               className="btn primary"
-              disabled={picked.length !== words.length}
+              disabled={filledCount !== words.length}
               onClick={check}
             >
               Check order
@@ -112,19 +163,79 @@ export function ScriptureScramble({ user, difficulty, onComplete, onBack }: Game
       }
     >
       <p className="muted">
-        Rebuild the verse in order. Uses your memory-bank translation when available; otherwise WEB
-        (public domain).
+        Rebuild the verse in order. Click a word to place it in the next empty slot, or drag it onto a
+        slot. Tap a placed word to remove it.
       </p>
       <p className="muted tiny">Score: {score}</p>
-      <div className="scramble-built" aria-live="polite">
-        {picked.length ? picked.join(' ') : <span className="muted">Tap words below…</span>}
-      </div>
-      <div className="scramble-bank">
-        {available.map(({ w, i }) => (
-          <button key={`${i}-${w}`} type="button" className="chip" onClick={() => addWord(i, w)}>
-            {w}
+
+      <div
+        className="scramble-slots"
+        aria-label="Verse slots"
+        onDragOver={(e) => {
+          if (draggingBank == null || checked) return
+          e.preventDefault()
+        }}
+      >
+        {activeSlots.map((slot, i) => (
+          <button
+            key={`slot-${i}`}
+            type="button"
+            className={`scramble-slot ${slot.kind === 'empty' ? 'empty' : 'filled'} ${
+              dragOverSlot === i ? 'drop-target' : ''
+            } ${i === nextEmpty && slot.kind === 'empty' ? 'next' : ''}`}
+            disabled={checked && slot.kind === 'empty'}
+            onClick={() => {
+              if (slot.kind === 'filled') clearSlot(i)
+            }}
+            onDragOver={(e) => {
+              if (draggingBank == null || checked) return
+              e.preventDefault()
+              setDragOverSlot(i)
+            }}
+            onDragLeave={() => setDragOverSlot((cur) => (cur === i ? null : cur))}
+            onDrop={(e) => {
+              e.preventDefault()
+              const raw = e.dataTransfer.getData('text/plain')
+              const bankIndex = Number(raw)
+              setDragOverSlot(null)
+              setDraggingBank(null)
+              if (Number.isFinite(bankIndex)) placeFromBank(bankIndex, i)
+            }}
+          >
+            {slot.kind === 'filled' ? slot.word : i === nextEmpty ? '…' : '·'}
           </button>
         ))}
+      </div>
+
+      <div className="scramble-bank" aria-label="Word bank">
+        {bank.map((w, i) => {
+          const used = usedBank.has(i)
+          return (
+            <button
+              key={`${i}-${w}`}
+              type="button"
+              className={`chip ${used ? 'used' : ''}`}
+              draggable={!checked && !used}
+              disabled={checked || used}
+              onClick={() => placeFromBank(i)}
+              onDragStart={(e) => {
+                if (checked || used) {
+                  e.preventDefault()
+                  return
+                }
+                e.dataTransfer.setData('text/plain', String(i))
+                e.dataTransfer.effectAllowed = 'move'
+                setDraggingBank(i)
+              }}
+              onDragEnd={() => {
+                setDraggingBank(null)
+                setDragOverSlot(null)
+              }}
+            >
+              {w}
+            </button>
+          )
+        })}
       </div>
       {checked && <AriReactionCue active correct={lastOk} />}
       {feedback && <p className={`nudge ${lastOk ? 'good' : 'risk'}`}>{feedback}</p>}

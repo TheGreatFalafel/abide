@@ -120,11 +120,19 @@ export function migrateUserState(
   }
 
   const translationId = raw.translationId ?? base.translationId
+  const rawDifficulty = (raw as Partial<UserState>).learnDifficulty
+  const learnDifficulty =
+    rawDifficulty === 'beginner' ||
+    rawDifficulty === 'intermediate' ||
+    rawDifficulty === 'advanced'
+      ? rawDifficulty
+      : base.learnDifficulty
 
   return {
     ...base,
     ...raw,
     translationId,
+    learnDifficulty,
     esvApiKey: raw.esvApiKey ?? '',
     memoryVerses: collapseMemoryBankByScripture([...byId.values()], translationId),
     memoryReviewsToday: raw.memoryReviewsToday ?? 0,
@@ -345,7 +353,13 @@ export function updateSettings(
   patch: Partial<
     Pick<
       UserState,
-      'translationId' | 'esvApiKey' | 'planId' | 'dailyGoalXp' | 'notifications' | 'guidedTour'
+      | 'translationId'
+      | 'esvApiKey'
+      | 'planId'
+      | 'dailyGoalXp'
+      | 'notifications'
+      | 'guidedTour'
+      | 'learnDifficulty'
     >
   >,
 ): UserState {

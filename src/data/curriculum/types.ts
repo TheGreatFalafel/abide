@@ -1,12 +1,15 @@
 import type { PassageRef } from '../books'
-import type { QuizQuestion } from '../planQuizzes'
+import type { CurriculumDifficulty, QuizQuestion } from '../planQuizzes'
 import type { BiteExercise } from '../../lib/biteSized/types'
+
+export type { CurriculumDifficulty }
 
 /** Teachers / historians whose published frameworks organize or supplement topics. */
 export type CurriculumTeacherId =
   | 'grudem'
   | 'sproul'
   | 'macarthur'
+  | 'hoekema'
   | 'schaff'
   | 'needham'
   | 'gonzalez'
@@ -15,6 +18,21 @@ export type CurriculumTeacherId =
 
 /** Learn catalog domain — theology, church history, or evangelism & apologetics. */
 export type CurriculumDomain = 'theology' | 'church-history' | 'evangelism-apologetics'
+
+/** Full authored lessons vs map/outline stubs awaiting Part-1 depth expansion. */
+export type CurriculumContentStatus = 'full' | 'outline'
+
+/** Content visibility relative to the learner's Learn difficulty. */
+export type ContentLevel = 'all' | CurriculumDifficulty
+
+/** Tiered objectives from the master curriculum schema; flat string[] remains supported. */
+export type CurriculumObjectives =
+  | string[]
+  | {
+      beginner: string[]
+      intermediate: string[]
+      advanced: string[]
+    }
 
 export type ChurchHistoryEra =
   | 'early'
@@ -56,12 +74,15 @@ export type ContentTeaching = {
   kind: 'teaching'
   title?: string
   body: string
+  /** Omit or `all` = always shown; higher tiers become Go Deeper for lower learners */
+  level?: ContentLevel
 }
 
 export type ContentConcept = {
   kind: 'concept'
   term: string
   explanation: string
+  level?: ContentLevel
 }
 
 export type ContentScriptureFocus = {
@@ -106,13 +127,36 @@ export type ContentBlock =
   | ContentAttribution
   | ContentPrimarySource
 
+/**
+ * Structured further-study entry (Update Pack schema).
+ * Show locator only when `verified` is true — never invent page/chapter numbers.
+ */
+export type CurriculumFurtherStudy = {
+  author: string
+  work: string
+  /** Chapter, page, or message title — display only when verified */
+  locator?: string
+  verified: boolean
+  /** Optional outbound URL (Grace to You, Ligonier, etc.) */
+  url?: string
+}
+
+/** Link-out study video — never embed/host third-party media. */
+export type CurriculumLessonVideo = {
+  url: string
+  attribution: string
+  provider: 'grace-to-you' | 'ligonier' | 'other'
+}
+
+export type CurriculumLessonStatus = 'draft' | 'review' | 'published'
+
 export type CurriculumLesson = {
   /** Stable id — never rename; add new lessons instead */
   id: string
   order: number
   title: string
   estimatedMinutes: number
-  objectives: string[]
+  objectives: CurriculumObjectives
   primaryPassages: PassageRef[]
   supportingPassages: PassageRef[]
   /** Ordered instructional blocks */
@@ -126,7 +170,15 @@ export type CurriculumLesson = {
   interactiveExercises?: BiteExercise[]
   /** Free-response reflection prompts (completion-gated, not auto-graded) */
   reflectionPrompts: string[]
-  furtherStudy?: string[]
+  /**
+   * Legacy string lines or structured entries. Prefer structured where verified
+   * locators matter; strings remain supported for passages and free-form notes.
+   */
+  furtherStudy?: Array<string | CurriculumFurtherStudy>
+  /** Optional outbound teaching video (GTY preferred over Ligonier when both exist) */
+  video?: CurriculumLessonVideo | CurriculumLessonVideo[]
+  /** Optional per-lesson workflow status; topic contentStatus remains the catalog gate */
+  status?: CurriculumLessonStatus
   /** Prior lesson ids whose review questions appear in this lesson's bank */
   reviewFromLessonIds?: string[]
 }
@@ -146,6 +198,11 @@ export type CurriculumTopic = {
   era?: ChurchHistoryEra
   /** Learner-facing era label, e.g. "Early Church (c. 30–500)" */
   eraLabel?: string
+  /**
+   * `full` = Part-1 depth; `outline` = map/stub teaching awaiting expansion.
+   * Defaults to `full` when omitted.
+   */
+  contentStatus?: CurriculumContentStatus
   sources: CurriculumSource[]
   lessons: CurriculumLesson[]
   /** Bump when lesson ids or completion semantics change incompatibly */
@@ -178,7 +235,7 @@ export type CurriculumProgress = {
 }
 
 /** Bump when catalog membership or completion semantics change; completions are preserved. */
-export const CURRICULUM_CATALOG_VERSION = 6
+export const CURRICULUM_CATALOG_VERSION = 9
 
 export function emptyCurriculumProgress(
   catalogVersion = CURRICULUM_CATALOG_VERSION,

@@ -1,3 +1,6 @@
+/** Learn / language quiz tier. Omit on a question to treat as available at every level. */
+export type CurriculumDifficulty = 'beginner' | 'intermediate' | 'advanced'
+
 export type McQuestion = {
   id: string
   type: 'mc'
@@ -6,6 +9,8 @@ export type McQuestion = {
   answer: number
   /** Optional brief rationale shown after the learner checks an answer */
   explanation?: string
+  /** When set, filtered by the learner's Learn difficulty preference */
+  difficulty?: CurriculumDifficulty
 }
 
 export type OpenQuestion = {

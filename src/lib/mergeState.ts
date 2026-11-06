@@ -199,6 +199,8 @@ export function mergeUserStates(local: UserState, cloud: UserState): UserState {
     },
     esvApiKey,
     translationId,
+    // Device preference — prefer local Learn difficulty setting
+    learnDifficulty: local.learnDifficulty || cloud.learnDifficulty || 'beginner',
     dailyGoalXp: local.dailyGoalXp || cloud.dailyGoalXp,
     todayXp: Math.max(local.todayXp, cloud.todayXp),
     todayXpDate:

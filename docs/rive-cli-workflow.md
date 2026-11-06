@@ -16,6 +16,7 @@ The product contract is unchanged. See `docs/rive-characters.md`. `CharacterEven
 | `src/components/rive/RiveCharacter.tsx` | Fires `StateMachineInput.fire()` and sets boolean/number inputs |
 | `rive/poc-idle/` | Isolated proof of concept. Different artboard and state-machine names. Not mounted by the app |
 | `rive/poc-image-animation/` | Multi-PNG experiment (Solo hard swaps + opacity soft morph). See `docs/rive-cli-image-animation.md` |
+| `rive/poc-gemini-poses/` | Gemini dimensional lion poses (stand/sit/think/walk/sleep). See `docs/rive-cli-gemini-poses.md` and `docs/rive-review-index.md` |
 
 `rive/ari/AGENTS.md` is the CLI's own instructions for an agent editing that project. Follow it: look types up with `rive schema` and `rive docs`, then check the build. Do not guess property names.
 

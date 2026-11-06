@@ -5,6 +5,8 @@ import {
   SOURCE_SPROUL_EVANG,
 } from '../evangelismSources'
 import { mc, open, passage } from './_helpers'
+import { PART16_GOSPEL_BY_LESSON } from '../banks/part16-gospel-sharing'
+import { appendOutlineBank } from '../banks/outlineBankHelper'
 
 /** Section A — Understanding the Gospel (foundational, condensed). */
 export const GOSPEL_FOUNDATIONS: CurriculumTopic = {
@@ -23,7 +25,8 @@ export const GOSPEL_FOUNDATIONS: CurriculumTopic = {
   prerequisites: [],
   framework: 'reformed',
   domain: 'evangelism-apologetics',
-  version: 1,
+  contentStatus: 'full',
+  version: 2,
   sources: [
     {
       ...SOURCE_GRUDEM_EVANG,
@@ -114,7 +117,7 @@ export const GOSPEL_FOUNDATIONS: CurriculumTopic = {
             'Creation and fall explain why redemption is needed; Christ and faith are the answer — not the reverse.',
         },
       ],
-      questions: [
+      questions: appendOutlineBank('gospel-god-creation-fall', [
         mc(
           'gospel-fall-q1',
           'According to this lesson, the gospel begins with:',
@@ -140,7 +143,7 @@ export const GOSPEL_FOUNDATIONS: CurriculumTopic = {
           'Romans and Genesis describe real guilt and corruption before God.',
         ),
         open('gospel-fall-open', 'In one sentence, why must evangelism talk about God before “tips for life”?'),
-      ],
+      ], PART16_GOSPEL_BY_LESSON),
       reflectionPrompts: [
         'Praise God as Creator, confess where you have lived as if you were your own god, and ask for a clearer love for his holiness.',
       ],
@@ -199,7 +202,7 @@ export const GOSPEL_FOUNDATIONS: CurriculumTopic = {
             'Supplementary emphasis on the necessity of a real atonement and empty tomb — themes only.',
         },
       ],
-      questions: [
+      questions: appendOutlineBank('gospel-christ-cross-resurrection', [
         mc(
           'gospel-christ-q1',
           'In 1 Corinthians 15, Paul treats the resurrection as:',
@@ -224,7 +227,7 @@ export const GOSPEL_FOUNDATIONS: CurriculumTopic = {
           1,
           'Biblical atonement language ties the cross to sin, justice, and mercy.',
         ),
-      ],
+      ], PART16_GOSPEL_BY_LESSON),
       reflectionPrompts: [
         'Thank Jesus for the cross and resurrection, and name one way you are tempted to reduce him to a mere example.',
       ],
@@ -292,7 +295,7 @@ export const GOSPEL_FOUNDATIONS: CurriculumTopic = {
             'Faith alone justifies; the faith that justifies is never alone — Ephesians 2:10 and James insist on fruit without making fruit the basis of justification.',
         },
       ],
-      questions: [
+      questions: appendOutlineBank('gospel-repentance-faith-justification', [
         mc(
           'gospel-faith-q1',
           'Repentance, in biblical evangelism, primarily means:',
@@ -317,7 +320,7 @@ export const GOSPEL_FOUNDATIONS: CurriculumTopic = {
           1,
           'Faith is the empty hand that receives the Savior.',
         ),
-      ],
+      ], PART16_GOSPEL_BY_LESSON),
       reflectionPrompts: [
         'Ask God to deepen repentance and simple trust in Christ, not confidence in your religious résumé.',
       ],
@@ -375,7 +378,7 @@ export const GOSPEL_FOUNDATIONS: CurriculumTopic = {
             'Supplementary emphasis on clear confession of Christ’s exclusive saving work — original paraphrase only.',
         },
       ],
-      questions: [
+      questions: appendOutlineBank('gospel-grace-exclusivity', [
         mc(
           'gospel-excl-q1',
           'John 14:6, on its face, teaches that:',
@@ -400,7 +403,7 @@ export const GOSPEL_FOUNDATIONS: CurriculumTopic = {
           1,
           'Truthfulness and love belong together in witness.',
         ),
-      ],
+      ], PART16_GOSPEL_BY_LESSON),
       reflectionPrompts: [
         'Pray for a friend who does not know Christ — ask for boldness without arrogance, and for your own deeper gratitude for grace.',
       ],

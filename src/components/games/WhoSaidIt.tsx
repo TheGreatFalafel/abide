@@ -19,7 +19,7 @@ export function WhoSaidIt({ difficulty, onComplete, onBack }: GameSessionProps) 
   const q = questions[index]
   if (!q) {
     return (
-      <GameChrome title="Who Said It?" stepLabel="Unavailable" onBack={onBack}>
+      <GameChrome gameId="who-said-it" title="Who Said It?" stepLabel="Unavailable" onBack={onBack}>
         <p className="muted">No questions for this difficulty.</p>
       </GameChrome>
     )
@@ -54,6 +54,7 @@ export function WhoSaidIt({ difficulty, onComplete, onBack }: GameSessionProps) 
 
   return (
     <GameChrome
+      gameId="who-said-it"
       title="Who Said It?"
       stepLabel={`${index + 1} / ${questions.length}`}
       onBack={onBack}

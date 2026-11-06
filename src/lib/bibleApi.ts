@@ -263,14 +263,24 @@ function sliceChapter(
 ): PassageContent {
   if (!verseStart && !verseEnd) return content
   const start = verseStart ?? content.verses[0]?.number ?? 1
-  const end = verseEnd ?? content.verses[content.verses.length - 1]?.number ?? start
+  const end = verseEnd ?? verseStart ?? content.verses[content.verses.length - 1]?.number ?? start
   const sliced = content.verses.filter((v) => v.number >= start && v.number <= end)
+  // If the API numbering did not match the requested range, fall back to the
+  // full chapter rather than rendering an empty "passage" card.
+  if (!sliced.length) {
+    return {
+      ...content,
+      reference: heading
+        ? `${content.reference} · ${heading}`
+        : `${content.reference} (requested ${start}${end !== start ? `–${end}` : ''} unavailable — showing chapter)`,
+    }
+  }
   const hasMore = content.verses.some((v) => v.number > end)
   const label =
     heading ||
-    (verseEnd
+    (end !== start
       ? `${content.reference}:${start}–${end}`
-      : `${content.reference}:${start}–`)
+      : `${content.reference}:${start}`)
   return {
     ...content,
     reference: heading ? `${content.reference} · ${heading}` : label,

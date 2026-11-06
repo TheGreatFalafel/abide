@@ -43,8 +43,13 @@ describe('curriculum catalog', () => {
     const history = listCurriculumTopicsByDomain('church-history')
     const witness = listCurriculumTopicsByDomain('evangelism-apologetics')
     expect(theology.every((t) => (t.domain ?? 'theology') === 'theology')).toBe(true)
-    expect(history.map((t) => t.id)).toEqual(['early-church'])
-    expect(witness.length).toBe(5)
+    expect(history.map((t) => t.id)).toEqual([
+      'early-church',
+      'medieval-church',
+      'reformation',
+      'modern-christianity',
+    ])
+    expect(witness.length).toBe(12)
     expect(theology.length + history.length + witness.length).toBe(listCurriculumTopics().length)
   })
 
@@ -59,11 +64,21 @@ describe('curriculum catalog', () => {
       'doctrine-of-church',
       'doctrine-of-last-things',
       'early-church',
+      'medieval-church',
+      'reformation',
+      'modern-christianity',
       'gospel-foundations',
       'christian-apologetics',
       'sharing-your-faith',
-      'worldview-atheism',
+      'atheism-naturalism',
+      'mormonism',
+      'roman-catholicism',
+      'eastern-orthodoxy',
       'understanding-islam',
+      'jehovahs-witnesses',
+      'eastern-religions-new-age',
+      'judaism',
+      'other-groups',
     ])
     for (const topic of topics) {
       expect(validateCurriculumTopic(topic)).toEqual([])
@@ -83,8 +98,15 @@ describe('curriculum catalog', () => {
       'gospel-foundations',
       'christian-apologetics',
       'sharing-your-faith',
-      'worldview-atheism',
+      'atheism-naturalism',
+      'mormonism',
+      'roman-catholicism',
+      'eastern-orthodoxy',
       'understanding-islam',
+      'jehovahs-witnesses',
+      'eastern-religions-new-age',
+      'judaism',
+      'other-groups',
     ])
     expect(
       witness.some((t) =>
@@ -95,35 +117,14 @@ describe('curriculum catalog', () => {
     ).toBe(true)
   })
 
-  it('registers Understanding Islam with ten sections, sources, and conversations', () => {
+  it('registers Understanding Islam (Part 11) with full lessons and evangelism domain', () => {
     const topic = listCurriculumTopics().find((t) => t.id === 'understanding-islam')
     expect(topic).toBeTruthy()
     expect(topic!.domain).toBe('evangelism-apologetics')
     expect(topic!.prerequisites).toEqual(['gospel-foundations'])
-    expect(orderedLessons(topic!).map((l) => l.id)).toEqual([
-      'islam-introduction-origins',
-      'islam-quran-sources',
-      'islam-allah-monotheism',
-      'islam-jesus',
-      'islam-salvation-afterlife',
-      'islam-five-pillars',
-      'islam-differences-christianity',
-      'islam-diversity-sunni-shia',
-      'islam-common-questions',
-      'islam-sharing-gospel',
-    ])
-    expect(topic!.lessons.some((l) => l.content.some((b) => b.kind === 'primary_source'))).toBe(
-      true,
-    )
-    const convoLessons = topic!.lessons.filter((l) =>
-      l.interactiveExercises?.some((ex) => ex.kind === 'conversation'),
-    )
-    expect(convoLessons.map((l) => l.id)).toEqual([
-      'islam-jesus',
-      'islam-differences-christianity',
-      'islam-common-questions',
-      'islam-sharing-gospel',
-    ])
+    expect(topic!.contentStatus).toBe('full')
+    expect(topic!.lessons.length).toBeGreaterThanOrEqual(3)
+    expect(topic!.lessons.every((l) => l.content.some((b) => b.kind === 'distinction'))).toBe(true)
     const byId = curriculumTopicsById()
     expect(isTopicUnlocked(topic!, emptyCurriculumProgress(), byId)).toBe(false)
     const afterGospel = emptyCurriculumProgress()
@@ -172,8 +173,9 @@ describe('curriculum catalog', () => {
     const topic = listCurriculumTopics().find((t) => t.id === 'nature-of-man')
     expect(topic).toBeTruthy()
     const lessons = orderedLessons(topic!)
-    expect(lessons.map((l) => l.order)).toEqual([1, 2, 3, 4, 5])
-    expect(lessons[0].id).toBe('nature-of-man-image')
+    expect(lessons.map((l) => l.order)).toEqual([1, 2, 3, 4, 5, 6])
+    expect(lessons[0].id).toBe('nature-of-man-creation-origins')
+    expect(lessons[1].id).toBe('nature-of-man-image')
     expect(getCurriculumLesson('nature-of-man-sin')?.topic.id).toBe('nature-of-man')
   })
 

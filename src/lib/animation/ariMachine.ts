@@ -27,7 +27,11 @@ const ARI_STATE_SPECS: Record<AriCharacterState, AriStateSpec> = {
   correct: { expression: 'proud', pose: 'celebrate', motion: 'react' },
   encourage: { expression: 'comforting', pose: 'encourage', motion: 'react' },
   celebrate: { expression: 'celebrating', pose: 'celebrate', motion: 'react' },
+  jump: { expression: 'celebrating', pose: 'jump', motion: 'react' },
+  levelUp: { expression: 'celebrating', pose: 'celebrate', motion: 'react' },
   milestone: { expression: 'celebrating', pose: 'jump', motion: 'react' },
+  /** Resting / overnight — soft idle until `sleep` timeline exists in SVG. */
+  sleep: { expression: 'neutral', pose: 'idle', motion: 'idle' },
 }
 
 export function normalizeAriCharacterState(raw: unknown): AriCharacterState {
@@ -55,6 +59,8 @@ export function ariStateFromFeedback(event: AnimationFeedbackEvent): AriCharacte
       return event.correct ? 'correct' : 'encourage'
     case 'lesson_completed':
       return 'celebrate'
+    case 'level_up':
+      return 'levelUp'
     case 'achievement_unlocked':
     case 'streak_milestone':
       return 'milestone'

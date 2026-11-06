@@ -438,6 +438,42 @@ export const MATCH_BANK: MatchItem[] = [
     explanation: 'This “hall of faith” chapter defines faith as confident trust in God’s promises, commending it through examples across redemptive history.',
     difficulty: 'advanced',
   },
+  // Part 13.6 theme matches (unique refs only)
+  {
+    id: 'm-49',
+    reference: 'Genesis 6–9',
+    summary: 'Noah and the Flood; God preserves a remnant through the ark.',
+    explanation: 'Genesis 6–9 narrates the Flood judgment and covenant with Noah.',
+    difficulty: 'beginner',
+  },
+  {
+    id: 'm-50',
+    reference: 'Jonah 1–2',
+    summary: 'Jonah flees from God’s call and is swallowed by a great fish.',
+    explanation: 'Jonah’s flight and deliverance display God’s mercy and sovereignty over the nations.',
+    difficulty: 'beginner',
+  },
+  {
+    id: 'm-51',
+    reference: 'Nehemiah 1–2',
+    summary: 'Nehemiah prays and returns to rebuild Jerusalem’s walls.',
+    explanation: 'Nehemiah’s mission restores the city’s defenses under Persian rule.',
+    difficulty: 'intermediate',
+  },
+  {
+    id: 'm-53',
+    reference: 'Daniel 9',
+    summary: 'Daniel prays and receives the prophecy of the seventy weeks.',
+    explanation: 'Daniel 9 includes confession and the seventy-weeks vision concerning Israel and Messiah.',
+    difficulty: 'advanced',
+  },
+  {
+    id: 'm-54',
+    reference: 'Habakkuk 2:4',
+    summary: 'The righteous shall live by his faith.',
+    explanation: 'Habakkuk 2:4 is cited in Romans and Galatians as a key faith text.',
+    difficulty: 'intermediate',
+  },
 ]
 
 export function matchItemsForDifficulty(difficulty: GameDifficulty, count = 4): MatchItem[] {

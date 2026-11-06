@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import {
+  CURRICULUM_DIFFICULTY_LABELS,
   curriculumTopicsById,
   isLessonUnlocked,
   isTopicUnlocked,
@@ -67,6 +68,11 @@ function TopicList({
               <div>
                 <h3>{topic.title}</h3>
                 {topic.eraLabel ? <p className="eyebrow">{topic.eraLabel}</p> : null}
+                {(topic.contentStatus ?? 'full') === 'outline' ? (
+                  <p className="nudge" role="note">
+                    Outline — teaching to be expanded to full lesson depth.
+                  </p>
+                ) : null}
                 <p className="muted">{topic.description}</p>
               </div>
               <div className="learn-meta">
@@ -156,6 +162,10 @@ export function Learn({ user, onOpenLesson, onOpenLanguageLesson }: Props) {
         <p className="muted">
           Theology, Church History, Evangelism & Apologetics, and Biblical Greek and Hebrew.
           Progress is saved separately — opening a lesson alone does not earn XP.
+        </p>
+        <p className="eyebrow">
+          Difficulty:{' '}
+          {CURRICULUM_DIFFICULTY_LABELS[user.learnDifficulty ?? 'beginner']} (change in Settings)
         </p>
       </div>
 

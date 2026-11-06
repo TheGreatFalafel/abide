@@ -353,6 +353,48 @@ export function SettingsView({
             </section>
 
             <section className="settings-block tight">
+              <h3>Learn difficulty</h3>
+              <p className="muted">
+                Filters objectives, Go Deeper teaching, and quiz tiers in Learn (theology, history,
+                witness, Greek, and Hebrew). You can still open Go Deeper steps in a lesson.
+              </p>
+              <div className="plan-grid">
+                {(
+                  [
+                    {
+                      id: 'beginner' as const,
+                      label: 'Beginner',
+                      blurb: 'Recall and understand. Plain language, one idea at a time.',
+                    },
+                    {
+                      id: 'intermediate' as const,
+                      label: 'Intermediate',
+                      blurb: 'Explain and connect. Compare positions and use basic terms.',
+                    },
+                    {
+                      id: 'advanced' as const,
+                      label: 'Advanced',
+                      blurb: 'Analyze and defend. Historical theology, nuance, and objections.',
+                    },
+                  ] as const
+                ).map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    className={`plan-card ${(user.learnDifficulty ?? 'beginner') === opt.id ? 'selected' : ''}`}
+                    onClick={() =>
+                      onUserChange(updateSettings(user, { learnDifficulty: opt.id }))
+                    }
+                  >
+                    <span className="plan-vibe">{opt.label}</span>
+                    <strong>{opt.label}</strong>
+                    <span className="plan-blurb">{opt.blurb}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="settings-block tight">
               <h3>Daily XP goal</h3>
               <p className="muted">
                 How much XP fills “Today’s quest.” This only changes the target — it does not add XP.

@@ -1,10 +1,31 @@
-import type { CurriculumLesson, CurriculumTopic, ContentBlock } from '../../data/curriculum/types'
+import type {
+  ContentBlock,
+  CurriculumDifficulty,
+  CurriculumLesson,
+  CurriculumTopic,
+} from '../../data/curriculum/types'
+import {
+  contentIsGoDeeper,
+  contentVisibleInline,
+  nextDifficulty,
+  objectivesForDifficulty,
+  questionMatchesDifficulty,
+  shuffleMcChoices,
+} from '../../data/curriculum/difficulty'
 import { assembleCurriculumQuestions } from '../../data/curriculum/quizBank'
+import { formatFurtherStudyItem } from '../../data/curriculum/topics/_helpers'
 import type { BiteExercise, BiteLesson, BiteStep } from './types'
 import { quizQuestionToMc } from './types'
 
 /** Cap practice length so spiral review cannot produce 25-question walls. */
 export const CURRICULUM_PRACTICE_CAP = 5
+
+export type CompileCurriculumOptions = {
+  difficulty?: CurriculumDifficulty
+  /** Include one tier above the learner’s level in practice MC. */
+  challengeUp?: boolean
+  random?: () => number
+}
 
 function isHistory(topic: CurriculumTopic): boolean {
   return topic.domain === 'church-history'
@@ -27,14 +48,33 @@ function blockTitle(block: ContentBlock, index: number): string {
   return `Step ${index + 1}`
 }
 
+function blockLevel(
+  block: ContentBlock,
+): 'all' | CurriculumDifficulty | undefined {
+  if (block.kind === 'teaching' || block.kind === 'concept') return block.level
+  return 'all'
+}
+
 function blockToSteps(
   block: ContentBlock,
   index: number,
   history: boolean,
   evangelism: boolean,
+  asGoDeeper: boolean,
 ): BiteStep[] {
   const id = `c-block-${index}`
   if (block.kind === 'teaching') {
+    if (asGoDeeper) {
+      return [
+        {
+          id,
+          kind: 'deeper',
+          title: block.title?.trim() || 'Go deeper',
+          body: block.body,
+          deeperItems: [block.body],
+        },
+      ]
+    }
     return [
       {
         id,
@@ -45,6 +85,17 @@ function blockToSteps(
     ]
   }
   if (block.kind === 'concept') {
+    if (asGoDeeper) {
+      return [
+        {
+          id,
+          kind: 'deeper',
+          title: block.term,
+          body: block.explanation,
+          deeperItems: [`${block.term}: ${block.explanation}`],
+        },
+      ]
+    }
     return [
       {
         id,
@@ -120,7 +171,6 @@ function blockToSteps(
       },
     ]
   }
-  // attribution → deeper
   return [
     {
       id,
@@ -163,6 +213,9 @@ function practiceFromQuestions(
   lesson: CurriculumLesson,
   topic: CurriculumTopic,
   remainingSlots: number,
+  difficulty: CurriculumDifficulty,
+  challengeUp: boolean,
+  random: () => number,
 ): BiteStep[] {
   if (remainingSlots <= 0) return []
 
@@ -171,21 +224,56 @@ function practiceFromQuestions(
   const nativeIds = new Set(
     lesson.questions.filter((q) => q.type === 'mc').map((q) => q.id),
   )
-  const native = mc.filter((q) => nativeIds.has(q.id))
-  const review = mc.filter((q) => !nativeIds.has(q.id))
-  const picked = [...native, ...review].slice(0, remainingSlots)
+
+  const matches = (q: (typeof mc)[number]) =>
+    questionMatchesDifficulty(q.difficulty, difficulty, { includeChallengeUp: challengeUp })
+
+  const native = mc.filter((q) => nativeIds.has(q.id) && matches(q))
+  const review = mc.filter((q) => !nativeIds.has(q.id) && matches(q))
+
+  // Prefer same-tier native, then challenge-up, then review
+  const sameTier = [...native, ...review].filter(
+    (q) => q.difficulty == null || q.difficulty === difficulty || !challengeUp,
+  )
+  const challenge = challengeUp
+    ? [...native, ...review].filter((q) => {
+        const up = nextDifficulty(difficulty)
+        return up != null && q.difficulty === up
+      })
+    : []
+  const picked = [...sameTier, ...challenge]
+    .filter((q, i, arr) => arr.findIndex((x) => x.id === q.id) === i)
+    .slice(0, remainingSlots)
 
   if (!picked.length) {
-    return []
+    // Fall back to any MC so lessons still complete when banks lack tagged items
+    const fallback = [...native, ...review, ...mc].slice(0, remainingSlots)
+    return fallback.map((q, i) => {
+      const shuffled = shuffleMcChoices(q, random)
+      return {
+        id: `c-practice-${q.id || i}`,
+        kind: 'practice' as const,
+        title: `Practice ${i + 1}`,
+        body: 'Choose the best answer, then read the explanation carefully.',
+        exercise: quizQuestionToMc(shuffled) as BiteExercise,
+      }
+    })
   }
 
-  return picked.map((q, i) => ({
-    id: `c-practice-${q.id || i}`,
-    kind: 'practice' as const,
-    title: `Practice ${i + 1}`,
-    body: 'Choose the best answer, then read the explanation carefully.',
-    exercise: quizQuestionToMc(q) as BiteExercise,
-  }))
+  return picked.map((q, i) => {
+    const shuffled = shuffleMcChoices(q, random)
+    const up = nextDifficulty(difficulty)
+    const isChallenge = up != null && q.difficulty === up
+    return {
+      id: `c-practice-${q.id || i}`,
+      kind: 'practice' as const,
+      title: isChallenge ? `Challenge ${i + 1}` : `Practice ${i + 1}`,
+      body: isChallenge
+        ? 'Challenge-up question from the next difficulty tier. Choose the best answer, then read the explanation.'
+        : 'Choose the best answer, then read the explanation carefully.',
+      exercise: quizQuestionToMc(shuffled) as BiteExercise,
+    }
+  })
 }
 
 /**
@@ -195,9 +283,14 @@ function practiceFromQuestions(
 export function compileCurriculumBiteLesson(
   topic: CurriculumTopic,
   lesson: CurriculumLesson,
+  options: CompileCurriculumOptions = {},
 ): BiteLesson {
+  const difficulty = options.difficulty ?? 'beginner'
+  const challengeUp = options.challengeUp ?? true
+  const random = options.random ?? Math.random
   const history = isHistory(topic)
   const evangelism = isEvangelism(topic)
+  const objectives = objectivesForDifficulty(lesson.objectives, difficulty)
   const steps: BiteStep[] = []
 
   steps.push({
@@ -209,7 +302,7 @@ export function compileCurriculumBiteLesson(
       : evangelism
         ? `In about ${lesson.estimatedMinutes} minutes you will grow in gospel clarity and wise witness — Scripture first, accurate understanding of others, and practice that favors love and truth over winning arguments.`
         : `In about ${lesson.estimatedMinutes} minutes you will work through one focused theological concept — taught briefly, grounded in Scripture, practiced, and applied.`,
-    reviewItems: lesson.objectives,
+    reviewItems: objectives,
   })
 
   if (lesson.primaryPassages[0]) {
@@ -226,9 +319,33 @@ export function compileCurriculumBiteLesson(
     })
   }
 
+  const goDeeperBodies: string[] = []
   lesson.content.forEach((block, i) => {
-    steps.push(...blockToSteps(block, i, history, evangelism))
+    const level = blockLevel(block)
+    if (contentVisibleInline(level, difficulty)) {
+      steps.push(...blockToSteps(block, i, history, evangelism, false))
+    } else if (contentIsGoDeeper(level, difficulty)) {
+      if (block.kind === 'teaching') {
+        goDeeperBodies.push(
+          `${block.title?.trim() ? `${block.title.trim()}: ` : ''}${block.body}`,
+        )
+      } else if (block.kind === 'concept') {
+        goDeeperBodies.push(`${block.term}: ${block.explanation}`)
+      } else {
+        steps.push(...blockToSteps(block, i, history, evangelism, true))
+      }
+    }
   })
+
+  if (goDeeperBodies.length) {
+    steps.push({
+      id: 'c-go-deeper-tier',
+      kind: 'deeper',
+      title: 'Go deeper',
+      body: 'Optional material written for a higher Learn difficulty. Open when you want more depth — not required to finish the lesson.',
+      deeperItems: goDeeperBodies,
+    })
+  }
 
   lesson.primaryPassages.slice(1).forEach((p, i) => {
     steps.push({
@@ -244,7 +361,14 @@ export function compileCurriculumBiteLesson(
 
   const interactive = practiceFromInteractive(lesson)
   const mcSlots = Math.max(0, CURRICULUM_PRACTICE_CAP - interactive.length)
-  const fromQuiz = practiceFromQuestions(lesson, topic, mcSlots)
+  const fromQuiz = practiceFromQuestions(
+    lesson,
+    topic,
+    mcSlots,
+    difficulty,
+    challengeUp,
+    random,
+  )
   const practice = [...interactive, ...fromQuiz]
 
   if (!practice.length) {
@@ -255,7 +379,7 @@ export function compileCurriculumBiteLesson(
       body: 'Confirm the lesson objective before finishing.',
       exercise: {
         kind: 'true_false',
-        prompt: `This lesson’s focus is: ${lesson.objectives[0] ?? lesson.title}`,
+        prompt: `This lesson’s focus is: ${objectives[0] ?? lesson.title}`,
         answer: true,
         explanation:
           'Revisit the teaching steps if this objective does not yet feel clear.',
@@ -279,8 +403,14 @@ export function compileCurriculumBiteLesson(
     })
   }
 
+  const videos = lesson.video
+    ? (Array.isArray(lesson.video) ? lesson.video : [lesson.video]).map(
+        (v) => `${v.attribution}: ${v.url}`,
+      )
+    : []
   const deeperItems = [
-    ...(lesson.furtherStudy ?? []),
+    ...videos,
+    ...(lesson.furtherStudy ?? []).map(formatFurtherStudyItem),
     ...lesson.supportingPassages.map(
       (p) =>
         `Supporting passage: ${p.bookName} ${p.chapter}${p.verseStart != null ? `:${p.verseStart}` : ''}${p.verseEnd != null && p.verseEnd !== p.verseStart ? `–${p.verseEnd}` : ''}`,
@@ -298,6 +428,7 @@ export function compileCurriculumBiteLesson(
 
   const concepts = lesson.content
     .filter((b): b is Extract<ContentBlock, { kind: 'concept' }> => b.kind === 'concept')
+    .filter((b) => contentVisibleInline(b.level, difficulty))
     .map((b) => `${b.term}: ${b.explanation}`)
   steps.push({
     id: 'c-review',
@@ -308,7 +439,7 @@ export function compileCurriculumBiteLesson(
       : evangelism
         ? 'Before you finish, glance over the gospel points and wise-witness habits.'
         : 'Before you finish, glance over the objectives and key terms.',
-    reviewItems: [...lesson.objectives, ...concepts.slice(0, 4)],
+    reviewItems: [...objectives, ...concepts.slice(0, 4)],
   })
 
   lesson.reflectionPrompts.slice(1).forEach((prompt, i) => {
@@ -327,7 +458,7 @@ export function compileCurriculumBiteLesson(
     domain: topic.domain ?? 'theology',
     title: lesson.title,
     estimatedMinutes: lesson.estimatedMinutes,
-    objectives: lesson.objectives,
+    objectives,
     steps,
     prefetchPassages: [...lesson.primaryPassages, ...lesson.supportingPassages],
   }

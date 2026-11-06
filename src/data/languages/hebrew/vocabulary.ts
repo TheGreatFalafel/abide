@@ -16,6 +16,8 @@ export const HEBREW_VOCABULARY: LanguageVocabEntry[] = [
     id: 'hv-elohim',
     track: 'hebrew',
     lemma: 'אֱלֹהִים',
+    strongs: 'H430',
+    strongsVerified: true,
     transliteration: 'ʾelohim',
     gloss: 'God; gods',
     senseNote:
@@ -29,6 +31,8 @@ export const HEBREW_VOCABULARY: LanguageVocabEntry[] = [
     id: 'hv-yhwh',
     track: 'hebrew',
     lemma: 'יְהוָה',
+    strongs: 'H3068',
+    strongsVerified: true,
     transliteration: 'YHWH',
     gloss: 'the LORD (the divine name)',
     senseNote:
@@ -42,6 +46,8 @@ export const HEBREW_VOCABULARY: LanguageVocabEntry[] = [
     id: 'hv-amar',
     track: 'hebrew',
     lemma: 'אָמַר',
+    strongs: 'H559',
+    strongsVerified: true,
     transliteration: 'ʾamar',
     gloss: 'to say, speak',
     senseNote:
@@ -55,6 +61,8 @@ export const HEBREW_VOCABULARY: LanguageVocabEntry[] = [
     id: 'hv-hayah',
     track: 'hebrew',
     lemma: 'הָיָה',
+    strongs: 'H1961',
+    strongsVerified: true,
     transliteration: 'hayah',
     gloss: 'to be, become, happen',
     senseNote:
@@ -68,6 +76,8 @@ export const HEBREW_VOCABULARY: LanguageVocabEntry[] = [
     id: 'hv-erets',
     track: 'hebrew',
     lemma: 'אֶרֶץ',
+    strongs: 'H776',
+    strongsVerified: true,
     transliteration: 'ʾerets',
     gloss: 'land, earth, ground, country',
     senseNote:
@@ -81,6 +91,8 @@ export const HEBREW_VOCABULARY: LanguageVocabEntry[] = [
     id: 'hv-shamayim',
     track: 'hebrew',
     lemma: 'שָׁמַיִם',
+    strongs: 'H8064',
+    strongsVerified: true,
     transliteration: 'shamayim',
     gloss: 'heaven(s), sky',
     senseNote:
@@ -94,6 +106,8 @@ export const HEBREW_VOCABULARY: LanguageVocabEntry[] = [
     id: 'hv-yom',
     track: 'hebrew',
     lemma: 'יוֹם',
+    strongs: 'H3117',
+    strongsVerified: true,
     transliteration: 'yom',
     gloss: 'day',
     senseNote:
@@ -107,6 +121,8 @@ export const HEBREW_VOCABULARY: LanguageVocabEntry[] = [
     id: 'hv-ish',
     track: 'hebrew',
     lemma: 'אִישׁ',
+    strongs: 'H376',
+    strongsVerified: true,
     transliteration: 'ʾish',
     gloss: 'man, husband, each one',
     senseNote:
@@ -120,6 +136,8 @@ export const HEBREW_VOCABULARY: LanguageVocabEntry[] = [
     id: 'hv-ben',
     track: 'hebrew',
     lemma: 'בֵּן',
+    strongs: 'H1121',
+    strongsVerified: true,
     transliteration: 'ben',
     gloss: 'son, child',
     senseNote:
@@ -130,6 +148,8 @@ export const HEBREW_VOCABULARY: LanguageVocabEntry[] = [
     id: 'hv-melek',
     track: 'hebrew',
     lemma: 'מֶלֶךְ',
+    strongs: 'H4428',
+    strongsVerified: true,
     transliteration: 'melek',
     gloss: 'king',
     senseNote:
@@ -140,6 +160,8 @@ export const HEBREW_VOCABULARY: LanguageVocabEntry[] = [
     id: 'hv-torah',
     track: 'hebrew',
     lemma: 'תּוֹרָה',
+    strongs: 'H8451',
+    strongsVerified: true,
     transliteration: 'torah',
     gloss: 'instruction, teaching, law',
     senseNote:
@@ -170,6 +192,8 @@ export const HEBREW_VOCABULARY: LanguageVocabEntry[] = [
     id: 'hv-bayit',
     track: 'hebrew',
     lemma: 'בַּיִת',
+    strongs: 'H1004',
+    strongsVerified: true,
     transliteration: 'bayit',
     gloss: 'house, household, family, temple',
     senseNote:
@@ -190,6 +214,8 @@ export const HEBREW_VOCABULARY: LanguageVocabEntry[] = [
     id: 'hv-lev',
     track: 'hebrew',
     lemma: 'לֵב',
+    strongs: 'H3820',
+    strongsVerified: true,
     transliteration: 'lev',
     gloss: 'heart, mind, will',
     senseNote:
@@ -200,6 +226,8 @@ export const HEBREW_VOCABULARY: LanguageVocabEntry[] = [
     id: 'hv-shama',
     track: 'hebrew',
     lemma: 'שָׁמַע',
+    strongs: 'H8085',
+    strongsVerified: true,
     transliteration: 'shamaʿ',
     gloss: 'to hear, listen, obey',
     senseNote:
@@ -213,6 +241,8 @@ export const HEBREW_VOCABULARY: LanguageVocabEntry[] = [
     id: 'hv-raah',
     track: 'hebrew',
     lemma: 'רָאָה',
+    strongs: 'H7200',
+    strongsVerified: true,
     transliteration: 'raʾah',
     gloss: 'to see, perceive, understand',
     senseNote:
@@ -259,6 +289,8 @@ export const HEBREW_VOCABULARY: LanguageVocabEntry[] = [
     id: 'hv-asah',
     track: 'hebrew',
     lemma: 'עָשָׂה',
+    strongs: 'H6213',
+    strongsVerified: true,
     transliteration: 'ʿasah',
     gloss: 'to do, make',
     senseNote:

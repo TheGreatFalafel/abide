@@ -1,5 +1,8 @@
+import type { CurriculumDifficulty } from '../data/planQuizzes'
 import type { LanguageProgress } from '../data/languages/types'
 import type { TranslationId } from '../data/translations'
+
+export type { CurriculumDifficulty }
 
 export type AchievementId =
   | 'first_step'
@@ -349,6 +352,11 @@ export type UserState = {
   weekKey: string
   translationId: TranslationId
   esvApiKey: string
+  /**
+   * Learn difficulty for curriculum and language lessons.
+   * Filters objectives, Go Deeper content, and quiz tiers.
+   */
+  learnDifficulty: CurriculumDifficulty
   memoryVerses: MemoryVerse[]
   memoryReviewsToday: number
   completedQuizzes: string[]
@@ -531,6 +539,7 @@ export function createInitialState(name: string, planId: string): UserState {
     weekKey: weekKey(),
     translationId: 'web',
     esvApiKey: '',
+    learnDifficulty: 'beginner',
     memoryVerses: [],
     memoryReviewsToday: 0,
     completedQuizzes: [],

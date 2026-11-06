@@ -5,7 +5,11 @@
 
 import type { AriExpression, AriPose } from '../mascot'
 
-/** Product-level Ari states (event-driven character machine). */
+/**
+ * Product-level Ari states (event-driven character machine).
+ * Prefer `CharacterEvent` at the application boundary; these states remain
+ * the internal bridge to SVG / Rive / 3D renderers.
+ */
 export type AriCharacterState =
   | 'idle'
   | 'blink'
@@ -17,7 +21,10 @@ export type AriCharacterState =
   | 'correct'
   | 'encourage'
   | 'celebrate'
+  | 'jump'
+  | 'levelUp'
   | 'milestone'
+  | 'sleep'
 
 export const ARI_CHARACTER_STATES: readonly AriCharacterState[] = [
   'idle',
@@ -30,10 +37,17 @@ export const ARI_CHARACTER_STATES: readonly AriCharacterState[] = [
   'correct',
   'encourage',
   'celebrate',
+  'jump',
+  'levelUp',
   'milestone',
+  'sleep',
 ] as const
 
-/** Product-level human avatar states (foundation; AbideAvatar wiring is follow-up). */
+/**
+ * Product-level human avatar states.
+ * SVG `AbideAvatar` remains the live renderer; Rive avatar is prepared in
+ * `avatarRive.ts` without replacing cosmetics / inventory.
+ */
 export type AvatarCharacterState =
   | 'idle'
   | 'blink'
@@ -41,6 +55,8 @@ export type AvatarCharacterState =
   | 'think'
   | 'celebrate'
   | 'achievement'
+  | 'sleep'
+  | 'greet'
 
 export const AVATAR_CHARACTER_STATES: readonly AvatarCharacterState[] = [
   'idle',
@@ -49,6 +65,8 @@ export const AVATAR_CHARACTER_STATES: readonly AvatarCharacterState[] = [
   'think',
   'celebrate',
   'achievement',
+  'sleep',
+  'greet',
 ] as const
 
 /**
@@ -62,6 +80,7 @@ export type AnimationFeedbackEvent =
   | { type: 'matching_completed'; correct: boolean }
   | { type: 'exercise_completed'; correct: boolean }
   | { type: 'lesson_completed' }
+  | { type: 'level_up' }
   | { type: 'achievement_unlocked' }
   | { type: 'streak_milestone' }
 

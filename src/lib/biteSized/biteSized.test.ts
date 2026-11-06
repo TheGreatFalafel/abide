@@ -113,9 +113,9 @@ describe('bite-sized compilers', () => {
   })
 
   it('compiles Understanding Islam conversations and Quran source stubs', () => {
-    const jesus = getCurriculumLesson('islam-jesus')
-    expect(jesus).toBeTruthy()
-    const bite = compileCurriculumBiteLesson(jesus!.topic, jesus!.lesson)
+    const engage = getCurriculumLesson('is-engage-objections')
+    expect(engage).toBeTruthy()
+    const bite = compileCurriculumBiteLesson(engage!.topic, engage!.lesson)
     expect(bite.domain).toBe('evangelism-apologetics')
     const convo = bite.steps.find((s) => s.exercise?.kind === 'conversation')
     expect(convo?.exercise?.kind).toBe('conversation')
@@ -123,21 +123,14 @@ describe('bite-sized compilers', () => {
       expect(convo.exercise.partnerName).toBe('Amir')
       expect(convo.exercise.steps[0]?.choices.some((c) => c.quality === 'helpful')).toBe(true)
       expect(convo.exercise.steps[0]?.choices.some((c) => c.quality === 'hostile')).toBe(true)
+      expect(convo.exercise.steps.length).toBe(2)
     }
 
-    const sources = getCurriculumLesson('islam-quran-sources')
-    const sourceBite = compileCurriculumBiteLesson(sources!.topic, sources!.lesson)
+    const origins = getCurriculumLesson('is-origins-pillars')
+    const sourceBite = compileCurriculumBiteLesson(origins!.topic, origins!.lesson)
     expect(
       sourceBite.steps.some((s) => s.primarySource?.authorOrBody.includes('Quran')),
     ).toBe(true)
-
-    const share = getCurriculumLesson('islam-sharing-gospel')
-    const shareBite = compileCurriculumBiteLesson(share!.topic, share!.lesson)
-    const shareConvo = shareBite.steps.find((s) => s.exercise?.kind === 'conversation')
-    expect(shareConvo?.exercise?.kind).toBe('conversation')
-    if (shareConvo?.exercise?.kind === 'conversation') {
-      expect(shareConvo.exercise.steps.length).toBe(2)
-    }
   })
 
   it('compiles Christian Apologetics conversations and primary sources', () => {

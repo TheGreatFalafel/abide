@@ -491,6 +491,52 @@ export const WHO_SAID_IT_BANK: WhoSaidItQuestion[] = [
       SOURCE_CATALOG.gq_ephesians_2,
     ],
   },
+  // Part 13.4 additions
+  {
+    id: 'ws-49',
+    quote: '“Let us make man in our image, after our likeness.”',
+    choices: ['God', 'Adam', 'Moses', 'An angel'],
+    answer: 0,
+    reference: 'Genesis 1:26',
+    explanation: 'God speaks in Genesis 1:26 as Creator declaring the making of humanity.',
+    difficulty: 'beginner',
+  },
+  {
+    id: 'ws-50',
+    quote: '“Follow me, and I will make you fishers of men.”',
+    choices: ['Peter', 'John the Baptist', 'Jesus', 'Paul'],
+    answer: 2,
+    reference: 'Matthew 4:19',
+    explanation: 'Jesus called Simon and Andrew to follow Him.',
+    difficulty: 'beginner',
+  },
+  {
+    id: 'ws-51',
+    quote: '“You are the man!”',
+    choices: ['Samuel', 'Nathan', 'Elijah', 'Elisha'],
+    answer: 1,
+    reference: '2 Samuel 12:7',
+    explanation: 'Nathan confronted David after his sin with Bathsheba.',
+    difficulty: 'intermediate',
+  },
+  {
+    id: 'ws-52',
+    quote: '“What is truth?”',
+    choices: ['Caiaphas', 'Herod', 'Pilate', 'Gamaliel'],
+    answer: 2,
+    reference: 'John 18:38',
+    explanation: 'Pontius Pilate asked Jesus this question at the trial.',
+    difficulty: 'advanced',
+  },
+  {
+    id: 'ws-55',
+    quote: '“Now you let your servant depart in peace.”',
+    choices: ['Zacharias', 'Simeon', 'Anna', 'Joseph'],
+    answer: 1,
+    reference: 'Luke 2:29',
+    explanation: 'Simeon blessed God after seeing the infant Messiah.',
+    difficulty: 'advanced',
+  },
 ]
 
 export function whoSaidItForDifficulty(difficulty: GameDifficulty, count = 5): WhoSaidItQuestion[] {

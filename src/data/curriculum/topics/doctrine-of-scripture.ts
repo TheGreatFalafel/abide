@@ -8,6 +8,11 @@ import {
   SOURCE_SPROUL_SUP,
   SOURCE_MACARTHUR_SUP,
 } from './_helpers'
+import { PART17_SCRIPTURE_BY_LESSON } from '../banks/part17-doctrine-of-scripture'
+
+function withOutlineBank(lessonId: string, base: QuizQuestion[]): QuizQuestion[] {
+  return [...base, ...(PART17_SCRIPTURE_BY_LESSON[lessonId] ?? [])]
+}
 
 const L1_QUESTIONS: QuizQuestion[] = [
   mc(
@@ -247,7 +252,8 @@ export const DOCTRINE_OF_SCRIPTURE: CurriculumTopic = {
   estimatedMinutes: 92,
   prerequisites: [],
   framework: 'reformed',
-  version: 1,
+  contentStatus: 'full',
+  version: 2,
   sources: [
     {
       ...SOURCE_GRUDEM_ORG,
@@ -342,7 +348,7 @@ export const DOCTRINE_OF_SCRIPTURE: CurriculumTopic = {
             'Supplementary emphasis: a high view of inspiration grounds confident, expository reading of the text as God\u2019s address to his people, rather than treating Scripture as a springboard for human opinion. Original paraphrase only.',
         },
       ],
-      questions: L1_QUESTIONS,
+      questions: withOutlineBank('scripture-inspiration', L1_QUESTIONS),
       reflectionPrompts: [
         'Thank God that he has spoken, and name one area of life where you tend to trust your own feelings over his written word.',
       ],
@@ -427,7 +433,7 @@ export const DOCTRINE_OF_SCRIPTURE: CurriculumTopic = {
             'Supplementary emphasis: Scripture\u2019s authority means it has the right to correct every tradition, feeling, and cultural assumption believers bring to it, rather than merely confirming what readers already think. Original paraphrase only.',
         },
       ],
-      questions: L2_QUESTIONS,
+      questions: withOutlineBank('scripture-authority', L2_QUESTIONS),
       reflectionPrompts: [
         'Name one belief or habit you hold mainly because of tradition or personal preference. How would you test it against Scripture this week?',
       ],
@@ -511,7 +517,7 @@ export const DOCTRINE_OF_SCRIPTURE: CurriculumTopic = {
             'Every long, ancient document invites real interpretive questions \u2014 differing details between parallel Gospel accounts, large numbers in historical narratives, or quotations that summarize rather than reproduce word-for-word. A mature doctrine of inerrancy does not panic at these questions; it studies context, genre, and ancient convention before concluding there is an actual error, and holds unresolved difficulties with humility rather than either denial or despair.',
         },
       ],
-      questions: L3_QUESTIONS,
+      questions: withOutlineBank('scripture-inerrancy', L3_QUESTIONS),
       reflectionPrompts: [
         'Where do you tend to react with either anxiety or dismissiveness when you meet a hard passage? What would patient, confident study look like instead?',
       ],
@@ -596,7 +602,7 @@ export const DOCTRINE_OF_SCRIPTURE: CurriculumTopic = {
             'Sufficiency does not mean Scripture names which job to take or which house to buy. It gives wisdom, character, and principles (general revelation, Christian liberty, prayerful wisdom) for decisions it does not directly address \u2014 a very different claim than demanding an explicit verse for every choice.',
         },
       ],
-      questions: L4_QUESTIONS,
+      questions: withOutlineBank('scripture-sufficiency-clarity', L4_QUESTIONS),
       reflectionPrompts: [
         'Name a decision or struggle where you\u2019ve been waiting for a specific sign rather than applying Scripture\u2019s wisdom and principles. What would faithful next steps look like?',
       ],
@@ -680,7 +686,7 @@ export const DOCTRINE_OF_SCRIPTURE: CurriculumTopic = {
             'A workable pattern for personal study is observe (what does the text actually say?), interpret (what did it mean to its original audience, and what is the point?), and apply (how does this truth call for faith and obedience today?). Skipping straight to application without observation and interpretation is the most common source of misreading.',
         },
       ],
-      questions: [
+      questions: withOutlineBank('scripture-interpretation', [
         ...L5_QUESTIONS,
         mc(
           'scr-interp-review-insp',
@@ -689,7 +695,7 @@ export const DOCTRINE_OF_SCRIPTURE: CurriculumTopic = {
           1,
           'Lesson 1 defined inspiration as a claim about Scripture\u2019s source \u2014 breathed out by God \u2014 not merely its quality or reception.',
         ),
-      ],
+      ]),
       reflectionPrompts: [
         'Choose one passage you plan to study this week using the observe-interpret-apply pattern, and write down your first observation.',
       ],

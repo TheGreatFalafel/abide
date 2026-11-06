@@ -17,7 +17,7 @@ Rive is the **primary long-term character animation runtime**. SVG (`AriMark`, `
 | Avatar Rive prep | `AvatarRive` + `AVATAR_RIVE_CONTRACT` (loads only when `/rive/avatar.riv` exists) |
 | 3D experiment | `AriCompanion` / `Ari3D` behind `NEXT_PUBLIC_ARI_3D` + missing GLB |
 
-**Artwork constraint:** The approved lion illustration is a **visual reference**, not a rigged animation file. Do not CSS-animate a flattened JPG. Author and export a real `ari.riv` from Rive (see `rive/ari/`).
+**Artwork approach (current):** Gemini pose plates in `rive/ari/assets/pose-*.png` (stand / sit / think / walk / sleep). Motion is long opacity **ghost-fades** between plates plus a soft root breathe/bob — not bone/mesh rigging. Rebuild with `rive rive/ari --once` and copy `rive/ari/build/ari.riv` → `public/rive/ari.riv`.
 
 ---
 

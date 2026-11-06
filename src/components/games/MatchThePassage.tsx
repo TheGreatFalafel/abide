@@ -36,7 +36,7 @@ export function MatchThePassage({ difficulty, onComplete, onBack }: GameSessionP
 
   if (!items.length) {
     return (
-      <GameChrome title="Match the Passage" stepLabel="Unavailable" onBack={onBack}>
+      <GameChrome gameId="match-the-passage" title="Match the Passage" stepLabel="Unavailable" onBack={onBack}>
         <p className="muted">No match items for this difficulty.</p>
       </GameChrome>
     )
@@ -78,6 +78,7 @@ export function MatchThePassage({ difficulty, onComplete, onBack }: GameSessionP
 
   return (
     <GameChrome
+      gameId="match-the-passage"
       title="Match the Passage"
       stepLabel={`${Object.keys(pairs).length} / ${items.length} paired`}
       onBack={onBack}

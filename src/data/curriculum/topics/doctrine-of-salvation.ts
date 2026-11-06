@@ -8,6 +8,8 @@ import {
   SOURCE_SPROUL_SUP,
   SOURCE_MACARTHUR_SUP,
 } from './_helpers'
+import { PART17_SALVATION_BY_LESSON } from '../banks/part17-doctrine-christ-salvation-church'
+import { appendOutlineBank } from '../banks/outlineBankHelper'
 
 /* -------------------------------------------------------------------------- */
 /* Lesson 1 — Election and Effectual Calling                                  */
@@ -390,7 +392,8 @@ export const DOCTRINE_OF_SALVATION: CurriculumTopic = {
   estimatedMinutes: 110,
   prerequisites: ['doctrine-of-christ'],
   framework: 'reformed',
-  version: 1,
+  contentStatus: 'full',
+  version: 2,
   sources: [
     {
       ...SOURCE_GRUDEM_ORG,
@@ -483,7 +486,7 @@ export const DOCTRINE_OF_SALVATION: CurriculumTopic = {
             'Organizational cue: Grudem’s soteriology begins the ordo salutis with election and effectual calling before regeneration and conversion. This lesson follows that same logical starting point with original explanations.',
         },
       ],
-      questions: L1_QUESTIONS,
+      questions: appendOutlineBank('salvation-election-calling', L1_QUESTIONS, PART17_SALVATION_BY_LESSON),
       reflectionPrompts: [
         'Write a short prayer of thanks that does not mention anything you did to deserve being chosen—only what God did.',
       ],
@@ -565,7 +568,7 @@ export const DOCTRINE_OF_SALVATION: CurriculumTopic = {
             'Supplementary pastoral stress: true conversion is marked by actual, observable repentance and changed desires, not merely a one-time decision with no accompanying life change.',
         },
       ],
-      questions: L2_QUESTIONS,
+      questions: appendOutlineBank('salvation-regeneration-conversion', L2_QUESTIONS, PART17_SALVATION_BY_LESSON),
       reflectionPrompts: [
         'Describe, as concretely as you can, one desire or affection that is different now than before you trusted Christ (or that you long to see change if you are early in your faith).',
       ],
@@ -642,7 +645,7 @@ export const DOCTRINE_OF_SALVATION: CurriculumTopic = {
             'Supplementary emphasis: justification as a legal declaration received by faith, distinct from the believer’s ongoing moral transformation, is a widely known Reformation theme applied here to everyday assurance. Original paraphrase only.',
         },
       ],
-      questions: L3_QUESTIONS,
+      questions: appendOutlineBank('salvation-justification', L3_QUESTIONS, PART17_SALVATION_BY_LESSON),
       reflectionPrompts: [
         'Identify one way you tend to treat your standing with God as something you must keep re-earning through good behavior, and bring that specific pattern to God in prayer.',
       ],
@@ -719,7 +722,7 @@ export const DOCTRINE_OF_SALVATION: CurriculumTopic = {
             'Organizational cue: adoption is treated here as its own step in the ordo salutis, following justification, consistent with standard systematic sequencing. Original explanation for learners.',
         },
       ],
-      questions: L4_QUESTIONS,
+      questions: appendOutlineBank('salvation-adoption', L4_QUESTIONS, PART17_SALVATION_BY_LESSON),
       reflectionPrompts: [
         'Try praying "Abba, Father" slowly, and notice what resistance or relief that brings up in you.',
       ],
@@ -802,7 +805,7 @@ export const DOCTRINE_OF_SALVATION: CurriculumTopic = {
             'Supplementary pastoral stress: genuine sanctification shows up in observable, practical obedience, not merely in theological knowledge about grace.',
         },
       ],
-      questions: L5_QUESTIONS,
+      questions: appendOutlineBank('salvation-sanctification', L5_QUESTIONS, PART17_SALVATION_BY_LESSON),
       reflectionPrompts: [
         'Identify one concrete habit of obedience you will practice this week, and name specifically how you are depending on the Spirit’s power rather than sheer willpower to do it.',
       ],
@@ -885,7 +888,7 @@ export const DOCTRINE_OF_SALVATION: CurriculumTopic = {
             'Supplementary emphasis: assurance resting on God’s preserving grace rather than on the believer’s fluctuating performance is a widely known Reformed theme, applied here as the capstone of the ordo salutis. Original paraphrase only.',
         },
       ],
-      questions: L6_QUESTIONS,
+      questions: appendOutlineBank('salvation-perseverance-glorification', L6_QUESTIONS, PART17_SALVATION_BY_LESSON),
       reflectionPrompts: [
         'Write a short prayer thanking God that your final salvation depends on His power to keep you rather than on your power to hold on, and ask Him to grow one specific fruit of genuine faith in you this season.',
       ],

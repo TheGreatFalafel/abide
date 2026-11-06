@@ -9,11 +9,14 @@ import {
   type AriPose,
   type MascotLine,
 } from '../lib/mascot'
-import { AriRive } from './AriRive'
+import { AriCompanion } from './ari3d/AriCompanion'
 
 export { AriMark } from './AriMark'
 export type { AriMarkProps } from './AriMark'
 export { AriRive } from './AriRive'
+export { Ari } from './rive/Ari'
+export { RiveCharacter } from './rive/RiveCharacter'
+export { AriCompanion } from './ari3d/AriCompanion'
 
 type BannerProps = {
   line: MascotLine
@@ -21,7 +24,7 @@ type BannerProps = {
   animate?: boolean
   /** Override facial expression (defaults to line.mood). */
   expression?: AriExpression
-  /** Optional product character state for the Rive player. */
+  /** Optional product character state for the character player. */
   characterState?: AriCharacterState
 }
 
@@ -39,7 +42,7 @@ function characterStateFromLine(
   return 'idle'
 }
 
-/** Contextual Ari banner — Rive when available, SVG fallback otherwise. */
+/** Contextual Ari banner — 3D (opt-in + GLB) → Rive → SVG fallback. */
 export function MascotBanner({
   line,
   compact,
@@ -55,7 +58,7 @@ export function MascotBanner({
       className={`mascot-banner mood-${expr} ${compact ? 'compact' : ''}`}
       aria-label={`${MASCOT_NAME}: ${line.title}`}
     >
-      <AriRive
+      <AriCompanion
         characterState={state}
         size={compact ? 72 : 96}
         forceFallback={!animate}

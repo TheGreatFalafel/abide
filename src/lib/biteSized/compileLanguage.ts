@@ -1,3 +1,9 @@
+import type { CurriculumDifficulty } from '../../data/curriculum'
+import {
+  nextDifficulty,
+  questionMatchesDifficulty,
+  shuffleMcChoices,
+} from '../../data/curriculum/difficulty'
 import type {
   LanguageCourse,
   LanguageExercise,
@@ -5,6 +11,12 @@ import type {
   LanguageLetter,
 } from '../../data/languages/types'
 import type { BiteExercise, BiteLesson, BiteStep } from './types'
+
+export type CompileLanguageOptions = {
+  difficulty?: CurriculumDifficulty
+  challengeUp?: boolean
+  random?: () => number
+}
 
 /** Max alphabet recognition rounds generated from alphabet_match exercises. */
 export const ALPHABET_PRACTICE_ROUNDS = 6
@@ -67,29 +79,48 @@ function exerciseToSteps(
   index: number,
   seed: number,
   alphabetMaxRounds: number = ALPHABET_PRACTICE_ROUNDS,
+  difficulty: CurriculumDifficulty = 'beginner',
+  challengeUp = true,
+  random: () => number = Math.random,
 ): BiteStep[] {
   if (exercise.kind === 'alphabet_match') {
     return alphabetRounds(course, exercise, seed + index * 97, alphabetMaxRounds)
   }
   if (exercise.kind === 'mc' && exercise.question.type === 'mc') {
+    const q = exercise.question
+    if (
+      !questionMatchesDifficulty(q.difficulty, difficulty, { includeChallengeUp: challengeUp })
+    ) {
+      return []
+    }
+    const shuffled = shuffleMcChoices(q, random)
+    const up = nextDifficulty(difficulty)
+    const isChallenge = up != null && q.difficulty === up
     return [
       {
-        id: `l-mc-${exercise.question.id || index}`,
+        id: `l-mc-${q.id || index}`,
         kind: 'practice',
-        title: `Practice ${index + 1}`,
+        title: isChallenge ? `Challenge ${index + 1}` : `Practice ${index + 1}`,
         exercise: {
           kind: 'mc',
-          prompt: exercise.question.prompt,
-          choices: exercise.question.choices,
-          answer: exercise.question.answer,
+          prompt: shuffled.prompt,
+          choices: shuffled.choices,
+          answer: shuffled.answer,
           explanation:
-            exercise.question.explanation?.trim() ||
+            shuffled.explanation?.trim() ||
             'Re-read the teaching step, then try a related example.',
         },
       },
     ]
   }
   if (exercise.kind === 'parse' || exercise.kind === 'translate') {
+    const shuffled = shuffleMcChoices(
+      {
+        choices: exercise.choices,
+        answer: exercise.answer,
+      },
+      random,
+    )
     return [
       {
         id: `l-${exercise.kind}-${index}`,
@@ -102,8 +133,8 @@ function exerciseToSteps(
         exercise: {
           kind: 'mc',
           prompt: exercise.prompt,
-          choices: exercise.choices,
-          answer: exercise.answer,
+          choices: shuffled.choices,
+          answer: shuffled.answer,
           explanation: exercise.explanation,
         },
       },
@@ -142,7 +173,11 @@ function exerciseToSteps(
 export function compileLanguageBiteLesson(
   course: LanguageCourse,
   lesson: LanguageLesson,
+  options: CompileLanguageOptions = {},
 ): BiteLesson {
+  const difficulty = options.difficulty ?? 'beginner'
+  const challengeUp = options.challengeUp ?? true
+  const random = options.random ?? Math.random
   const steps: BiteStep[] = []
   const rtl = course.scriptDirection === 'rtl'
   const seed = lesson.order * 1009 + lesson.id.length
@@ -217,7 +252,18 @@ export function compileLanguageBiteLesson(
     Math.ceil(ALPHABET_PRACTICE_ROUNDS / Math.max(1, alphabetExerciseCount)),
   )
   lesson.exercises.forEach((ex, i) => {
-    steps.push(...exerciseToSteps(course, ex, i, seed, alphabetPerExercise))
+    steps.push(
+      ...exerciseToSteps(
+        course,
+        ex,
+        i,
+        seed,
+        alphabetPerExercise,
+        difficulty,
+        challengeUp,
+        random,
+      ),
+    )
   })
 
   if (lesson.reflectionPrompts[0]) {

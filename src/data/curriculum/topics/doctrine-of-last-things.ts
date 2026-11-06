@@ -1,261 +1,96 @@
 import type { QuizQuestion } from '../../planQuizzes'
 import type { CurriculumTopic } from '../types'
-import {
-  passage,
-  mc,
-  open,
-  SOURCE_GRUDEM_ORG,
-  SOURCE_SPROUL_SUP,
-  SOURCE_MACARTHUR_SUP,
-} from './_helpers'
+import { passage, mc, open, SOURCE_MACARTHUR_SUP, SOURCE_SPROUL_SUP } from './_helpers'
 
-const L1_QUESTIONS: QuizQuestion[] = [
-  mc(
-    'lot-1-origin',
-    'Genesis 3:19 and Romans 5:12 teach that physical death entered the human story as…',
-    [
-      'Part of God’s original “very good” design',
-      'A consequence of sin, God’s just judgment on human rebellion',
-      'An illusion to be overcome by willpower',
-      'Something only unbelievers experience',
-    ],
-    1,
-    'Death is not presented as a neutral, natural cycle in Scripture’s storyline but as judgment entering through sin—which is exactly why Christ’s resurrection is such good news.',
-  ),
-  mc(
-    'lot-1-depart',
-    'Philippians 1:23 and 2 Corinthians 5:8 teach that for the believer, to depart this life means to be…',
-    [
-      'Unconscious until the resurrection',
-      'Immediately present with Christ',
-      'Annihilated entirely',
-      'Reincarnated into a new body on earth',
-    ],
-    1,
-    'Paul describes departing and being “with Christ” as “far better” (Phil 1:23) and being “away from the body” as being “at home with the Lord” (2 Cor 5:8)—language of immediate, conscious presence.',
-  ),
-  mc(
-    'lot-1-state',
-    'This lesson’s Reformed view of the intermediate state holds that departed believers are…',
-    [
-      'Consciously with Christ, awaiting the future bodily resurrection',
-      'Asleep and unaware of anything until judgment day',
-      'Already fully glorified in resurrection bodies',
-      'Purified through suffering before entering God’s presence',
-    ],
-    0,
-    'Reformed theology teaches conscious fellowship with Christ immediately at death, while still awaiting and longing for the future resurrection of the body—the intermediate state is real but not final.',
-  ),
-  open(
-    'lot-1-open',
-    'How does the hope of being “at home with the Lord” shape how you think about your own death or that of a believing loved one?',
-  ),
+const L1: QuizQuestion[] = [
+  mc('lot-1-b1', 'What does Paul say about being “away from the body”?', ['We cease to exist', 'We are at home with the Lord', 'We return as spirits to earth', 'We sleep unconsciously'], 1, '2 Corinthians 5:8.', 'beginner'),
+  mc('lot-1-b2', 'What did Jesus promise the repentant thief?', ['Paradise that day', 'Purgatory first', 'Rest until the resurrection', 'Nothing'], 0, 'Luke 23:43.', 'beginner'),
+  mc('lot-1-i1', 'What is the “intermediate state”?', ['The time between a person’s death and the resurrection', 'The time between conversion and baptism', 'The Tribulation', 'The Millennium'], 0, undefined, 'intermediate'),
+  mc('lot-1-i2', 'Which passage shows the unsaved conscious after death?', ['Luke 16:19-31', 'John 3:16', 'Genesis 1', 'Psalm 23'], 0, undefined, 'intermediate'),
+  mc('lot-1-a1', 'Which verse most directly refutes reincarnation?', ['Hebrews 9:27', 'Romans 8:28', 'John 1:1', 'Isaiah 53:5'], 0, 'Appointed for man to die once.', 'advanced'),
+  mc('lot-1-a2', 'Why do evangelicals reject purgatory?', ['No Scripture teaches it, and Christ’s sacrifice fully cleanses (Heb 10:14), and believers are immediately with Him (Phil 1:23)', 'Because it is too old', 'Because the apostles condemned it by name', 'Because it contradicts the Septuagint'], 0, undefined, 'advanced'),
+  open('lot-1-open', 'How does the hope of being “at home with the Lord” shape how you think about death?'),
 ]
 
-const L2_QUESTIONS: QuizQuestion[] = [
-  mc(
-    'lot-2-visible',
-    'Acts 1:11 promises that Jesus will return…',
-    [
-      'Secretly, so that no one notices',
-      'In the same way the disciples saw Him go—visibly and personally',
-      'Only in a spiritual, non-bodily sense',
-      'As a different person than the one who ascended',
-    ],
-    1,
-    'The angels’ words tie Christ’s future coming directly to the manner of His visible ascension, ruling out a purely secret or merely symbolic return.',
-  ),
-  mc(
-    'lot-2-timing',
-    'Matthew 24:36 teaches that the timing of Christ’s return is…',
-    [
-      'Calculable from world events by careful students',
-      'Known only to the Father, not to be date-set by anyone',
-      'Already past and fulfilled',
-      'Irrelevant to how believers should live',
-    ],
-    1,
-    'Jesus explicitly says “concerning that day and hour no one knows”—a statement meant to produce watchfulness, not speculative timelines.',
-  ),
-  mc(
-    'lot-2-debate',
-    'According to this lesson, Christians who equally affirm Scripture’s authority nevertheless differ on…',
-    [
-      'Whether Christ will return at all',
-      'How the “catching up” described in 1 Thessalonians 4 relates to a future tribulation period',
-      'Whether the dead in Christ will be raised',
-      'Whether Christ’s return will be visible',
-    ],
-    1,
-    'Pretribulational, midtribulational, and posttribulational readings all affirm Christ’s certain return and the resurrection of believers; they differ on the sequencing of the “rapture” relative to a future tribulation.',
-  ),
-  open(
-    'lot-2-open',
-    'How should the certainty—but not the timing—of Christ’s return shape a decision or habit you’re working on this week?',
-  ),
+const L2: QuizQuestion[] = [
+  mc('lot-2-b1', 'What does Acts 1:11 promise?', ['Jesus will return the same way He ascended', 'Jesus will not return', 'Jesus will return as an angel', 'Jesus will return secretly'], 0, undefined, 'beginner'),
+  mc('lot-2-b2', 'What will happen to believers at the rapture?', ['They will be caught up to meet the Lord', 'They will go through the Tribulation', 'They will die', 'They will be judged for salvation'], 0, undefined, 'beginner'),
+  mc('lot-2-i1', 'The Latin word from which “rapture” comes translates which Greek word?', ['harpazo (caught up)', 'agape', 'parousia', 'ekklesia'], 0, undefined, 'intermediate'),
+  mc('lot-2-i2', 'Which is true of the rapture in the pretribulational view?', ['It is imminent, with no preceding signs', 'It follows the Tribulation', 'It happens at Armageddon', 'It is the same event as the Second Coming'], 0, undefined, 'intermediate'),
+  mc('lot-2-a1', 'Which verse promises the church deliverance from wrath?', ['1 Thessalonians 5:9', 'Genesis 3:15', 'Psalm 1:1', 'Jude 3'], 0, undefined, 'advanced'),
+  mc('lot-2-a2', 'Which view holds that the church will be raptured at the end of the Tribulation?', ['Posttribulationism', 'Pretribulationism', 'Pre-wrath', 'Preterism'], 0, undefined, 'advanced'),
+  open('lot-2-open', 'How does the “blessed hope” (Titus 2:13) shape watchfulness in your ordinary week?'),
 ]
 
-const L3_QUESTIONS: QuizQuestion[] = [
-  mc(
-    'lot-3-body',
-    '1 Corinthians 15:42–44 teaches that the resurrection body is raised…',
-    [
-      'Identical in every way, with no change at all',
-      'Imperishable, in glory and power, a Spirit-empowered body continuous with yet transformed from the present one',
-      'As a purely spiritual existence with no body',
-      'Only for some believers, not all',
-    ],
-    1,
-    'Paul’s seed analogy (what is sown is not what is raised, yet it is the same plant) pictures real continuity with real transformation—glorification, not replacement.',
-  ),
-  mc(
-    'lot-3-judgment',
-    'Revelation 20:11–15 describes final judgment as being rendered according to…',
-    [
-      'Random selection',
-      'Deeds recorded in the books, and whether one’s name is written in the book of life',
-      'National or ethnic identity alone',
-      'Church membership records',
-    ],
-    1,
-    'The scene combines evaluation according to deeds with the decisive question of whether a person’s name is written in the Lamb’s book of life.',
-  ),
-  mc(
-    'lot-3-nocondemnation',
-    'According to Romans 8:1, believers’ relationship to final judgment should be understood as…',
-    [
-      'Escaping judgment’s reality altogether, with no evaluation at all',
-      'No condemnation in Christ Jesus, while Spirit-wrought works are still evaluated and acknowledged',
-      'Uncertain until judgment day reveals the verdict',
-      'Earned through a lifetime of good deeds',
-    ],
-    1,
-    'Union with Christ secures believers against condemnation, while texts like 1 Corinthians 3:12–15 and 2 Corinthians 5:10 still describe an evaluation of works for reward, not for salvation’s basis.',
-  ),
-  open(
-    'lot-3-open',
-    'How does the hope of a transformed resurrection body change the way you think about present suffering or physical weakness?',
-  ),
+const L3: QuizQuestion[] = [
+  mc('lot-3-b1', 'How long is the Tribulation in the pretribulational view?', ['7 years', '40 years', '1,000 years', '3 days'], 0, undefined, 'beginner'),
+  mc('lot-3-b2', 'Which book describes the seals, trumpets, and bowls?', ['Revelation', 'Romans', 'Genesis', 'Hebrews'], 0, undefined, 'beginner'),
+  mc('lot-3-i1', 'Who is the “man of lawlessness”?', ['The Antichrist (2 Thess 2)', 'Judas', 'Nero only', 'Pontius Pilate'], 0, undefined, 'intermediate'),
+  mc('lot-3-i2', 'What are the 144,000 in Revelation 7 (futurist reading)?', ['Sealed servants from the tribes of Israel', 'All Christians', 'The angels', 'Martyrs only'], 0, undefined, 'intermediate'),
+  mc('lot-3-a1', 'In Daniel 9, how many years are in the seventy weeks?', ['490', '70', '1,000', '144'], 0, 'Seventy sevens of years.', 'advanced'),
+  mc('lot-3-a2', 'Which view says most of Revelation 6–19 was fulfilled in the first century?', ['Preterism', 'Futurism', 'Premillennialism', 'Dispensationalism'], 0, undefined, 'advanced'),
+  open('lot-3-open', 'How should God’s coming judgment move you toward holiness and witness without fear-mongering?'),
 ]
 
-const L4_QUESTIONS: QuizQuestion[] = [
-  mc(
-    'lot-4-premill',
-    'Premillennialism teaches that Christ returns…',
-    [
-      'After a thousand-year golden age produced by the gospel’s cultural influence',
-      'Before a future earthly reign described using Revelation 20’s “thousand years”',
-      'At the exact same moment as His ascension',
-      'Only in a spiritual sense with no visible return',
-    ],
-    1,
-    'Premillennialists (in historic and dispensational forms) read Revelation 20 as describing a future, visible, earthly reign of Christ beginning at His return.',
-  ),
-  mc(
-    'lot-4-amill',
-    'Amillennialism, long associated with Reformed confessions, understands the “thousand years” of Revelation 20 as…',
-    [
-      'A literal future thousand-year calendar period on earth',
-      'A symbolic description of the present church age, during which Christ reigns and Satan’s power to deceive the nations is restrained',
-      'A period that has already fully passed with no remaining significance',
-      'Equivalent to the eternal state itself',
-    ],
-    1,
-    'Amillennialism reads Revelation’s apocalyptic genre as picturing the entire period between Christ’s first and second comings, during which the gospel advances among the nations despite ongoing conflict.',
-  ),
-  mc(
-    'lot-4-postmill',
-    'Postmillennialism distinctively expects that…',
-    [
-      'The world will grow uniformly worse until Christ returns to rescue a tiny remnant',
-      'The gospel will progressively transform culture through ordinary means of grace before Christ’s return',
-      'Christ already returned invisibly in the first century and nothing more is expected',
-      'There will be no final judgment',
-    ],
-    1,
-    'Postmillennialism anticipates gradual, Spirit-empowered gospel advance leading to widespread (though not universal) transformation prior to Christ’s visible return.',
-  ),
-  open(
-    'lot-4-open',
-    'Why might charitable humility be especially important when discussing millennial views with other believers, compared to how we discuss core gospel doctrines?',
-  ),
+const L4: QuizQuestion[] = [
+  mc('lot-4-b1', 'How long will Christ reign on the earth in Revelation 20?', ['1,000 years', '7 years', '40 years', '12 years'], 0, undefined, 'beginner'),
+  mc('lot-4-b2', 'Who is bound for the 1,000 years?', ['Satan', 'The Antichrist', 'Death', 'The false prophet'], 0, 'Revelation 20:2.', 'beginner'),
+  mc('lot-4-i1', 'Which view says Christ returns before the Millennium?', ['Premillennialism', 'Amillennialism', 'Postmillennialism', 'Preterism'], 0, undefined, 'intermediate'),
+  mc('lot-4-i2', 'Amillennialism teaches that the “thousand years” is:', ['The present church age, symbolically', 'A literal future reign', 'The Tribulation', 'The eternal state'], 0, undefined, 'intermediate'),
+  mc('lot-4-a1', 'Which Old Testament covenants support a future literal kingdom for Israel?', ['Abrahamic, Davidic, and New covenants', 'Only the Mosaic', 'Only the Noahic', 'None'], 0, undefined, 'advanced'),
+  mc('lot-4-a2', 'What does Revelation 20:7-10 show?', ['Even in a perfect environment, unregenerate hearts rebel when Satan is released', 'The Millennium never happens', 'The church is destroyed', 'The Tribulation ends'], 0, undefined, 'advanced'),
+  open('lot-4-open', 'How does a future kingdom for Israel and the nations enlarge your view of God’s faithfulness?'),
 ]
 
-const L5_QUESTIONS: QuizQuestion[] = [
-  mc(
-    'lot-5-dwell',
-    'Revelation 21:3–4 describes the new creation’s central blessing as…',
-    [
-      'Unlimited material wealth',
-      'God Himself dwelling with His people, wiping away every tear, with death and mourning no more',
-      'A return to a disembodied, spiritual-only existence',
-      'The abolition of all physical creation with nothing replacing it',
-    ],
-    1,
-    'The climax of redemptive history is not escape from the physical world but God dwelling face-to-face with His renewed people in a renewed creation.',
-  ),
-  mc(
-    'lot-5-creation',
-    'Romans 8:19–23 teaches that creation itself will be…',
-    [
-      'Destroyed with no future at all',
-      'Set free from its bondage to corruption into the freedom of the glory of God’s children',
-      'Left permanently groaning with no resolution',
-      'Irrelevant to the believer’s hope',
-    ],
-    1,
-    'Paul pictures creation as a woman in labor, groaning toward a liberation tied to believers’ own future glorification—creation’s future, like ours, is renewal, not annihilation.',
-  ),
-  mc(
-    'lot-5-renewal',
-    'This lesson’s Reformed reading of 2 Peter 3 and Romans 8 together favors understanding the new heavens and new earth as…',
-    [
-      'A renewed and purified creation continuous with the present one, not an annihilated creation replaced from nothing',
-      'A return to Eden with no final judgment',
-      'Purely symbolic language with no real future creation at all',
-      'A second, unrelated creation with no connection to this one',
-    ],
-    0,
-    'Reading 2 Peter 3’s purifying “fire” imagery alongside Romans 8’s liberation imagery and the resurrection-body pattern (transformation, not replacement) favors renewal over annihilation, while this lesson also notes other believers read 2 Peter 3 more literally.',
-  ),
-  open(
-    'lot-5-open',
-    'How does picturing eternity as embodied life in a renewed creation—rather than a disembodied, ethereal existence—change what you look forward to?',
-  ),
+const L5: QuizQuestion[] = [
+  mc('lot-5-b1', 'What does Revelation 21 describe?', ['A new heaven and new earth', 'The end of time with nothing after', 'A temple built by man', 'The Millennium'], 0, undefined, 'beginner'),
+  mc('lot-5-b2', 'Where is the final judgment of unbelievers?', ['The Great White Throne', 'Mount Sinai', 'The Mount of Olives', 'The Areopagus'], 0, 'Revelation 20:11.', 'beginner'),
+  mc('lot-5-i1', 'What is the judgment seat of Christ for?', ['Evaluating believers’ works for reward', 'Deciding whether believers are saved', 'Judging nations', 'Judging angels'], 0, undefined, 'intermediate'),
+  mc('lot-5-i2', 'Which verse speaks of the “resurrection of life” and the “resurrection of judgment”?', ['John 5:28-29', 'Romans 8:1', 'Psalm 23', 'Genesis 2:7'], 0, undefined, 'intermediate'),
+  mc('lot-5-a1', 'Why does Matthew 25:46 count against annihilationism?', ['“Eternal” modifies both life and punishment, in parallel', 'It says nothing about punishment', 'It was added later', 'It is poetry'], 0, undefined, 'advanced'),
+  mc('lot-5-a2', 'Which statement best fits universalism’s problem with Scripture?', ['It contradicts passages like Revelation 20:15 and John 3:36 that speak of final separation', 'It agrees with Matthew 25:46', 'It is taught by the apostles', 'It is taught by the creeds'], 0, undefined, 'advanced'),
+  open('lot-5-open', 'How should the reality of judgment and the hope of the new creation shape your evangelism and endurance?'),
 ]
 
-/** Third complete theology topic: the doctrine of last things (eschatology). */
 export const DOCTRINE_OF_LAST_THINGS: CurriculumTopic = {
   id: 'doctrine-of-last-things',
   title: 'The Doctrine of Last Things',
   description:
-    'A Reformed introduction to eschatology: what happens at death and in the intermediate state, the certainty and nature of Christ’s return, the resurrection and final judgment, the major millennial views, and the hope of the new heavens and new earth.',
+    'Personal and general eschatology from a pretribulational, premillennial reading aligned with The Master’s Seminary: death and the intermediate state, the rapture and Second Coming, the Tribulation, the Millennium, and the eternal state — with other views described fairly.',
   objectives: [
-    'Explain the biblical teaching on death and the intermediate state for believers and unbelievers.',
-    'Establish that Christ’s return is personal, visible, and certain, though its timing is unknown.',
-    'Describe the general resurrection and final judgment and their basis in Scripture.',
-    'Define the major millennial views (premillennial, postmillennial, amillennial) fairly, without declaring one the only legitimate Christian position.',
-    'Articulate the hope of the new heavens and new earth as bodily, embodied, and relational, not merely ethereal.',
+    'Explain death and the intermediate state for believers and unbelievers.',
+    'Distinguish the rapture from the Second Coming and state why this curriculum teaches pretribulationism.',
+    'Outline Daniel’s seventieth week and major Tribulation figures.',
+    'Compare millennial views and teach a literal future Millennium with a future for national Israel.',
+    'Distinguish the judgment seat of Christ from the Great White Throne and affirm eternal conscious punishment and the new creation.',
   ],
-  estimatedMinutes: 96,
+  estimatedMinutes: 90,
   prerequisites: ['doctrine-of-salvation'],
   framework: 'reformed',
-  version: 1,
+  contentStatus: 'full',
+  version: 3,
   sources: [
     {
-      ...SOURCE_GRUDEM_ORG,
+      ...SOURCE_MACARTHUR_SUP,
+      teacher: 'John MacArthur / The Master’s Seminary',
+      work: 'Biblical Doctrine; Because the Time Is Near; The Second Coming (themes)',
+      role: 'organizational',
       note:
-        'Topic order (death and the intermediate state, Christ’s return, resurrection, millennium, final judgment, new creation) follows the standard systematic-theology sequence for personal and general eschatology as an organizing map for original lesson writing—not reproduced textbook text. Grudem’s practice of surveying all three millennial views in turn shapes the structure of the millennium lesson.',
+        'Organizational baseline for pretribulational premillennial eschatology taught in this topic. Paraphrase only.',
+    },
+    {
+      teacherId: 'macarthur',
+      teacher: 'J. Dwight Pentecost / John Walvoord (TMS-aligned tradition)',
+      work: 'Things to Come; The Millennial Kingdom; The Rapture Question (themes)',
+      role: 'supplementary',
+      note:
+        'Classic dispensational frameworks for Tribulation, Millennium, and rapture distinctions — paraphrased organizationally, not quoted.',
     },
     {
       ...SOURCE_SPROUL_SUP,
+      work: 'The Last Days According to Jesus (other-view description)',
       note:
-        'Sproul’s widely known emphasis on God’s sovereignty over history and the certainty of His purposes supplements the lessons on Christ’s return and final judgment. Claims here are original paraphrase of public themes, not quoted sermons.',
-    },
-    {
-      ...SOURCE_MACARTHUR_SUP,
-      note:
-        'MacArthur’s published pastoral emphasis on eager expectation of Christ’s return and the urgency it creates for holy living supplements the return-of-Christ and new-creation lessons. No sermon transcripts are reproduced.',
+        'Used only to describe partial-preterist / other readings fairly — not taught as the app’s position.',
     },
   ],
   lessons: [
@@ -264,411 +99,300 @@ export const DOCTRINE_OF_LAST_THINGS: CurriculumTopic = {
       order: 1,
       title: 'Death and the Intermediate State',
       estimatedMinutes: 18,
-      objectives: [
-        'Explain death’s origin and meaning from Genesis 3 and Romans 5.',
-        'Describe the biblical teaching on the intermediate state for believers.',
-        'Distinguish the intermediate state from the final bodily resurrection.',
-        'Apply biblical hope to grief and the fear of death.',
-      ],
+      objectives: {
+        beginner: ['Explain what the Bible says happens to a believer and an unbeliever at death.'],
+        intermediate: ['Distinguish the intermediate state from the final resurrection.'],
+        advanced: ['Respond to soul sleep, purgatory, and reincarnation from Scripture.'],
+      },
       primaryPassages: [
-        passage('genesis', 'Genesis', 3, 17, 19),
-        passage('philippians', 'Philippians', 1, 21, 23),
-        passage('2corinthians', '2 Corinthians', 5, 1, 8),
+        passage('2corinthians', '2 Corinthians', 5, 1, 10),
+        passage('philippians', 'Philippians', 1, 21, 24),
+        passage('luke', 'Luke', 16, 19, 31),
       ],
       supportingPassages: [
-        passage('luke', 'Luke', 23, 42, 43),
+        passage('romans', 'Romans', 5, 12, 12),
         passage('hebrews', 'Hebrews', 9, 27, 27),
-        passage('1thessalonians', '1 Thessalonians', 4, 13, 14),
+        passage('luke', 'Luke', 23, 43, 43),
+        passage('revelation', 'Revelation', 6, 9, 11),
       ],
       content: [
         {
           kind: 'teaching',
-          title: 'Why eschatology begins here',
+          level: 'all',
+          title: 'Death and hope',
           body:
-            'Systematic theology typically studies “last things” in two movements: personal eschatology (what happens to an individual at death and beyond) and general eschatology (what happens to the whole world at Christ’s return and after). This topic follows that order, beginning with death because it is the next “last thing” most of us will personally face.',
+            'Death entered through sin (Romans 5:12; 6:23), and every person dies once and then faces judgment (Hebrews 9:27). For the believer, death is not loss but gain: to be absent from the body is to be at home with the Lord (2 Corinthians 5:8; Philippians 1:21-23). Jesus told the repentant thief, “today you will be with me in Paradise” (Luke 23:43). For the unbeliever, Luke 16:19-31 shows conscious torment after death while awaiting final judgment (Revelation 20:13-15). The believer’s body waits until the resurrection (1 Thessalonians 4:13-18).',
         },
         {
-          kind: 'scripture_focus',
-          passage: passage('genesis', 'Genesis', 3, 19, 19),
-          note:
-            'Interpretation: Death is pronounced as part of the judgment for sin—“to dust you shall return”—not presented as part of God’s original “very good” design in Genesis 1–2. Romans 5:12 confirms that death spread to all because all sinned.',
+          kind: 'teaching',
+          level: 'intermediate',
+          title: 'Go deeper: soul sleep and purgatory',
+          body:
+            'Soul sleep claims the dead are unconscious; Luke 16, Luke 23:43, Philippians 1:23, and Revelation 6:9-11 teach conscious existence. Purgatory (formalized in medieval Roman Catholic teaching) is rejected: no biblical passage teaches it, and Christ’s one sacrifice fully cleanses (Hebrews 10:14). Reincarnation is refuted by Hebrews 9:27.',
         },
         {
-          kind: 'concept',
-          term: 'Intermediate state',
-          explanation:
-            'The period between a person’s death and the future bodily resurrection, during which the soul exists consciously apart from the body—with Christ for believers, and in conscious separation from God’s saving favor for unbelievers, both awaiting the final resurrection and judgment.',
+          kind: 'teaching',
+          level: 'advanced',
+          title: 'Go deeper: Paradise and Hades',
+          body:
+            'Before the cross, believers’ souls are pictured in comfort (“Abraham’s side,” Luke 16:22). Christ’s work brings believers into God’s presence. 2 Corinthians 12:2-4 uses “Paradise” for the third heaven. Intermediate state is real but not final — resurrection completes hope.',
         },
         {
           kind: 'distinction',
           biblical:
-            'Paul says that to depart and be with Christ is “far better” (Phil 1:23) and that to be “away from the body” is to be “at home with the Lord” (2 Cor 5:8). Jesus tells the dying thief, “today you will be with me in paradise” (Luke 23:43). Revelation pictures martyrs’ souls consciously crying out while awaiting vindication (Rev 6:9–11).',
+            'Scripture teaches death as judgment entering through sin, immediate presence with Christ for believers, conscious existence after death, and future bodily resurrection.',
           interpretation:
-            'Reformed theology teaches that at death believers’ souls go immediately into Christ’s conscious presence, in true but incomplete blessedness, while awaiting the future resurrection of the body; unbelievers experience conscious separation from God awaiting final judgment.',
+            'The seminary teaches that the souls of the redeemed are with Christ in the intermediate heaven, that the souls of the unsaved are under punishment in the intermediate hell until the second resurrection, and that the first resurrection of believers begins at the rapture (Luke 16:19-26; 2 Corinthians 5:8; 1 Thessalonians 4:13-17; Revelation 20:4-6, 13-15). This curriculum rejects soul sleep, purgatory, reincarnation, and annihilation of the intermediate person.',
           disagreement:
-            'Some Christian groups have historically taught “soul sleep” (psychopannychism)—that the soul is unconscious between death and resurrection. Historic Reformed confessions affirm conscious intermediate existence instead. This lesson teaches the conscious-intermediate-state view as the Reformed position while noting the alternate view exists among some sincere Christians.',
-        },
-        {
-          kind: 'attribution',
-          teacherId: 'grudem',
-          work: 'Systematic Theology',
-          note:
-            'Grudem’s eschatology begins with personal eschatology—death and the intermediate state—before general eschatology. This lesson follows that organizational sequence with original explanations.',
-        },
-        {
-          kind: 'teaching',
-          title: 'Grieving with hope',
-          body:
-            '1 Thessalonians 4:13–14 does not forbid grief at death; it forbids grieving “as others do who have no hope.” Because Jesus died and rose, believers grieve real loss while trusting a real future reunion and resurrection. Hope reshapes grief; it does not erase it.',
-        },
-        {
-          kind: 'attribution',
-          teacherId: 'sproul',
-          work: 'Published Ligonier teaching on the Christian’s hope in death',
-          note:
-            'Supplementary theme: confidence in God’s sovereign goodness steadies believers who face death and bereavement. Original paraphrase of a widely known theme, not a quoted sermon.',
+            'Some Christians teach soul sleep; Roman Catholicism teaches purgatory. Those views are described and answered from Scripture.',
         },
       ],
-      questions: L1_QUESTIONS,
+      questions: L1,
       reflectionPrompts: [
-        'Bring a specific fear about death—your own or a loved one’s—to God in prayer, naming one truth from this lesson that meets that fear.',
+        'How does the hope of being “at home with the Lord” shape how you think about your own death or that of a believing loved one?',
       ],
-      furtherStudy: [
-        'Read Psalm 90 and note how it holds together human mortality and hope in God.',
-        'Compare Luke 23:43 and 2 Corinthians 5:8 on where believers go immediately at death.',
-      ],
+      furtherStudy: ['2 Corinthians 5; Philippians 1; Luke 16; Hebrews 9:27.'],
     },
     {
-      id: 'last-return-christ',
+      id: 'last-rapture-return',
       order: 2,
-      title: 'The Return of Christ',
+      title: 'The Rapture and the Second Coming',
       estimatedMinutes: 18,
-      objectives: [
-        'Establish from Scripture that Christ’s return is personal, visible, and certain.',
-        'Explain why the timing of Christ’s return is unknown and what response that calls for.',
-        'Introduce pretribulational, midtribulational, and posttribulational views fairly.',
-        'Apply the hope of Christ’s return to holy living and perseverance.',
-      ],
+      objectives: {
+        beginner: ['Know that Jesus will come again and that believers will be taken to be with Him.'],
+        intermediate: ['Distinguish the rapture from the Second Coming.'],
+        advanced: ['Defend the pretribulational view from Scripture and describe alternatives fairly.'],
+      },
       primaryPassages: [
+        passage('1thessalonians', '1 Thessalonians', 4, 13, 18),
+        passage('john', 'John', 14, 1, 3),
         passage('acts', 'Acts', 1, 9, 11),
-        passage('matthew', 'Matthew', 24, 30, 31),
-        passage('1thessalonians', '1 Thessalonians', 4, 16, 17),
       ],
       supportingPassages: [
-        passage('matthew', 'Matthew', 24, 36, 36),
+        passage('1corinthians', '1 Corinthians', 15, 51, 58),
         passage('titus', 'Titus', 2, 13, 13),
-        passage('revelation', 'Revelation', 1, 7, 7),
+        passage('revelation', 'Revelation', 3, 10, 10),
+        passage('revelation', 'Revelation', 19, 11, 16),
+        passage('zechariah', 'Zechariah', 14, 3, 4),
       ],
       content: [
         {
           kind: 'teaching',
-          title: 'The blessed hope',
+          level: 'all',
+          title: 'Caught up and coming again',
           body:
-            'Titus 2:13 calls Christ’s return “our blessed hope”—not a source of fear for believers, but the long-awaited completion of salvation. The New Testament consistently presents this return as personal (Christ Himself, not merely an influence or idea), visible (seen by all), and certain (promised repeatedly), even though its timing remains hidden.',
+            'Jesus promised to come and take His own to the Father’s house (John 14:1-3). Paul describes the Lord descending, the dead in Christ rising first, and living believers “caught up” (Greek harpazo) to meet the Lord in the air (1 Thessalonians 4:13-18; 1 Corinthians 15:51-52). This is the blessed hope (Titus 2:13). The Second Coming is distinct: Christ returns visibly to the earth with His saints to judge enemies, rescue Israel, and establish His kingdom (Matthew 24:29-31; Zechariah 14; Revelation 19; Acts 1:11).',
         },
         {
-          kind: 'scripture_focus',
-          passage: passage('acts', 'Acts', 1, 11, 11),
-          note:
-            'Interpretation: The angels tell the disciples that “this Jesus… will come in the same way as you saw him go”—tying the future return directly to the visible, bodily nature of the ascension they had just witnessed.',
+          kind: 'teaching',
+          level: 'intermediate',
+          title: 'Why pretribulational (app position)',
+          body:
+            'The church is promised deliverance from coming wrath (1 Thessalonians 1:10; 5:9; Revelation 3:10). The Tribulation is “the time of Jacob’s trouble” (Jeremiah 30:7) and concerns Israel (Daniel 9:24). The rapture is imminent — no sign must precede it. Rapture: Christ comes for His saints, in the air, unseen by the world as a public spectacle of judgment. Second Coming: Christ comes with His saints to the earth, every eye sees, preceded by signs.',
         },
         {
-          kind: 'concept',
-          term: 'Parousia',
-          explanation:
-            'A Greek term meaning “coming” or “presence,” used in the New Testament for Christ’s future, visible return in glory to raise the dead, judge the world, and consummate His kingdom.',
+          kind: 'teaching',
+          level: 'advanced',
+          title: 'Go deeper: other timing views',
+          body:
+            'Posttribulationism (church through the Tribulation; e.g. Ladd), midtribulationism, and pre-wrath are described as other views. Amillennialists and many postmillennialists hold one general return. Pretribulationism became widespread in the modern era through teachers such as Darby and Scofield; the doctrine is taught here from the text’s distinctions and promises, not from novelty claims.',
         },
         {
           kind: 'distinction',
           biblical:
-            'Scripture affirms Christ will return visibly and bodily (Acts 1:11; Rev 1:7), that the dead in Christ will rise and living believers will be “caught up together with them” to meet the Lord (1 Thess 4:16–17), and that no one knows the day or hour (Matt 24:36).',
+            'Scripture promises Christ will receive His people, the dead in Christ will rise, living believers will be caught up, and Christ will return visibly to the earth as He ascended.',
           interpretation:
-            'Reformed theology affirms a single, personal, visible return of Christ that brings resurrection, judgment, and consummation. Interpreters differ on how the “catching up” in 1 Thessalonians 4 (often called “the rapture”) relates to the future tribulation period described especially in Revelation and Daniel.',
+            'This curriculum teaches a pretribulational rapture distinct from the Second Coming to earth, with imminence and deliverance from wrath for the church.',
           disagreement:
-            'Dispensational premillennialists often teach a pretribulational rapture distinct from and prior to Christ’s later visible return; other premillennialists hold midtribulational or posttribulational views, placing the rapture during or at the end of the tribulation. Many Reformed amillennialists and postmillennialists read 1 Thessalonians 4 as describing the one, final, visible return rather than a separate secret coming. This curriculum does not require one view here, exploring the broader millennial framework further in Lesson 4.',
-        },
-        {
-          kind: 'attribution',
-          teacherId: 'grudem',
-          work: 'Systematic Theology',
-          note:
-            'Grudem discusses the return of Christ before treating the resurrection, millennium, and final judgment in turn, reflecting a common systematic ordering. This lesson follows that sequence with original explanations.',
-        },
-        {
-          kind: 'teaching',
-          title: 'Watchfulness, not speculation',
-          body:
-            'Mark 13:32–37 compares believers to servants who do not know when their master will return, and are therefore to stay alert and faithful at all times. The unknown timing of Christ’s return is meant to produce steady readiness and holy living, not anxious date-setting or speculative timelines.',
-        },
-        {
-          kind: 'attribution',
-          teacherId: 'macarthur',
-          work: 'Published biblical teaching on the return of Christ',
-          note:
-            'Supplementary pastoral emphasis: eager expectation of Christ’s return should produce urgency in evangelism and personal holiness now, not passive speculation about dates. Paraphrased theme only.',
+            'Posttrib, midtrib, pre-wrath, and single-return schemes are described fairly as other evangelical views.',
         },
       ],
-      questions: L2_QUESTIONS,
+      questions: L2,
       reflectionPrompts: [
-        'Name one area of your life where “watchfulness” rather than either apathy or anxious speculation about the future would better honor Christ’s promised return.',
+        'How does the blessed hope shape watchfulness without date-setting?',
       ],
-      furtherStudy: [
-        'Read Mark 13:32–37 and list the attitudes Jesus commends in a watchful servant.',
-        'Compare 1 Thessalonians 4:13–18 and 2 Thessalonians 2:1–4 on events surrounding Christ’s coming.',
-      ],
+      furtherStudy: ['1 Thessalonians 4–5; John 14:1-3; Titus 2:13; Revelation 19.'],
       reviewFromLessonIds: ['last-death-intermediate'],
     },
     {
-      id: 'last-resurrection-judgment',
+      id: 'last-tribulation',
       order: 3,
-      title: 'Resurrection and Final Judgment',
-      estimatedMinutes: 20,
-      objectives: [
-        'Explain the biblical teaching on the general bodily resurrection of all people.',
-        'Describe the nature of the believer’s resurrection body from 1 Corinthians 15.',
-        'Summarize the final judgment and its basis according to Scripture.',
-        'Apply the certainty of judgment to present holiness and gospel assurance.',
-      ],
+      title: 'The Tribulation and Daniel’s Seventieth Week',
+      estimatedMinutes: 18,
+      objectives: {
+        beginner: ['Explain that a period of great judgment is coming on the earth.'],
+        intermediate: ['Outline the seven-year Tribulation and major figures.'],
+        advanced: ['Interpret Daniel 9:24-27 in a futurist reading and respond to preterism.'],
+      },
       primaryPassages: [
-        passage('john', 'John', 5, 28, 29),
-        passage('1corinthians', '1 Corinthians', 15, 42, 44),
-        passage('revelation', 'Revelation', 20, 11, 15),
+        passage('daniel', 'Daniel', 9, 24, 27),
+        passage('matthew', 'Matthew', 24, 4, 31),
+        passage('2thessalonians', '2 Thessalonians', 2, 1, 12),
       ],
       supportingPassages: [
-        passage('daniel', 'Daniel', 12, 2, 2),
-        passage('2corinthians', '2 Corinthians', 5, 10, 10),
-        passage('romans', 'Romans', 8, 1, 1),
+        passage('revelation', 'Revelation', 6, 1, 17),
+        passage('revelation', 'Revelation', 13, 1, 18),
+        passage('jeremiah', 'Jeremiah', 30, 7, 7),
+        passage('romans', 'Romans', 11, 25, 27),
       ],
       content: [
         {
           kind: 'teaching',
-          title: 'More than souls floating',
+          level: 'all',
+          title: 'Daniel’s seventieth week',
           body:
-            'The biblical hope is not merely the soul’s survival after death but the resurrection of the body—a hope central enough that Paul says if Christ has not been raised, Christian faith is futile (1 Cor 15:17). The resurrection is the capstone of personal eschatology and the gateway to the eternal state.',
+            'Daniel 9:24-27 gives God’s timeline for Israel: seventy “weeks” (sevens) of years — 490 years. Sixty-nine weeks lead to Messiah the Prince; Messiah is “cut off.” The seventieth week is yet future: seven years beginning when the coming prince confirms a covenant with Israel. Midway comes the abomination of desolation (Matthew 24:15; 2 Thessalonians 2). Revelation 6–19 describes seals, trumpets, and bowls. Key figures include the Antichrist, the false prophet, two witnesses, and 144,000 sealed Jewish servants. The period ends with Armageddon and Christ’s return.',
         },
         {
-          kind: 'scripture_focus',
-          passage: passage('1corinthians', '1 Corinthians', 15, 42, 44),
-          note:
-            'Interpretation: Paul’s seed analogy (sown perishable, raised imperishable; sown in weakness, raised in power) pictures real continuity between the earthly and resurrection body alongside real, glorious transformation.',
+          kind: 'teaching',
+          level: 'intermediate',
+          title: 'Go deeper: hermeneutics',
+          body:
+            'Literal (grammatical-historical) interpretation applies to prophecy. First-coming prophecies were fulfilled literally, which supports literal fulfillment of those yet future. Pretribulationists place a gap (the church age) between the sixty-ninth and seventieth weeks because Daniel 9 concerns Israel and the church was a mystery (Ephesians 3:1-6).',
         },
         {
-          kind: 'concept',
-          term: 'Resurrection body',
-          explanation:
-            'The glorified, Spirit-empowered, imperishable body believers will receive at Christ’s return—genuinely continuous with the present body (as Christ’s own resurrection body bore His wounds, John 20:27) yet transformed beyond its present weakness and mortality.',
+          kind: 'teaching',
+          level: 'advanced',
+          title: 'Go deeper: other schools',
+          body:
+            'Preterism reads most of Revelation and Matthew 24 as fulfilled in AD 70 or the fall of Rome (Sproul held a partial form — described, not taught). Historicism traces church history; idealism sees timeless conflict. This curriculum teaches futurism.',
         },
         {
           kind: 'distinction',
           biblical:
-            'John 5:28–29 and Daniel 12:2 teach a resurrection of all people, some to life and some to judgment; 2 Corinthians 5:10 and Revelation 20:11–15 describe all appearing before Christ’s judgment seat or throne, judged according to deeds, with those not found in the book of life facing final judgment.',
+            'Daniel’s seventy weeks, Jesus’ Olivet Discourse, Paul’s man of lawlessness, and Revelation’s judgments describe future tribulation and Antichrist figures in a futurist reading.',
           interpretation:
-            'Reformed theology teaches a future resurrection and judgment that will publicly vindicate God’s justice and openly display the fruit of grace in believers’ lives. Believers’ judgment, grounded in Romans 8:1, is not for condemnation but for the evaluation and reward of Spirit-wrought works (cf. 1 Cor 3:12–15).',
+            'The app teaches a future seven-year Tribulation as Daniel’s seventieth week, centered on Israel, after the church’s rapture.',
           disagreement:
-            'Views differ, addressed further in the next lesson, on whether the resurrection of the just and unjust occur at the same moment or are separated by an intervening millennial kingdom. This lesson teaches the data common across the New Testament while flagging that timing question for the millennium lesson.',
-        },
-        {
-          kind: 'attribution',
-          teacherId: 'grudem',
-          work: 'Systematic Theology',
-          note:
-            'Grudem treats the resurrection and final judgment as closely linked loci within general eschatology. This lesson follows that organizational pairing with original explanations.',
-        },
-        {
-          kind: 'teaching',
-          title: 'Judgment and assurance held together',
-          body:
-            'Romans 8:1’s “no condemnation” does not erase the reality of judgment; it secures believers within it. United to Christ by faith, believers can anticipate the judgment seat not with dread of condemnation but with sober expectation of having their Spirit-wrought faithfulness acknowledged and rewarded.',
-        },
-        {
-          kind: 'attribution',
-          teacherId: 'sproul',
-          work: 'Published Ligonier teaching on the holiness and justice of God',
-          note:
-            'Supplementary theme: a high view of God’s holiness makes both the seriousness of judgment and the sufficiency of Christ’s righteousness more vivid. Original paraphrase of a widely known theme, not a quoted sermon.',
+            'Preterist, historicist, and idealist readings are named so learners can recognize them.',
         },
       ],
-      questions: L3_QUESTIONS,
+      questions: L3,
       reflectionPrompts: [
-        'Reflect on one way the certainty of future judgment, held together with “no condemnation in Christ,” should shape a choice you face today.',
+        'How should coming judgment move you toward holiness and witness without fear-mongering?',
       ],
-      furtherStudy: [
-        'Read 1 Corinthians 15 in full and outline Paul’s argument from Christ’s resurrection to ours.',
-        'Compare Matthew 25:31–46 and Revelation 20:11–15 on the basis of final judgment.',
-      ],
-      reviewFromLessonIds: ['last-death-intermediate', 'last-return-christ'],
+      furtherStudy: ['Daniel 9; Matthew 24; 2 Thessalonians 2; Revelation 6–19.'],
+      reviewFromLessonIds: ['last-rapture-return'],
     },
     {
       id: 'last-millennium',
       order: 4,
-      title: 'Millennium Perspectives',
-      estimatedMinutes: 20,
-      objectives: [
-        'Define premillennialism, postmillennialism, and amillennialism accurately.',
-        'Identify key texts each view appeals to, especially Revelation 20.',
-        'Describe which views are most historically associated with Reformed theology, while affirming this is a debated, non-essential matter.',
-        'Apply charity and humility in discussing eschatological timing differences with other believers.',
-      ],
+      title: 'The Millennial Kingdom',
+      estimatedMinutes: 18,
+      objectives: {
+        beginner: ['Know that Christ will reign on earth for a thousand years.'],
+        intermediate: ['Compare premillennialism, amillennialism, and postmillennialism.'],
+        advanced: ['Explain why a literal Millennium is tied to the covenants and answer other views.'],
+      },
       primaryPassages: [
-        passage('revelation', 'Revelation', 20, 1, 6),
-        passage('matthew', 'Matthew', 13, 24, 30),
-        passage('2thessalonians', '2 Thessalonians', 2, 1, 4),
+        passage('revelation', 'Revelation', 20, 1, 10),
+        passage('isaiah', 'Isaiah', 11, 1, 10),
+        passage('romans', 'Romans', 11, 25, 29),
       ],
       supportingPassages: [
-        passage('romans', 'Romans', 11, 25, 26),
-        passage('1corinthians', '1 Corinthians', 15, 24, 26),
-        passage('psalms', 'Psalms', 2, 6, 9),
+        passage('isaiah', 'Isaiah', 2, 2, 4),
+        passage('jeremiah', 'Jeremiah', 31, 31, 37),
+        passage('luke', 'Luke', 1, 32, 33),
+        passage('zechariah', 'Zechariah', 14, 9, 9),
       ],
       content: [
         {
           kind: 'teaching',
-          title: 'One text, three readings',
+          level: 'all',
+          title: 'A thousand years',
           body:
-            'Revelation 20 is the only passage in Scripture that explicitly names a “thousand years” (the Latin root of “millennium”). Because this single, admittedly apocalyptic text drives much of the debate, faithful interpreters who share the same high view of Scripture have reached different conclusions about how it relates to Christ’s return and the eternal state.',
+            'After the Tribulation Christ returns, binds Satan, and reigns over the earth for 1,000 years (Revelation 20:1-6). The Old Testament describes peace among nations, renewed creation, and the Son of David on David’s throne. The seminary teaches that Israel has been temporarily set aside and will be awakened through repentance to enter the land of blessing (Matthew 21:43; Romans 11:25-29), and that the kingdom fulfills God’s promise to Israel (Isaiah 65:17-25; Ezekiel 37:21-28; Zechariah 8:1-17). Paul affirms that “all Israel will be saved” (Romans 11:25-27). At the end Satan is released and many still rebel — showing sin is not merely environmental.',
         },
         {
-          kind: 'scripture_focus',
-          passage: passage('revelation', 'Revelation', 20, 1, 6),
-          note:
-            'Interpretation: The passage describes Satan being bound, a resurrection and reign of “a thousand years,” and a final rebellion before the last judgment—details read quite differently depending on one’s overall interpretive framework for Revelation’s apocalyptic genre.',
+          kind: 'teaching',
+          level: 'intermediate',
+          title: 'Go deeper: three millennial views',
+          body:
+            'Premillennialism: Christ returns before the Millennium. Dispensational premillennialism (this curriculum) distinguishes Israel and the church and is typically pretribulational. Historic premillennialism is often posttribulational. Amillennialism treats the thousand years as the present age symbolically. Postmillennialism expects gospel triumph before Christ returns. Alternatives are described; premillennial futurism is taught.',
         },
         {
-          kind: 'concept',
-          term: 'Premillennialism',
-          explanation:
-            'The view that Christ returns before a future reign—described using Revelation 20’s “thousand years”—after which comes the final rebellion, resurrection of the rest of the dead, and the eternal state. Historic premillennialism places the church through a future tribulation before this reign; dispensational premillennialism additionally holds to a pretribulational rapture and a future, distinct role for national Israel.',
-        },
-        {
-          kind: 'concept',
-          term: 'Postmillennialism',
-          explanation:
-            'The view that the gospel will progressively transform the world through ordinary means of grace—preaching, discipleship, and cultural influence—leading to a period of widespread (though not universal) righteousness and peace, often identified with or culminating in the “thousand years,” before Christ returns. Historically influential among many Puritan and later Reformed theologians, especially in eras of optimism about gospel advance.',
-        },
-        {
-          kind: 'concept',
-          term: 'Amillennialism',
-          explanation:
-            'The view that the “thousand years” symbolically describes the entire present church age, during which Christ reigns from heaven and Satan’s power to deceive the nations as he did before Christ’s first coming is restrained (Rev 20:3), with Christ’s return bringing the resurrection, final judgment, and eternal state directly, without an intervening earthly political kingdom.',
+          kind: 'teaching',
+          level: 'advanced',
+          title: 'Go deeper: Israel and the church',
+          body:
+            'Replacement theology (supersessionism) holds that the church permanently replaces Israel. This curriculum rejects that on the basis of Romans 9–11 and the unconditional covenants. Amillennial readings of Revelation 20 are answered by noting Satan’s present activity (1 Peter 5:8) and the sequential flow of Revelation 19–20 in a futurist reading.',
         },
         {
           kind: 'distinction',
           biblical:
-            'Revelation 20:1–6 describes a binding of Satan, a resurrection and reign of “a thousand years,” and a final rebellion before the last judgment. Other texts are read differently depending on one’s framework: Matthew 13’s wheat and tares growing together until the harvest, 2 Thessalonians 2’s “man of lawlessness” preceding the day of the Lord, and Romans 11’s hope for the fullness of Israel.',
+            'Revelation 20 speaks of a thousand-year reign with Satan bound; the prophets promise a Davidic kingdom and restoration; Romans 11 speaks of Israel’s future salvation.',
           interpretation:
-            'Historic Reformed confessions and many Reformed theologians have held amillennial or postmillennial views, reading Revelation’s symbolism within its apocalyptic genre rather than requiring a future, literal thousand-year earthly political kingdom. Premillennialism, including dispensational forms, is also held by many Bible-believing Christians, including some within broader Reformed-influenced evangelicalism.',
+            'The app teaches a literal future Millennium after Christ’s return, with a future for national Israel distinct from the church.',
           disagreement:
-            'This is one of the most debated areas of eschatology among faithful, Bible-believing Christians. Scripture’s relative silence on precise sequencing outside Revelation’s challenging apocalyptic genre, along with differing understandings of how Israel and the church relate, accounts for much of the difference. Abide does not teach that any one millennial view is the only legitimate Christian position; it presents amillennialism and postmillennialism as most historically native to Reformed confessional theology while describing premillennialism accurately and respectfully as a view held by many faithful believers.',
-        },
-        {
-          kind: 'attribution',
-          teacherId: 'grudem',
-          work: 'Systematic Theology',
-          note:
-            'Grudem’s systematic theology surveys all three millennial views in turn, with their supporting arguments and objections, before noting the author’s own leaning. This lesson follows that same fair-survey structure in original wording, without asserting any single author’s personal conviction as required teaching.',
-        },
-        {
-          kind: 'attribution',
-          teacherId: 'macarthur',
-          work: 'Published biblical teaching on prophecy',
-          note:
-            'Supplementary note: broader evangelical teaching ministries, including dispensational premillennial traditions, have produced extensive popular teaching on prophetic texts. This lesson represents that reading fairly as one established evangelical option rather than the only one.',
+            'Amillennial and postmillennial Christians read Revelation 20 differently; those views are described fairly.',
         },
       ],
-      questions: L4_QUESTIONS,
+      questions: L4,
       reflectionPrompts: [
-        'Write a short prayer asking God for humility and charity toward believers who hold a different millennial view than you find most persuasive.',
+        'How does a future kingdom enlarge your confidence in God’s faithfulness to His promises?',
       ],
-      furtherStudy: [
-        'Read Revelation 19–21 in one sitting to see the millennium passage in its larger narrative context.',
-        'Compare how Matthew 13:24–30, 36–43 and 2 Thessalonians 2:1–12 each describe good and evil coexisting before the end.',
-      ],
-      reviewFromLessonIds: ['last-return-christ', 'last-resurrection-judgment'],
+      furtherStudy: ['Revelation 20; Isaiah 11; Romans 11; Jeremiah 31.'],
+      reviewFromLessonIds: ['last-tribulation'],
     },
     {
-      id: 'last-new-creation',
+      id: 'last-resurrection-judgment',
       order: 5,
-      title: 'The New Heavens and New Earth',
-      estimatedMinutes: 20,
-      objectives: [
-        'Describe the biblical hope of a renewed physical creation, not an escape from the material world.',
-        'Explain the significance of God’s dwelling with His people in Revelation 21–22.',
-        'Connect Romans 8’s picture of creation’s groaning to its final liberation.',
-        'Apply the hope of the new creation to present perseverance, stewardship, and worship.',
-      ],
+      title: 'Resurrection, Judgment, and the Eternal State',
+      estimatedMinutes: 18,
+      objectives: {
+        beginner: ['Know that all people will be raised and judged, and that believers will live with God forever.'],
+        intermediate: ['Distinguish the judgment seat of Christ from the Great White Throne.'],
+        advanced: ['Defend eternal conscious punishment against annihilationism and universalism.'],
+      },
       primaryPassages: [
-        passage('revelation', 'Revelation', 21, 1, 5),
-        passage('2peter', '2 Peter', 3, 10, 13),
-        passage('romans', 'Romans', 8, 19, 23),
+        passage('revelation', 'Revelation', 20, 11, 15),
+        passage('revelation', 'Revelation', 21, 1, 8),
+        passage('john', 'John', 5, 28, 29),
       ],
       supportingPassages: [
-        passage('revelation', 'Revelation', 22, 1, 5),
-        passage('isaiah', 'Isaiah', 65, 17, 19),
-        passage('1corinthians', '1 Corinthians', 2, 9, 9),
+        passage('2corinthians', '2 Corinthians', 5, 10, 10),
+        passage('1corinthians', '1 Corinthians', 3, 11, 15),
+        passage('matthew', 'Matthew', 25, 31, 46),
+        passage('2peter', '2 Peter', 3, 10, 13),
       ],
       content: [
         {
           kind: 'teaching',
-          title: 'An ending that is a beginning',
+          level: 'all',
+          title: 'Two resurrections and two judgments',
           body:
-            'Scripture’s story does not end with disembodied souls floating in an ethereal heaven; it ends with a renewed creation where God dwells with His people face-to-face. Eden’s garden becomes, in Revelation, a garden-city filled with the glory of God—redemption’s goal is restored and perfected creation, not creation’s abandonment.',
+            'Scripture teaches resurrection of life and of judgment (John 5:28-29; Daniel 12:2; Revelation 20). For believers, the judgment seat of Christ evaluates works for reward, not salvation (Romans 14:10; 2 Corinthians 5:10; 1 Corinthians 3:11-15). For unbelievers, the Great White Throne judges according to works, and those not in the book of life are cast into the lake of fire. Jesus taught eternal conscious punishment (Matthew 25:46; Revelation 14:11; 20:10). The final state is a new heaven and new earth (Revelation 21–22).',
         },
         {
-          kind: 'scripture_focus',
-          passage: passage('revelation', 'Revelation', 21, 1, 4),
-          note:
-            'Interpretation: John sees “a new heaven and a new earth” and hears that God’s dwelling place is now with man—with every tear wiped away and death, mourning, crying, and pain gone forever. The center of the new creation’s blessing is God’s own presence, not merely the absence of suffering.',
+          kind: 'teaching',
+          level: 'intermediate',
+          title: 'Go deeper: Millennium vs eternal state',
+          body:
+            'The Millennium is a mediatorial kingdom on this earth. The eternal state begins after the Great White Throne with the new heaven and earth (Revelation 21:1). Degrees of reward and punishment appear in Matthew 11:22-24 and Luke 12:47-48.',
         },
         {
-          kind: 'concept',
-          term: 'New heavens and new earth',
-          explanation:
-            'The renewed, purified, and glorified creation that believers will inhabit bodily after Christ’s return—continuous with the present creation in the same way the resurrection body is continuous with the present body, yet freed from sin, decay, and death.',
+          kind: 'teaching',
+          level: 'advanced',
+          title: 'Go deeper: annihilationism and universalism',
+          body:
+            'Annihilationism claims the wicked are destroyed; Matthew 25:46 uses the same word “eternal” for life and punishment, and Revelation speaks of torment “forever.” Universalism (all finally saved) contradicts Revelation 20:15 and John 3:36. This curriculum teaches eternal conscious punishment. Knowing the fear of the Lord, we persuade others (2 Corinthians 5:11).',
         },
         {
           kind: 'distinction',
           biblical:
-            '2 Peter 3:10–13 says the heavens will “pass away” and the elements will be “burned up” or dissolved, while also anticipating “new heavens and a new earth in which righteousness dwells.” Romans 8:19–23 says creation itself will be “set free from its bondage to corruption” and obtain “the freedom of the glory of the children of God.”',
+            'Scripture teaches resurrection, reward for believers, final judgment for the lost, eternal punishment, and a new creation where God dwells with His people.',
           interpretation:
-            'Reformed theology generally reads these texts together as teaching purifying transformation and renewal of the present creation—paralleling the resurrection body’s continuity-with-transformation pattern—rather than its utter annihilation and replacement by an unrelated creation made from nothing.',
+            'The app teaches the bema for believers, the Great White Throne for unbelievers, eternal conscious punishment, and the new heaven and earth as the final hope.',
           disagreement:
-            'Some Christians read 2 Peter 3’s “burned up” and “dissolved” language more literally, emphasizing the complete destruction and re-creation of the physical universe. Others, often appealing to Romans 8 and the resurrection-body analogy, read it as purifying judgment that renews rather than annihilates. This lesson teaches the renewal-emphasis reading common in Reformed theology while noting the alternate reading exists among faithful believers.',
-        },
-        {
-          kind: 'attribution',
-          teacherId: 'grudem',
-          work: 'Systematic Theology',
-          note:
-            'Grudem treats the new heavens and new earth as the capstone of general eschatology, following resurrection, millennium, and final judgment. This lesson follows that organizational placement with original explanations.',
-        },
-        {
-          kind: 'teaching',
-          title: 'Face-to-face fellowship, not escape',
-          body:
-            'Revelation 21:3 and 22:4 describe God dwelling with His people and His people seeing His face—language of restored, unhindered fellowship that Eden only foreshadowed. The goal of redemption was never escape from a physical world but renewed, embodied communion with God within a creation finally set right.',
-        },
-        {
-          kind: 'attribution',
-          teacherId: 'macarthur',
-          work: 'Published biblical teaching on the believer’s future hope',
-          note:
-            'Supplementary pastoral emphasis: concrete hope in a real future inheritance motivates present faithfulness amid suffering, rather than functioning as mere escapism. Paraphrased theme only.',
-        },
-        {
-          kind: 'teaching',
-          title: 'Living in light of the end',
-          body:
-            'New creation hope reshapes ordinary life now: it dignifies work and creation care as previews of coming renewal, steadies believers through grief with the promise of no more tears, and fuels mission because the gospel is what brings people into this coming inheritance.',
+            'Annihilationism and universalism are described and rejected from the texts above.',
         },
       ],
-      questions: L5_QUESTIONS,
+      questions: L5,
       reflectionPrompts: [
-        'Name one ordinary task or relationship this week you can approach differently in light of the hope of a renewed, embodied creation.',
+        'How should judgment and the new creation shape your evangelism and endurance?',
       ],
-      furtherStudy: [
-        'Read Revelation 21–22 in full and list every description of what will be absent (no more sea, death, mourning, curse) and present (God’s glory, the river of life, the tree of life).',
-        'Compare Isaiah 65:17–25 with Revelation 21–22 and note the shared imagery of renewal.',
-      ],
-      reviewFromLessonIds: ['last-resurrection-judgment', 'last-millennium'],
+      furtherStudy: ['Revelation 20–22; 1 Corinthians 15; 2 Corinthians 5; Matthew 25.'],
+      reviewFromLessonIds: ['last-death-intermediate', 'last-millennium'],
     },
   ],
 }

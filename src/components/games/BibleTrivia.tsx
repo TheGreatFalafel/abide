@@ -19,7 +19,7 @@ export function BibleTrivia({ difficulty, onComplete, onBack }: GameSessionProps
   const q = questions[index]
   if (!q) {
     return (
-      <GameChrome title="Bible Trivia" stepLabel="Unavailable" onBack={onBack}>
+      <GameChrome gameId="bible-trivia" title="Bible Trivia" stepLabel="Unavailable" onBack={onBack}>
         <p className="muted">No trivia questions for this difficulty.</p>
       </GameChrome>
     )
@@ -54,6 +54,7 @@ export function BibleTrivia({ difficulty, onComplete, onBack }: GameSessionProps
 
   return (
     <GameChrome
+      gameId="bible-trivia"
       title="Bible Trivia"
       stepLabel={`${index + 1} / ${questions.length} · ${q.category}`}
       onBack={onBack}

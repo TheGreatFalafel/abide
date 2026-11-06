@@ -2,7 +2,11 @@
 
 Audit and design for character animation and game-UI feedback. **Preserve** lesson mechanics, rewards, progress sync, and navigation. Character motion stays separate from educational/business logic.
 
-> **Phase C update:** Professional Rive Ari (`public/rive/ari.riv`) is the primary character renderer. See `docs/phase-c-visual-foundation.md`. SVG `AriMark` remains the graceful fallback. The Phase A “defer Rive” recommendation is superseded.
+> **Phase C update:** Professional Rive Ari (`public/rive/ari.riv`) is the primary shipping character renderer. See `docs/phase-c-visual-foundation.md` and **`docs/rive-characters.md`** (asset contracts, `CharacterEvent` API, replacement steps). SVG `AriMark` remains the graceful fallback. The Phase A “defer Rive” recommendation is superseded.
+>
+> **Shared Rive host:** `RiveCharacter` + dedicated `Ari` in `src/components/rive/`. Application boundary prefers `CharacterEvent` (`idle`…`react_incorrect`); legacy `AriCharacterState` still works.
+>
+> **3D foundation:** React Three Fiber integration is in place for a future rigged `public/characters/ari/ari.glb`. Product UI stays on Rive/SVG until the GLB exists and `NEXT_PUBLIC_ARI_3D=1` is set. See `docs/ari-3d-integration.md` and `docs/ASSET_CONTRACT.md`.
 
 ---
 
@@ -94,7 +98,9 @@ Audit and design for character animation and game-UI feedback. **Preserve** less
 
 ### Ari character states (product API)
 
-`idle` · `blink` · `greet` · `walk` · `run` · `think` · `guide` · `correct` · `encourage` · `celebrate` · `milestone`
+`idle` · `blink` · `greet` · `walk` · `run` · `think` · `guide` · `correct` · `encourage` · `celebrate` · `jump` · `levelUp` · `milestone`
+
+3D clip bridge: `src/lib/animation/ari3d.ts` (`ariMotionFromCharacterState` / `ariMotionFromFeedback`).
 
 **Presentation bridge (no new art):**
 
@@ -130,6 +136,7 @@ Map onto existing idle/blink + short react flash and face variants — **no seco
 | `matching_completed` | `correct` or `encourage` | Match game complete |
 | `exercise_completed` | `correct` / `encourage` | Bite exercise result |
 | `lesson_completed` | `celebrate` | Celebration + banner |
+| `level_up` | `levelUp` | Level-up celebration (presentation only) |
 | `achievement_unlocked` | `milestone` | Celebration badges |
 | `streak_milestone` | `milestone` | `streakMilestoneFrom` + jump pose |
 
@@ -142,9 +149,11 @@ Events are **descriptive**; they never award XP/gems. Progress modules emit outc
 | Component / module | Responsibility |
 |--------------------|----------------|
 | `src/lib/animation/*` | Types, event → state, state → `{ expression, pose, motion, poseClass }` |
-| `AriMark` | Pure renderer; accepts legacy props **or** `characterState` |
-| `AriReactionCue` | Resolves feedback events → Ari presentation |
-| `MascotBanner` | Contextual copy (still from `mascotLineFor`) + Ari |
+| `AriMark` | Pure SVG renderer; accepts legacy props **or** `characterState` |
+| `AriRive` | Rive player → SVG fallback |
+| `AriCompanion` / `Ari3D` | Optional WebGL player when GLB + opt-in; else Rive/SVG |
+| `AriReactionCue` | Resolves feedback events → Ari presentation (Rive; keeps canvases small) |
+| `MascotBanner` | Contextual copy (still from `mascotLineFor`) + `AriCompanion` |
 | Future: `GameFeedbackFx` | Correct/incorrect chrome without owning Ari art |
 | Future: avatar state helper | Drive `AbideAvatar` react / face from events |
 

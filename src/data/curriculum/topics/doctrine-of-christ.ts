@@ -8,6 +8,10 @@ import {
   SOURCE_SPROUL_SUP,
   SOURCE_MACARTHUR_SUP,
 } from './_helpers'
+import {
+  PART17_CHRIST_BY_LESSON,
+} from '../banks/part17-doctrine-christ-salvation-church'
+import { appendOutlineBank } from '../banks/outlineBankHelper'
 
 /* -------------------------------------------------------------------------- */
 /* Lesson 1 — The Person of Christ: One Person, Two Natures                   */
@@ -117,6 +121,19 @@ const L2_QUESTIONS: QuizQuestion[] = [
     1,
     'Luke 2:52 shows Jesus genuinely growing in wisdom and stature. Real humanity includes real development and dependence, without this ever requiring sin.',
   ),
+  mc(
+    'cil-2-impeccability',
+    'Impeccability means that Christ:',
+    [
+      'Was able not to sin, but could have sinned',
+      'Was not able to sin, because He is God',
+      'Never faced temptation',
+      'Had only a divine nature',
+    ],
+    1,
+    'The app teaches impeccability: Christ was not able to sin, because He is God and His natures are united in one person. Temptation was real; yielding was impossible.',
+    'advanced',
+  ),
   open(
     'cil-2-open',
     'How does picturing Jesus as a real child who grew, learned, and depended on His parents change the way you relate to Him as an adult believer?',
@@ -175,6 +192,19 @@ const L3_QUESTIONS: QuizQuestion[] = [
     ],
     2,
     'Scripture presents several true pictures of the cross—victory, ransom, reconciliation, sacrifice—held together. Reformed theology treats penal substitution as the logical and legal foundation beneath the others, not their replacement.',
+  ),
+  mc(
+    'ca-3-definite',
+    'Definite atonement teaches that Christ’s death:',
+    [
+      'Was designed to secure the salvation of those the Father gave Him',
+      'Had no value',
+      'Saves everyone automatically',
+      'Was only an example',
+    ],
+    0,
+    'The TMS statement describes satisfaction, propitiation, reconciliation, and an inheritance for those the Father gave to the Son — definite (particular) atonement.',
+    'intermediate',
   ),
   open(
     'ca-3-open',
@@ -319,7 +349,8 @@ export const DOCTRINE_OF_CHRIST: CurriculumTopic = {
   estimatedMinutes: 95,
   prerequisites: ['doctrine-of-god'],
   framework: 'reformed',
-  version: 1,
+  contentStatus: 'full',
+  version: 2,
   sources: [
     {
       ...SOURCE_GRUDEM_ORG,
@@ -406,7 +437,7 @@ export const DOCTRINE_OF_CHRIST: CurriculumTopic = {
             'Organizational cue: Grudem’s Christology begins with the person of Christ—deity, humanity, and their union—before addressing the work of Christ. This lesson follows that same logical starting point with original explanations.',
         },
       ],
-      questions: L1_QUESTIONS,
+      questions: appendOutlineBank('christ-present-ministry', L1_QUESTIONS, PART17_CHRIST_BY_LESSON),
       reflectionPrompts: [
         'Write one sentence in your own words describing why a Savior who is less than fully God, or less than fully human, could not actually save you.',
       ],
@@ -466,9 +497,9 @@ export const DOCTRINE_OF_CHRIST: CurriculumTopic = {
         },
         {
           kind: 'teaching',
-          title: 'A real childhood, a sinless life',
+          title: 'A real childhood, a sinless and impeccable life',
           body:
-            'Luke 2:52 says Jesus grew in wisdom and stature—ordinary, observable human development. Hebrews 4:15 says He was tempted in every way as we are, yet without sin. Together these texts describe genuine humanity (growth, limitation, real temptation) joined to unbroken moral perfection. Reformed theology resists two opposite errors: treating Jesus as essentially divine with humanity as a thin costume, and treating His sinlessness as making His humanity somehow unreal or untestable.',
+            'Luke 2:52 says Jesus grew in wisdom and stature—ordinary, observable human development. Hebrews 4:15 and 7:26 say He was tempted in every way as we are, yet without sin. His temptations were real, but He could not sin, because He is God and His divine and human natures are one person (James 1:13; Hebrews 7:26). The seminary teaches that He is impeccable: not only was He able not to sin, He was not able to sin. (The TMS doctrinal statement says “without sin” and does not use the word impeccable; impeccability is taught here as confirmed seminary teaching.) Reformed theology resists two opposite errors: treating Jesus as essentially divine with humanity as a thin costume, and treating His sinlessness as making His humanity somehow unreal or untestable.',
         },
         {
           kind: 'scripture_focus',
@@ -490,7 +521,7 @@ export const DOCTRINE_OF_CHRIST: CurriculumTopic = {
             'Supplementary pastoral stress: the Gospels are read as careful historical narrative, not devotional embellishment, grounding confidence that the earthly Jesus of the Gospels is the same Lord believers now trust.',
         },
       ],
-      questions: L2_QUESTIONS,
+      questions: appendOutlineBank('christ-incarnation-life', L2_QUESTIONS, PART17_CHRIST_BY_LESSON),
       reflectionPrompts: [
         'Where do you tend to think of Jesus as "too divine" to have really understood ordinary human struggle? Bring one current struggle to Him in prayer this week.',
       ],
@@ -558,7 +589,7 @@ export const DOCTRINE_OF_CHRIST: CurriculumTopic = {
           kind: 'teaching',
           title: 'The extent of the atonement',
           body:
-            'A separate historic debate concerns the intended scope of Christ’s atoning death: did Christ die with the specific intention of securing the salvation of His elect (often called "particular" or "limited" atonement), or did He die to make salvation generally available to all without guaranteeing anyone’s response ("general" or "unlimited" atonement)?',
+            'The seminary’s statement says that Christ’s perfect obedience and sacrifice satisfied God’s justice, propitiated His wrath, procured reconciliation, and purchased an inheritance for all those the Father has given to Him (John 6:39; 10:14-15, 28-29; 17:2, 9, 24). This is definite (particular) atonement: Christ died with the purpose of securing the salvation of His people. Christians who hold unlimited atonement teach that Christ’s death made provision for every person, to be received by faith (passages they cite include John 3:16; 1 Timothy 4:10; 1 John 2:2). The app teaches definite atonement and describes the other view.',
         },
         {
           kind: 'distinction',
@@ -577,7 +608,7 @@ export const DOCTRINE_OF_CHRIST: CurriculumTopic = {
             'Supplementary emphasis: because God is infinitely holy, sin cannot simply be waived; it must be dealt with justly. This widely known theme supplements the lesson’s legal framing of the atonement. Original paraphrase only—no sermon text reproduced.',
         },
       ],
-      questions: L3_QUESTIONS,
+      questions: appendOutlineBank('christ-person-natures', L3_QUESTIONS, PART17_CHRIST_BY_LESSON),
       reflectionPrompts: [
         'Spend a few minutes thanking God specifically for the legal exchange of the cross: your guilt for Christ’s righteousness. Name one guilt you are still carrying as though it were unpaid.',
       ],
@@ -654,7 +685,7 @@ export const DOCTRINE_OF_CHRIST: CurriculumTopic = {
             'Supplementary pastoral stress: the resurrection is taught as verifiable history on which the entire gospel stands or falls, not as an optional devotional metaphor.',
         },
       ],
-      questions: L4_QUESTIONS,
+      questions: appendOutlineBank('christ-atonement', L4_QUESTIONS, PART17_CHRIST_BY_LESSON),
       reflectionPrompts: [
         'Name one way the certainty of your own future bodily resurrection should change how you think about aging, illness, or grief.',
       ],
@@ -731,7 +762,7 @@ export const DOCTRINE_OF_CHRIST: CurriculumTopic = {
             'Supplementary emphasis: the ascended Christ’s active, present lordship is a widely known Reformed theme, applied here to ordinary confidence in prayer. Original paraphrase only.',
         },
       ],
-      questions: L5_QUESTIONS,
+      questions: appendOutlineBank('christ-resurrection-ascension', L5_QUESTIONS, PART17_CHRIST_BY_LESSON),
       reflectionPrompts: [
         'Bring one situation you feel too weak or ashamed to pray about, and pray it anyway, resting on Christ’s present intercession rather than on how well you think you are praying.',
       ],

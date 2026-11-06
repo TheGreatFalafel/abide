@@ -14,6 +14,8 @@ export const GREEK_VOCABULARY: LanguageVocabEntry[] = [
     id: 'gv-theos',
     track: 'greek',
     lemma: 'θεός',
+    strongs: 'G2316',
+    strongsVerified: true,
     transliteration: 'theos',
     gloss: 'God; a god',
     senseNote:
@@ -27,6 +29,8 @@ export const GREEK_VOCABULARY: LanguageVocabEntry[] = [
     id: 'gv-logos',
     track: 'greek',
     lemma: 'λόγος',
+    strongs: 'G3056',
+    strongsVerified: true,
     transliteration: 'logos',
     gloss: 'word; message; account; reason',
     senseNote:
@@ -40,6 +44,8 @@ export const GREEK_VOCABULARY: LanguageVocabEntry[] = [
     id: 'gv-kai',
     track: 'greek',
     lemma: 'καί',
+    strongs: 'G2532',
+    strongsVerified: true,
     transliteration: 'kai',
     gloss: 'and; also; even',
     senseNote:
@@ -53,6 +59,8 @@ export const GREEK_VOCABULARY: LanguageVocabEntry[] = [
     id: 'gv-en',
     track: 'greek',
     lemma: 'ἐν',
+    strongs: 'G1722',
+    strongsVerified: true,
     transliteration: 'en',
     gloss: 'in; on; among; by; with',
     senseNote:
@@ -66,6 +74,8 @@ export const GREEK_VOCABULARY: LanguageVocabEntry[] = [
     id: 'gv-eimi',
     track: 'greek',
     lemma: 'εἰμί',
+    strongs: 'G1510',
+    strongsVerified: true,
     transliteration: 'eimi',
     gloss: 'to be; to exist',
     senseNote:
@@ -79,6 +89,8 @@ export const GREEK_VOCABULARY: LanguageVocabEntry[] = [
     id: 'gv-echo',
     track: 'greek',
     lemma: 'ἔχω',
+    strongs: 'G2192',
+    strongsVerified: true,
     transliteration: 'echō',
     gloss: 'to have; to hold; to possess',
     senseNote:
@@ -92,6 +104,8 @@ export const GREEK_VOCABULARY: LanguageVocabEntry[] = [
     id: 'gv-anthropos',
     track: 'greek',
     lemma: 'ἄνθρωπος',
+    strongs: 'G444',
+    strongsVerified: true,
     transliteration: 'anthrōpos',
     gloss: 'human being; person; man (generic)',
     senseNote:
@@ -105,6 +119,8 @@ export const GREEK_VOCABULARY: LanguageVocabEntry[] = [
     id: 'gv-kurios',
     track: 'greek',
     lemma: 'κύριος',
+    strongs: 'G2962',
+    strongsVerified: true,
     transliteration: 'kyrios',
     gloss: 'lord; master; sir; Lord',
     senseNote:
@@ -118,6 +134,8 @@ export const GREEK_VOCABULARY: LanguageVocabEntry[] = [
     id: 'gv-iesous',
     track: 'greek',
     lemma: 'Ἰησοῦς',
+    strongs: 'G2424',
+    strongsVerified: true,
     transliteration: 'Iēsous',
     gloss: 'Jesus',
     senseNote:
@@ -131,6 +149,8 @@ export const GREEK_VOCABULARY: LanguageVocabEntry[] = [
     id: 'gv-christos',
     track: 'greek',
     lemma: 'Χριστός',
+    strongs: 'G5547',
+    strongsVerified: true,
     transliteration: 'Christos',
     gloss: 'Christ; Anointed One; Messiah',
     senseNote:
@@ -144,6 +164,8 @@ export const GREEK_VOCABULARY: LanguageVocabEntry[] = [
     id: 'gv-pisteuo',
     track: 'greek',
     lemma: 'πιστεύω',
+    strongs: 'G4100',
+    strongsVerified: true,
     transliteration: 'pisteuō',
     gloss: 'to believe; to trust; to have faith in',
     senseNote:
@@ -157,6 +179,8 @@ export const GREEK_VOCABULARY: LanguageVocabEntry[] = [
     id: 'gv-agape',
     track: 'greek',
     lemma: 'ἀγάπη',
+    strongs: 'G26',
+    strongsVerified: false,
     transliteration: 'agapē',
     gloss: 'love',
     senseNote:
@@ -196,6 +220,8 @@ export const GREEK_VOCABULARY: LanguageVocabEntry[] = [
     id: 'gv-pneuma',
     track: 'greek',
     lemma: 'πνεῦμα',
+    strongs: 'G4151',
+    strongsVerified: true,
     transliteration: 'pneuma',
     gloss: 'spirit; wind; breath',
     senseNote:
@@ -248,6 +274,8 @@ export const GREEK_VOCABULARY: LanguageVocabEntry[] = [
     id: 'gv-lego',
     track: 'greek',
     lemma: 'λέγω',
+    strongs: 'G3004',
+    strongsVerified: true,
     transliteration: 'legō',
     gloss: 'to say; to speak; to call; to mean',
     senseNote:
@@ -338,6 +366,8 @@ export const GREEK_VOCABULARY: LanguageVocabEntry[] = [
     id: 'gv-pros',
     track: 'greek',
     lemma: 'πρός',
+    strongs: 'G4314',
+    strongsVerified: true,
     transliteration: 'pros',
     gloss: 'to; toward; with; against',
     senseNote:
@@ -351,6 +381,8 @@ export const GREEK_VOCABULARY: LanguageVocabEntry[] = [
     id: 'gv-autos',
     track: 'greek',
     lemma: 'αὐτός',
+    strongs: 'G846',
+    strongsVerified: true,
     transliteration: 'autos',
     gloss: 'he/she/it; self; same',
     senseNote:

@@ -1,8 +1,11 @@
 'use client'
 
-import { ariPresentationFromFeedback } from '../lib/animation'
+import {
+  ariPresentationFromFeedback,
+  characterEventFromFeedback,
+} from '../lib/animation'
 import { reactionForAnswer } from '../lib/mascot'
-import { AriRive } from './AriRive'
+import { Ari } from './rive/Ari'
 
 type Props = {
   /** Show only when an answer has been checked. */
@@ -13,14 +16,15 @@ type Props = {
 
 /**
  * Compact Ari reaction for quiz/game feedback.
- * Driven by animation feedback events — Rive when available.
+ * Driven by CharacterEvent / animation feedback — Rive when available.
  */
 export function AriReactionCue({ active, correct, className = '' }: Props) {
   if (!active) return null
-  const event = correct
+  const feedback = correct
     ? ({ type: 'correct_answer' } as const)
     : ({ type: 'incorrect_answer' } as const)
-  const presentation = ariPresentationFromFeedback(event)
+  const characterEvent = characterEventFromFeedback(feedback)
+  const presentation = ariPresentationFromFeedback(feedback)
   const reaction = reactionForAnswer(correct)
   return (
     <div
@@ -28,8 +32,8 @@ export function AriReactionCue({ active, correct, className = '' }: Props) {
       role="status"
       aria-label={`${reaction.title}: ${reaction.body}`}
     >
-      <AriRive
-        characterState={presentation.state}
+      <Ari
+        event={characterEvent}
         size={48}
         fallbackProps={{
           expression: presentation.expression,

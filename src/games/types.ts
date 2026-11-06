@@ -8,6 +8,9 @@ export type GameId =
   | 'who-said-it'
   | 'biblical-timeline'
   | 'match-the-passage'
+  | 'doctrine-challenge'
+  | 'biblical-geography'
+  | 'book-of-the-bible-challenge'
 
 export type GameDifficulty = 'beginner' | 'intermediate' | 'advanced'
 

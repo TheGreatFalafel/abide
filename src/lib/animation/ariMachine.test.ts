@@ -21,7 +21,10 @@ describe('Ari character state machine', () => {
       'correct',
       'encourage',
       'celebrate',
+      'jump',
+      'levelUp',
       'milestone',
+      'sleep',
     ])
   })
 
@@ -39,6 +42,7 @@ describe('Ari character state machine', () => {
     expect(ariStateFromFeedback({ type: 'matching_completed', correct: false })).toBe('encourage')
     expect(ariStateFromFeedback({ type: 'exercise_completed', correct: true })).toBe('correct')
     expect(ariStateFromFeedback({ type: 'lesson_completed' })).toBe('celebrate')
+    expect(ariStateFromFeedback({ type: 'level_up' })).toBe('levelUp')
     expect(ariStateFromFeedback({ type: 'achievement_unlocked' })).toBe('milestone')
     expect(ariStateFromFeedback({ type: 'streak_milestone' })).toBe('milestone')
   })
@@ -68,6 +72,11 @@ describe('Ari character state machine', () => {
     expect(resolveAriPresentation('run').extraClass).toBe('pose-run')
     expect(resolveAriPresentation('run').pose).toBe('walk')
     expect(resolveAriPresentation('walk').extraClass).toBe('')
+    expect(resolveAriPresentation('sleep')).toMatchObject({
+      expression: 'neutral',
+      pose: 'idle',
+      motion: 'idle',
+    })
   })
 
   it('disables motion when reduceMotion is set (graceful fallback)', () => {

@@ -1,6 +1,12 @@
 import type { LanguageCourse, LanguageLesson } from '../types'
+import type { LanguageExercise } from '../types'
 import { HEBREW_ALPHABET } from './alphabet'
+import { HEBREW_PART15_BY_LESSON } from './part15Exercises'
 import { HEBREW_VOCABULARY } from './vocabulary'
+
+function withPart15(lessonId: string, exercises: LanguageExercise[]): LanguageExercise[] {
+  return [...exercises, ...(HEBREW_PART15_BY_LESSON[lessonId] ?? [])]
+}
 
 const ALL_LETTER_IDS = HEBREW_ALPHABET.map((l) => l.id)
 
@@ -74,7 +80,7 @@ const lessonConsonants: LanguageLesson = {
         'The pronunciation taught in this course follows a common academic, introductory-classroom convention for Biblical Hebrew. It is a teaching simplification: letters we pronounce alike for simplicity (such as א/ע, or ט/ת) were likely distinct sounds in ancient Hebrew, and Modern (Israeli) Hebrew pronunciation differs further still. This is a practical starting point for learning to read the text, not a claim to have recovered "the one true original sound."',
     },
   ],
-  exercises: [
+  exercises: withPart15('hebrew-consonants', [
     {
       kind: 'alphabet_match',
       prompt: 'Match each consonant glyph to its name.',
@@ -90,6 +96,7 @@ const lessonConsonants: LanguageLesson = {
         answer: 1,
         explanation:
           'Kaf is one of five letters — kaf, mem, nun, pe, and tsade — that take a special shape (ך) only at the end of a word.',
+        difficulty: 'beginner',
       },
     },
     {
@@ -101,9 +108,10 @@ const lessonConsonants: LanguageLesson = {
         choices: ['Left to right', 'Right to left', 'Top to bottom', 'It varies by book'],
         answer: 1,
         explanation: 'Hebrew, like other Semitic scripts, is written and read from right to left.',
+        difficulty: 'beginner',
       },
     },
-  ],
+  ]),
   reflectionPrompts: [
     'What felt different about tracking text that moves right to left?',
     'Why might recognizing the five final letter forms matter before you try to sound out whole words?',
@@ -168,7 +176,7 @@ const lessonVowels: LanguageLesson = {
         'Vowel points were added roughly a thousand years after Hebrew had ceased to be most people\'s everyday spoken language, by scholars preserving a received oral reading tradition. They are an enormously valuable, carefully transmitted guide to reading — but it is worth remembering they are a reading tradition layered onto an older consonantal text, not part of the text in the very same sense as the consonants themselves.',
     },
   ],
-  exercises: [
+  exercises: withPart15('hebrew-vowels', [
     {
       kind: 'mc',
       question: {
@@ -184,6 +192,7 @@ const lessonVowels: LanguageLesson = {
         answer: 1,
         explanation:
           'A vocal shva is a brief, reduced vowel sound that begins a syllable; a silent shva, by contrast, simply closes a syllable with no vowel sound.',
+        difficulty: 'intermediate',
       },
     },
     {
@@ -206,7 +215,7 @@ const lessonVowels: LanguageLesson = {
       explanation:
         'אֱלֹהִים is grammatically plural in form but is used, with a singular verb, as the primary word for the one God of Israel; it can also mean "gods" (plural) in other contexts.',
     },
-  ],
+  ]),
   introduceVocabIds: ['hv-elohim', 'hv-yhwh', 'hv-erets', 'hv-shamayim', 'hv-yom', 'hv-be', 'hv-le', 'hv-ve'],
   reflectionPrompts: [
     'Why might it matter, when reading the Hebrew Bible devotionally, to remember that the vowel points were added later than the consonants?',
@@ -267,7 +276,7 @@ const lessonNouns: LanguageLesson = {
         'A construct chain can describe many kinds of relationships beyond plain ownership: material ("a house of stone" = a stone house), description or quality ("a man of war" = a warrior), or source — not only "belonging to." Translate each chain from its context rather than assuming a single fixed formula every time.',
     },
   ],
-  exercises: [
+  exercises: withPart15('hebrew-nouns', [
     {
       kind: 'mc',
       question: {
@@ -283,6 +292,7 @@ const lessonNouns: LanguageLesson = {
         answer: 1,
         explanation:
           'The article attaches to the second, absolute noun; the whole chain is then understood as definite ("the king\'s house"), even though the first noun has no article of its own.',
+        difficulty: 'intermediate',
       },
     },
     {
@@ -309,7 +319,7 @@ const lessonNouns: LanguageLesson = {
       explanation:
         'תּוֹרָה is often rendered "law," but its core sense is "instruction/teaching" — it can describe a single instruction, a body of law, or the Pentateuch as a whole, depending on context.',
     },
-  ],
+  ]),
   introduceVocabIds: [
     'hv-ish',
     'hv-ben',
@@ -377,7 +387,7 @@ const lessonModifiers: LanguageLesson = {
         'Hebrew prepositions such as עַל, אֶל, and מִן shift their best English rendering with context — spatial, topical, comparative, or adversarial — rather than mapping onto one fixed English word every time. Likewise, remember from Lesson 3 that the article and the construct state interact in a specific way: do not assume "the ___ of the ___" in English always implies an article on the first Hebrew noun too.',
     },
   ],
-  exercises: [
+  exercises: withPart15('hebrew-modifiers', [
     {
       kind: 'mc',
       question: {
@@ -393,6 +403,7 @@ const lessonModifiers: LanguageLesson = {
         answer: 1,
         explanation:
           'הַ- is a prefix fused directly onto the front of the noun it makes definite (and typically onto an adjective describing that noun as well).',
+        difficulty: 'beginner',
       },
     },
     {
@@ -413,7 +424,7 @@ const lessonModifiers: LanguageLesson = {
       explanation:
         'אֲשֶׁר is Hebrew\'s general-purpose relative particle, introducing a clause describing or identifying something — invariant for gender and number.',
     },
-  ],
+  ]),
   introduceVocabIds: ['hv-kol', 'hv-asher', 'hv-al', 'hv-el', 'hv-min'],
   reflectionPrompts: [
     'How is the idea of a "prefixed article" similar to, or different from, how "the" works in English?',
@@ -474,7 +485,7 @@ const lessonVerbs: LanguageLesson = {
         'The "perfect" 3rd masculine singular form of the very common verb אמר ("say"). Despite the traditional name, only context — not the form by itself — tells you whether this is a simple past action, a general statement, or something else.',
     },
   ],
-  exercises: [
+  exercises: withPart15('hebrew-verbs', [
     {
       kind: 'mc',
       question: {
@@ -490,6 +501,7 @@ const lessonVerbs: LanguageLesson = {
         answer: 0,
         explanation:
           'The root carries the basic lexical meaning; stem, vowel pattern, and affixes layer on grammatical nuance (voice, intensity, causation) and person/gender/number/conjugation.',
+        difficulty: 'beginner',
       },
     },
     {
@@ -507,6 +519,7 @@ const lessonVerbs: LanguageLesson = {
         answer: 0,
         explanation:
           'While the perfect very often marks past/completed action, context can show a general truth ("the LORD is good," gnomic sense) or a confidently-expected future (the "prophetic perfect") — so the label "perfect" names a form, not a fixed English tense.',
+        difficulty: 'intermediate',
       },
     },
     {
@@ -518,7 +531,7 @@ const lessonVerbs: LanguageLesson = {
       explanation:
         'Qal is the simplest, most common active stem; the other stems layer on nuances like intensity, causation, passivity, or reflexivity relative to Qal.',
     },
-  ],
+  ]),
   introduceVocabIds: ['hv-amar', 'hv-hayah', 'hv-shama', 'hv-raah', 'hv-natan'],
   reflectionPrompts: [
     'What is one example (in any language you know) where a single verb form can describe more than one kind of time or aspect?',
@@ -583,7 +596,7 @@ const lessonVerbPatterns: LanguageLesson = {
         'It is tempting to flatten the vav-consecutive into a tidy rule — "vav + imperfect = past" and "vav + perfect = future" — and that rule of thumb does describe the large majority of narrative instances. But treat it as a strong, recognizable pattern (identified by its distinctive prefixed shape) rather than an exceptionless mechanical formula: narrative, poetic, and legal material can use these forms somewhat differently, and skilled readers decide from context, not a flowchart alone.',
     },
   ],
-  exercises: [
+  exercises: withPart15('hebrew-verb-patterns', [
     {
       kind: 'mc',
       question: {
@@ -599,6 +612,7 @@ const lessonVerbPatterns: LanguageLesson = {
         answer: 0,
         explanation:
           'This is the backbone form of Hebrew storytelling: clause after clause of וַ-prefixed imperfect verbs carrying the narrative forward in sequence.',
+        difficulty: 'advanced',
       },
     },
     {
@@ -624,7 +638,7 @@ const lessonVerbPatterns: LanguageLesson = {
       explanation:
         'As a vav-consecutive imperfect, וַיֹּאמֶר overwhelmingly functions as simple past narration, "and he said," driving the story forward.',
     },
-  ],
+  ]),
   introduceVocabIds: ['hv-bo', 'hv-halak', 'hv-asah'],
   reflectionPrompts: [
     'Why might a storyteller benefit from a dedicated verb form whose main job is simply "and then..."?',
@@ -677,7 +691,7 @@ const lessonSyntax: LanguageLesson = {
         'Word order in Hebrew can carry real interpretive weight — fronting a word ahead of the verb, for instance, often signals emphasis or contrast. But it is easy to over-read significance into a word\'s position without solid grammatical support from the wider context. Treat a word-order observation as one piece of supporting evidence, not a decisive argument standing alone.',
     },
   ],
-  exercises: [
+  exercises: withPart15('hebrew-syntax', [
     {
       kind: 'mc',
       question: {
@@ -693,6 +707,7 @@ const lessonSyntax: LanguageLesson = {
         answer: 0,
         explanation:
           'As a direct object marker, אֵת/אֶת simply flags the following definite noun as what the verb\'s action is done to — it is not translated as a separate English word.',
+        difficulty: 'intermediate',
       },
     },
     {
@@ -722,7 +737,7 @@ const lessonSyntax: LanguageLesson = {
       answer: 0,
       explanation: 'לֹא is placed directly before the word (usually a verb) that it negates.',
     },
-  ],
+  ]),
   reflectionPrompts: [
     'Why might translators choose to render the direct object marker אֵת/אֶת with no corresponding English word at all?',
     'What is one danger of reading too much theological weight into a single word\'s position in a Hebrew clause?',
@@ -791,7 +806,7 @@ const lessonPassageGenesis: LanguageLesson = {
         'Word-by-word parsing like this is a genuinely useful first step — it shows you what the Hebrew text actually says and surfaces real interpretive questions (like the grammatical ambiguity of בְּרֵאשִׁית). But it is not, by itself, a complete theological or exegetical reading of the verse. Questions about this verse\'s full meaning, its relationship to the rest of Genesis 1, and its place in the wider biblical story deserve careful study with good commentaries and teachers — not a grammar pass alone.',
     },
   ],
-  exercises: [
+  exercises: withPart15('hebrew-passage-genesis', [
     {
       kind: 'passage_guide',
       reference: 'Genesis 1:1',
@@ -816,6 +831,7 @@ const lessonPassageGenesis: LanguageLesson = {
         choices: ['אֱלֹהִים', 'בְּרֵאשִׁית', 'אֵת', 'וְאֵת'],
         answer: 0,
         explanation: 'אֱלֹהִים ("God") is the subject performing the action of בָּרָא ("created").',
+        difficulty: 'beginner',
       },
     },
     {
@@ -827,7 +843,7 @@ const lessonPassageGenesis: LanguageLesson = {
       explanation:
         'אֵת marks הַשָּׁמַיִם ("the heavens") as the direct object of בָּרָא; אֵת itself is not rendered as a separate English word.',
     },
-  ],
+  ]),
   reflectionPrompts: [
     'What is one grammatical detail in Genesis 1:1 you would likely have missed reading only in an English translation?',
     'Why might this course choose to flag the debate over בְּרֵאשִׁית\'s grammatical form rather than pick a side for you?',
@@ -867,5 +883,5 @@ export const HEBREW_COURSE: LanguageCourse = {
     lessonSyntax,
     lessonPassageGenesis,
   ],
-  version: 1,
+  version: 2,
 }

@@ -15,6 +15,7 @@ import { completeBibleGame } from '../lib/progress'
 import { computeEventXp } from '../lib/progressEvents'
 import { computeGemDelta } from '../lib/gemEvents'
 import { XP, createInitialState, todayKey } from '../lib/types'
+import { GAME_ART } from './art'
 import { getGame, isGameId, listGames } from './registry'
 import {
   selectPlayableVerses,
@@ -34,9 +35,9 @@ beforeEach(() => {
 })
 
 describe('game registry', () => {
-  it('registers six independently addressable games', () => {
+  it('registers nine independently addressable games', () => {
     const games = listGames()
-    expect(games).toHaveLength(6)
+    expect(games).toHaveLength(9)
     for (const g of games) {
       expect(g.meta.id).toBeTruthy()
       expect(g.meta.title).toBeTruthy()
@@ -44,6 +45,8 @@ describe('game registry', () => {
       expect(g.Component).toBeTypeOf('function')
       expect(isGameId(g.meta.id)).toBe(true)
       expect(getGame(g.meta.id)?.meta.id).toBe(g.meta.id)
+      expect(GAME_ART[g.meta.id].background).toMatch(/^\/games\/bg-/)
+      expect(GAME_ART[g.meta.id].emblem).toMatch(/^\/games\/emblem-/)
     }
   })
 })

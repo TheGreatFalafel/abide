@@ -38,6 +38,36 @@ export function avatarStateFromFeedback(event: AnimationFeedbackEvent): AvatarCh
   }
 }
 
+/**
+ * Map shared CharacterEvent → avatar presentation state.
+ * Keeps cosmetics / AbideAvatar as the live renderer until avatar.riv ships.
+ */
+export function avatarStateFromCharacterEvent(
+  event: import('./characterEvents').CharacterEvent | unknown,
+): AvatarCharacterState {
+  const raw = typeof event === 'string' ? event : 'idle'
+  switch (raw) {
+    case 'react_correct':
+      return 'smile'
+    case 'react_incorrect':
+    case 'encourage':
+    case 'think':
+      return 'think'
+    case 'celebrate':
+    case 'jump':
+      return 'celebrate'
+    case 'greet':
+      return 'greet'
+    case 'sleep':
+      return 'sleep'
+    case 'idle':
+    case 'walk':
+    case 'run':
+    default:
+      return 'idle'
+  }
+}
+
 /** Whether the avatar should play its short react flash for this state. */
 export function avatarShouldReact(state: AvatarCharacterState): boolean {
   return state === 'smile' || state === 'celebrate' || state === 'achievement'

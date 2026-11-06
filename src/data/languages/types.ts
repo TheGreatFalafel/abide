@@ -34,6 +34,45 @@ export type LanguageVocabEntry = {
   examplePhrase?: string
   exampleTranslation?: string
   tags?: string[]
+  /**
+   * Strong's number when verified (e.g. G2315 / H430).
+   * Hear-it link-out uses Blue Letter Bible; omit or leave unverified numbers out of UI.
+   */
+  strongs?: string
+  /** When false, hide Hear-it even if strongs is present (unverified entries). */
+  strongsVerified?: boolean
+}
+
+/** Unverified Strong's from Update Pack Step 7 — do not show Hear-it for these. */
+export const UNVERIFIED_STRONGS = new Set([
+  'G26',
+  'G4102',
+  'H802',
+  'H2617',
+  'G907',
+  'G1577',
+  'G2435',
+  'G5342',
+  'G622',
+])
+
+/** Blue Letter Bible lexicon URL for a verified Strong's number (link-out only). */
+export function blueLetterBibleLexiconUrl(strongs: string): string | null {
+  const m = strongs.trim().toUpperCase().match(/^([GH])(\d+)$/)
+  if (!m) return null
+  const num = m[2]
+  const prefix = m[1]
+  if (UNVERIFIED_STRONGS.has(`${prefix}${num}`)) return null
+  return `https://www.blueletterbible.org/lexicon/${prefix}${num}/`
+}
+
+/** Hear-it target for a vocab entry, or null when Strong's missing/unverified. */
+export function hearItUrl(entry: LanguageVocabEntry): string | null {
+  if (!entry.strongs) return null
+  if (entry.strongsVerified === false) return null
+  const key = entry.strongs.trim().toUpperCase()
+  if (UNVERIFIED_STRONGS.has(key)) return null
+  return blueLetterBibleLexiconUrl(entry.strongs)
 }
 
 /** Persisted FSRS card for language vocabulary — never mixed with memoryVerses. */
@@ -156,7 +195,7 @@ export type LanguageProgress = {
   hebrew: LanguageTrackProgress
 }
 
-export const LANGUAGE_CATALOG_VERSION = 1
+export const LANGUAGE_CATALOG_VERSION = 2
 
 export function emptyTrackProgress(): LanguageTrackProgress {
   return {

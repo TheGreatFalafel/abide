@@ -1,6 +1,12 @@
 import type { LanguageCourse, LanguageLesson } from '../types'
+import type { LanguageExercise } from '../types'
 import { GREEK_ALPHABET } from './alphabet'
+import { GREEK_PART14_BY_LESSON } from './part14Exercises'
 import { GREEK_VOCABULARY } from './vocabulary'
+
+function withPart14(lessonId: string, exercises: LanguageExercise[]): LanguageExercise[] {
+  return [...exercises, ...(GREEK_PART14_BY_LESSON[lessonId] ?? [])]
+}
 
 const FIRST_TWELVE_LETTER_IDS = [
   'gr-alpha',
@@ -74,7 +80,7 @@ const lessonAlphabet: LanguageLesson = {
         "Accent marks were added to the text by scribes and grammarians centuries after the New Testament was written — a system standardized well after the apostolic era. They are a reading and pronunciation aid, not part of the original inspired wording, and differences in accentuation across manuscripts or printed editions don't change Christian doctrine. Treat accents as pronunciation help, not as theological data in themselves.",
     },
   ],
-  exercises: [
+  exercises: withPart14('greek-alphabet', [
     {
       kind: 'alphabet_match',
       prompt: 'Match each letter to its name (Alpha–Mu).',
@@ -100,6 +106,7 @@ const lessonAlphabet: LanguageLesson = {
         answer: 0,
         explanation:
           'Rough breathing adds an initial "h" sound (as in ὁ, "ho"); smooth breathing adds no sound at all.',
+        difficulty: 'beginner',
       },
     },
     {
@@ -112,6 +119,7 @@ const lessonAlphabet: LanguageLesson = {
         answer: 0,
         explanation:
           'ου is a diphthong read as one sound (roughly "oo"); θ, ρ, and σ are single consonants, not vowel combinations.',
+        difficulty: 'beginner',
       },
     },
     {
@@ -129,9 +137,10 @@ const lessonAlphabet: LanguageLesson = {
         answer: 0,
         explanation:
           "Accentuation was standardized centuries after the NT was written. It helps pronunciation; it isn't a vehicle for new doctrine.",
+        difficulty: 'intermediate',
       },
     },
-  ],
+  ]),
   reflectionPrompts: [
     'Why might learning to sound out the Greek text, even slowly and imperfectly, change the way you read a familiar verse?',
   ],
@@ -181,7 +190,7 @@ const lessonReadingWords: LanguageLesson = {
         "Being able to pronounce or even recognize a Greek word is not the same as knowing how it functions in a sentence or what it contributes to a specific verse's meaning. Resist the feeling that you've 'unlocked' a verse just because you can sound out one of its words — that understanding comes from grammar, context, and careful reading, which this course builds toward across later lessons.",
     },
   ],
-  exercises: [
+  exercises: withPart14('greek-reading-words', [
     {
       kind: 'mc',
       question: {
@@ -191,6 +200,7 @@ const lessonReadingWords: LanguageLesson = {
         choices: ['1', '2', '3', '4'],
         answer: 1,
         explanation: 'λό-γος: two vowel sounds (ο, ο) give two syllables.',
+        difficulty: 'beginner',
       },
     },
     {
@@ -207,6 +217,7 @@ const lessonReadingWords: LanguageLesson = {
         ],
         answer: 0,
         explanation: 'The acute accent sits on the first syllable, ἄ, so it is stressed: ÁN-thrō-pos.',
+        difficulty: 'intermediate',
       },
     },
     {
@@ -223,7 +234,7 @@ const lessonReadingWords: LanguageLesson = {
       answer: 0,
       explanation: "This is the opening clause of John 1:1: 'In the beginning was the Word.'",
     },
-  ],
+  ]),
   introduceVocabIds: ['gv-theos', 'gv-logos', 'gv-kai', 'gv-en', 'gv-eimi'],
   reflectionPrompts: [
     'Try reading John 1:1 aloud in Greek, even haltingly. What did you notice slowing down to sound out each word, rather than just reading the English translation?',
@@ -275,7 +286,7 @@ const lessonNouns: LanguageLesson = {
         "Knowing a case ending tells you a word's grammatical function — not automatically a doctrine. The genitive case alone, for example, can express several different relationships (possession, source, description, and more); only the surrounding context decides which. Avoid arguments shaped like 'it's genitive, so it must mean X' without checking how the phrase is actually used.",
     },
   ],
-  exercises: [
+  exercises: withPart14('greek-nouns', [
     {
       kind: 'parse',
       prompt: 'What case and number is λόγον in a sentence like "...καὶ εἶδον τὸν λόγον" (illustrative)?',
@@ -313,6 +324,7 @@ const lessonNouns: LanguageLesson = {
         choices: ['Nominative', 'Genitive', 'Dative', 'Accusative'],
         answer: 0,
         explanation: 'The nominative case marks the subject — the one doing the action or being described.',
+        difficulty: 'beginner',
       },
     },
     {
@@ -329,7 +341,7 @@ const lessonNouns: LanguageLesson = {
       answer: 0,
       explanation: 'Accusative case marks the direct object of ἔδωκεν ("he gave") — God gave his only Son.',
     },
-  ],
+  ]),
   introduceVocabIds: ['gv-anthropos', 'gv-kurios', 'gv-ouranos', 'gv-ge', 'gv-huios', 'gv-pater', 'gv-hemera'],
   reflectionPrompts: [
     'English leans on word order; Greek leans on word endings. How might that shape the way a New Testament writer could arrange a sentence for emphasis?',
@@ -380,7 +392,7 @@ const lessonModifiers: LanguageLesson = {
         "A preposition's root or spatial sense doesn't guarantee that exact nuance in every occurrence. Don't build a sermon point purely on a preposition's etymology (for example, assuming ἐν must always carry some mystical 'in union with' force) — check how the word is actually used in its own sentence first.",
     },
   ],
-  exercises: [
+  exercises: withPart14('greek-modifiers', [
     {
       kind: 'parse',
       prompt: 'What gender, number, and case does the article τόν mark in the phrase τὸν λόγον?',
@@ -410,6 +422,7 @@ const lessonModifiers: LanguageLesson = {
         answer: 0,
         explanation:
           "Lacking the article doesn't automatically mean 'indefinite' in the English sense. Greek omits (and uses) the article for several reasons; translators weigh context rather than apply a mechanical rule.",
+        difficulty: 'intermediate',
       },
     },
     {
@@ -423,7 +436,7 @@ const lessonModifiers: LanguageLesson = {
       explanation:
         "μετά + genitive expresses accompaniment: 'with.' (μετά elides to μεθ' before the rough breathing on ἡμῶν.)",
     },
-  ],
+  ]),
   introduceVocabIds: [
     'gv-autos',
     'gv-houtos',
@@ -484,7 +497,7 @@ const lessonVerbs: LanguageLesson = {
       note: 'Contrast the aorist ἐπίστευσα, "I believed" (the same kind of event viewed as a simple whole) — a difference of aspect, not necessarily of how long the believing lasted.',
     },
   ],
-  exercises: [
+  exercises: withPart14('greek-verbs', [
     {
       kind: 'parse',
       prompt: 'πιστεύομεν — identify its person and number.',
@@ -514,6 +527,7 @@ const lessonVerbs: LanguageLesson = {
         answer: 0,
         explanation:
           'Greek tense-forms are primarily about aspect. Time is a secondary signal that depends heavily on mood (especially in the indicative) and context — it is not guaranteed by the tense-form alone.',
+        difficulty: 'intermediate',
       },
     },
     {
@@ -531,6 +545,7 @@ const lessonVerbs: LanguageLesson = {
         answer: 0,
         explanation:
           "This is a classic overclaim. The aorist's aspect (a whole, summary view of the action) is not the same as a theological claim about finality. Serious grammars warn against exactly this error.",
+        difficulty: 'advanced',
       },
     },
     {
@@ -548,7 +563,7 @@ const lessonVerbs: LanguageLesson = {
       explanation:
         'ἠγάπησεν is aorist active indicative, 3rd singular: "he/she/it loved" — presenting God\u2019s love as a completed whole, without by itself saying whether it was a single instance or an ongoing pattern.',
     },
-  ],
+  ]),
   introduceVocabIds: ['gv-echo', 'gv-pisteuo', 'gv-lego', 'gv-ginomai'],
   reflectionPrompts: [
     "How does thinking in terms of 'aspect' rather than strict English tense change how you'd read a verb like 'believed' or 'loved' in your English Bible?",
@@ -600,7 +615,7 @@ const lessonParticiplesInfinitives: LanguageLesson = {
         "Don't stack theological weight on a participle's 'tense' as if it independently proved a point about when or how long something happened. A present participle like ὁ πιστεύων primarily characterizes (\"the believing kind of person\" / \"one who believes\"), and a participle's relative timing still depends on the sentence around it. Check the whole sentence and passage before drawing a conclusion from the participle form alone.",
     },
   ],
-  exercises: [
+  exercises: withPart14('greek-participles-infinitives', [
     {
       kind: 'parse',
       prompt: 'In ὁ πιστεύων εἰς αὐτὸν, what is πιστεύων functioning as?',
@@ -629,6 +644,7 @@ const lessonParticiplesInfinitives: LanguageLesson = {
         ],
         answer: 0,
         explanation: 'An infinitive with the article (τὸ ζῆν, "the living / to live") functions as a noun — in Philippians 1:21 it is the sentence\u2019s subject.',
+        difficulty: 'intermediate',
       },
     },
     {
@@ -645,7 +661,7 @@ const lessonParticiplesInfinitives: LanguageLesson = {
       answer: 0,
       explanation: 'Philippians 1:21 uses two articular infinitives (ζῆν, "to live"; ἀποθανεῖν, "to die") as subjects: "to live is Christ, and to die is gain."',
     },
-  ],
+  ]),
   introduceVocabIds: ['gv-agape', 'gv-pneuma'],
   reflectionPrompts: [
     "Philippians 1:21 uses two infinitives as the subjects of a sentence — a construction English doesn't really have. What does that tell you about the limits of a strictly word-for-word translation?",
@@ -702,7 +718,7 @@ const lessonSyntax: LanguageLesson = {
         "Beginning-level grammar rules — including the ones in this course — are simplifications of a living, flexible language. Writers had more nuance and flexibility than any single textbook rule fully captures, and specific constructions, like an anarthrous predicate noun placed before the verb, have been debated by professional grammarians for well over a century. Don't treat a syntax rule as a conversation-ending 'proof text' for a doctrinal claim; read widely, consult serious scholarship, and let the whole counsel of Scripture — not an isolated grammar point — carry the theological weight.",
     },
   ],
-  exercises: [
+  exercises: withPart14('greek-syntax', [
     {
       kind: 'mc',
       question: {
@@ -717,6 +733,7 @@ const lessonSyntax: LanguageLesson = {
         ],
         answer: 0,
         explanation: 'Here ὅτι gives the reason for what was just said — "because God is love."',
+        difficulty: 'intermediate',
       },
     },
     {
@@ -735,6 +752,7 @@ const lessonSyntax: LanguageLesson = {
         answer: 0,
         explanation:
           "This construction is actively debated among grammarians precisely because it doesn't settle a theological question by itself. It is a real, ordinary feature of Greek style that needs careful, humble handling — this course flags it so you can recognize it, not so you can resolve a centuries-old debate from one grammar rule.",
+        difficulty: 'advanced',
       },
     },
     {
@@ -751,7 +769,7 @@ const lessonSyntax: LanguageLesson = {
       answer: 0,
       explanation: 'This is John 1:1a–b: "In the beginning was the Word, and the Word was with God."',
     },
-  ],
+  ]),
   introduceVocabIds: ['gv-iesous', 'gv-christos', 'gv-hoti'],
   reflectionPrompts: [
     'Why do you think this course asks you to hold syntax observations (like the anarthrous predicate noun) with humility rather than certainty?',
@@ -810,7 +828,7 @@ const lessonPassageJohn: LanguageLesson = {
         "This verse sits at the center of long-running translation and theological debates (for example, around how to render the anarthrous θεός in English). This course's job is to help you see the grammar accurately — not to hand you a 'grammar gotcha' that settles the debate in one line. Historic Christian teaching about who Jesus is rests on the whole witness of Scripture, read across many passages in their contexts, not on a single Greek construction. Hold what you've learned here with real humility, and keep reading the rest of the chapter — and the rest of Scripture — rather than stopping at one clause.",
     },
   ],
-  exercises: [
+  exercises: withPart14('greek-passage-john', [
     {
       kind: 'parse',
       prompt: 'In Ἐν ἀρχῇ ἦν ὁ λόγος, what mood and tense-form is ἦν?',
@@ -855,6 +873,7 @@ const lessonPassageJohn: LanguageLesson = {
         answer: 0,
         explanation:
           "This is a standard, widely recognized observation: εἰμί and γίνομαι are different verbs with different core meanings, and John's switch between them in the same passage is a meaningful stylistic/semantic choice — distinct from (and much safer than) claims built on a single tense-form alone.",
+        difficulty: 'advanced',
       },
     },
     {
@@ -887,7 +906,7 @@ const lessonPassageJohn: LanguageLesson = {
       caution:
         "This verse is one of the most theologically weighted and most debated single verses for Greek grammar in the entire New Testament (especially around how English should render the anarthrous θεός). The grammar here supports — but by itself does not single-handedly 'prove' — any particular side of that debate; historic Christian understanding of who the Word is rests on the whole of John's Gospel and the wider witness of Scripture, not on one clause's word order. Treat any claim that 'the Greek proves X' about this verse with real caution, and keep reading the rest of the chapter rather than stopping at a single grammatical point.",
     },
-  ],
+  ]),
   introduceVocabIds: ['gv-theos', 'gv-logos', 'gv-en', 'gv-eimi'],
   reflectionPrompts: [
     "Having parsed John 1:1 word by word, what's one thing you now notice in the verse that you hadn't picked up on reading only an English translation?",
@@ -928,5 +947,5 @@ export const GREEK_COURSE: LanguageCourse = {
   alphabet: GREEK_ALPHABET,
   vocabulary: GREEK_VOCABULARY,
   lessons: GREEK_LESSONS,
-  version: 1,
+  version: 2,
 }

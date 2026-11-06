@@ -54,7 +54,12 @@ function chapterRefs(
  * - Matthew 1:1-2:12
  */
 export function parsePassageLabel(label: string): PassageRef[] {
-  const cleaned = label.replace(/\s+/g, ' ').trim()
+  // Curriculum copy often uses en/em dashes in ranges (e.g. John 3:16–17).
+  const cleaned = label
+    .replace(/[–—]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\.+$/, '')
   const found = findBook(cleaned)
   if (!found) return []
   const { book, rest } = found
@@ -107,6 +112,15 @@ export function parsePassageLabel(label: string): PassageRef[] {
   }
 
   return []
+}
+
+/** Split semicolon/comma lists like "Romans 5; John 3:16" into refs. */
+export function parsePassageList(label: string): PassageRef[] {
+  return label
+    .split(/[;,]|\band\b/i)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .flatMap((part) => parsePassageLabel(part))
 }
 
 export function daysFromData2(data2: string[][]) {

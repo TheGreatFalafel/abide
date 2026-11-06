@@ -1,6 +1,8 @@
 import type { CurriculumTopic } from '../types'
 import { SOURCE_PACKER_ORG, SOURCE_SPROUL_EVANG } from '../evangelismSources'
 import { mc, open, passage } from './_helpers'
+import { PART16_SHARING_BY_LESSON } from '../banks/part16-gospel-sharing'
+import { appendOutlineBank } from '../banks/outlineBankHelper'
 
 /** Section B — Sharing Your Faith (with conversation practice). */
 export const SHARING_YOUR_FAITH: CurriculumTopic = {
@@ -18,7 +20,8 @@ export const SHARING_YOUR_FAITH: CurriculumTopic = {
   prerequisites: ['gospel-foundations'],
   framework: 'reformed',
   domain: 'evangelism-apologetics',
-  version: 1,
+  contentStatus: 'full',
+  version: 2,
   sources: [
     {
       ...SOURCE_PACKER_ORG,
@@ -82,7 +85,7 @@ export const SHARING_YOUR_FAITH: CurriculumTopic = {
             'Organizational cue: divine sovereignty and human responsibility cooperate in evangelism — themes only.',
         },
       ],
-      questions: [
+      questions: appendOutlineBank('share-why-evangelize', [
         mc(
           'share-why-q1',
           'Biblical evangelism is primarily:',
@@ -107,7 +110,7 @@ export const SHARING_YOUR_FAITH: CurriculumTopic = {
           1,
           'Sovereignty fuels faithfulness in means, not silence.',
         ),
-      ],
+      ], PART16_SHARING_BY_LESSON),
       reflectionPrompts: [
         'Ask God to grow love for a specific person and courage to speak when he opens a door.',
       ],
@@ -172,7 +175,7 @@ export const SHARING_YOUR_FAITH: CurriculumTopic = {
             'This is one faithful compression of the biblical storyline for clarity — not the only wording, but a coherent sequence.',
         },
       ],
-      questions: [
+      questions: appendOutlineBank('share-gospel-and-testimony', [
         mc(
           'share-clear-q1',
           'A Christian testimony should mainly:',
@@ -189,7 +192,7 @@ export const SHARING_YOUR_FAITH: CurriculumTopic = {
           'share-clear-open',
           'Write three sentences: who God is, what Christ did, and how someone should respond.',
         ),
-      ],
+      ], PART16_SHARING_BY_LESSON),
       reflectionPrompts: [
         'Draft a two-minute testimony ending with Jesus, not with your improvement metrics. Pray it would be truthful.',
       ],
@@ -305,7 +308,7 @@ export const SHARING_YOUR_FAITH: CurriculumTopic = {
           ],
         },
       ],
-      questions: [
+      questions: appendOutlineBank('share-listening-and-conversations', [
         mc(
           'share-listen-q1',
           'A wise first move when someone is angry at religion is often to:',
@@ -330,7 +333,7 @@ export const SHARING_YOUR_FAITH: CurriculumTopic = {
           1,
           'Gentleness and respect are commanded, not optional polish.',
         ),
-      ],
+      ], PART16_SHARING_BY_LESSON),
       reflectionPrompts: [
         'Confess any recent harsh speech about people who disagree with you, and ask God for a gentle, clear tongue.',
       ],
@@ -418,7 +421,7 @@ export const SHARING_YOUR_FAITH: CurriculumTopic = {
           ],
         },
       ],
-      questions: [
+      questions: appendOutlineBank('share-follow-up-patience', [
         mc(
           'share-follow-q1',
           'According to 1 Corinthians 3, growth in someone’s life ultimately comes from:',
@@ -443,7 +446,7 @@ export const SHARING_YOUR_FAITH: CurriculumTopic = {
           1,
           'Patience and presence serve the gospel better than pressure.',
         ),
-      ],
+      ], PART16_SHARING_BY_LESSON),
       reflectionPrompts: [
         'Name one person you will pray for weekly this month, asking God for opportunities without scripting outcomes.',
       ],

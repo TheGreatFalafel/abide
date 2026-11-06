@@ -1,6 +1,10 @@
 'use client'
 
+import { GAME_ART } from '../../games/art'
+import type { GameId } from '../../games/types'
+
 type Props = {
+  gameId: GameId
   title: string
   stepLabel: string
   onBack: () => void
@@ -8,9 +12,13 @@ type Props = {
   footer?: React.ReactNode
 }
 
-export function GameChrome({ title, stepLabel, onBack, children, footer }: Props) {
+export function GameChrome({ gameId, title, stepLabel, onBack, children, footer }: Props) {
   return (
-    <div className="screen session game-session">
+    <div
+      className="screen session game-session"
+      data-game={gameId}
+      style={{ ['--game-bg' as string]: `url(${GAME_ART[gameId].background})` }}
+    >
       <header className="session-top game-top">
         <button type="button" className="btn ghost" onClick={onBack}>
           ← Games

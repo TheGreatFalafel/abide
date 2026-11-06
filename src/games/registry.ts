@@ -1,5 +1,8 @@
 import { BibleTrivia } from '../components/games/BibleTrivia'
+import { BiblicalGeography } from '../components/games/BiblicalGeography'
 import { BiblicalTimeline } from '../components/games/BiblicalTimeline'
+import { BookOfTheBibleChallenge } from '../components/games/BookOfTheBibleChallenge'
+import { DoctrineChallenge } from '../components/games/DoctrineChallenge'
 import { FinishTheVerse } from '../components/games/FinishTheVerse'
 import { MatchThePassage } from '../components/games/MatchThePassage'
 import { ScriptureScramble } from '../components/games/ScriptureScramble'
@@ -96,6 +99,48 @@ export const GAME_REGISTRY: GameDefinition[] = [
       difficulties: ['beginner', 'intermediate', 'advanced'],
     },
     Component: MatchThePassage,
+  },
+  {
+    meta: {
+      id: 'doctrine-challenge',
+      title: 'Doctrine Challenge',
+      blurb: 'Sort statements into Orthodox, Heresy, or Debated.',
+      objectives: [
+        'Recognize historic orthodoxy and classic errors',
+        'Note intramural debates the app still takes a position on',
+      ],
+      estimatedMinutes: 5,
+      difficulties: ['beginner', 'intermediate', 'advanced'],
+    },
+    Component: DoctrineChallenge,
+  },
+  {
+    meta: {
+      id: 'biblical-geography',
+      title: 'Biblical Geography',
+      blurb: 'Identify biblical places from key references.',
+      objectives: [
+        'Connect places to Scripture',
+        'Note debated sites honestly',
+      ],
+      estimatedMinutes: 5,
+      difficulties: ['beginner', 'intermediate', 'advanced'],
+    },
+    Component: BiblicalGeography,
+  },
+  {
+    meta: {
+      id: 'book-of-the-bible-challenge',
+      title: 'Book of the Bible Challenge',
+      blurb: 'Facts, order, genre, and authorship of biblical books.',
+      objectives: [
+        'Build canon literacy',
+        'Distinguish genres and traditional authorship notes',
+      ],
+      estimatedMinutes: 5,
+      difficulties: ['beginner', 'intermediate', 'advanced'],
+    },
+    Component: BookOfTheBibleChallenge,
   },
 ]
 
