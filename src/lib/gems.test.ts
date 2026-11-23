@@ -40,7 +40,7 @@ describe('computeGemDelta', () => {
   })
 
   it('computes shop spend from catalog price only', () => {
-    expect(computeGemDelta('shop_purchase', { itemId: 'base-scribe' })).toBe(-40)
+    expect(computeGemDelta('shop_purchase', { itemId: 'acc-glasses' })).toBe(-40)
     expect(computeGemDelta('shop_purchase', { itemId: 'nope' })).toBe(0)
     expect(computeGemDelta('shop_purchase', { itemId: 'base-seeker' })).toBe(0)
   })
@@ -79,17 +79,17 @@ describe('local gem awards and purchases', () => {
   it('prevents negative balances and duplicate purchases', () => {
     let state = createInitialState('T', 'year')
     state = { ...state, gems: 10 }
-    const poor = purchaseCosmetic(state, 'base-scribe')
+    const poor = purchaseCosmetic(state, 'acc-glasses')
     expect(poor.ok).toBe(false)
     if (!poor.ok) expect(poor.error).toMatch(/Need 40/)
 
     state = { ...state, gems: 100 }
-    const buy = purchaseCosmetic(state, 'base-scribe')
+    const buy = purchaseCosmetic(state, 'acc-glasses')
     expect(buy.ok).toBe(true)
     if (buy.ok) {
       expect(buy.state.gems).toBe(60)
-      expect(ownsCosmetic(migrateCosmeticsState(buy.state.cosmetics), 'base-scribe')).toBe(true)
-      const again = purchaseCosmetic(buy.state, 'base-scribe')
+      expect(ownsCosmetic(migrateCosmeticsState(buy.state.cosmetics), 'acc-glasses')).toBe(true)
+      const again = purchaseCosmetic(buy.state, 'acc-glasses')
       expect(again.ok).toBe(false)
       if (!again.ok) expect(again.error).toMatch(/already own/i)
     }

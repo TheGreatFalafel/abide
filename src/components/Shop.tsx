@@ -13,6 +13,7 @@ import {
   migrateCosmeticsState,
   ownsCosmetic,
   slotLabel,
+  type CosmeticsState,
 } from '../lib/cosmetics'
 import {
   MAX_STREAK_FREEZES,
@@ -25,7 +26,6 @@ import {
 import { mascotLineFor } from '../lib/mascot'
 import { canPurchaseStreakFreeze } from '../lib/streak'
 import type { UserState } from '../lib/types'
-import { AbideAvatar } from './AbideAvatar'
 import { AvatarCustomizer } from './AvatarCustomizer'
 import { MascotBanner } from './MascotBanner'
 
@@ -36,6 +36,16 @@ type Props = {
 
 const SLOTS: CosmeticSlot[] = ['base', 'color', 'accessory', 'frame']
 const HAS_CLERK = isClerkConfigured()
+
+function previewEquippedFromId(
+  previewId: string | null,
+): Partial<CosmeticsState['equipped']> | undefined {
+  if (!previewId) return undefined
+  const item = getCosmetic(previewId)
+  if (!item) return undefined
+  if (item.slot === 'accessory') return { accessory: previewId }
+  return { [item.slot]: previewId } as Partial<CosmeticsState['equipped']>
+}
 
 function ShopView({
   user,
@@ -60,6 +70,7 @@ function ShopView({
   const freezeFull = !canPurchaseStreakFreeze(freezes)
   const freezeBlock = streakFreezePurchaseBlockReason(user)
   const freezeAffordable = (user.gems ?? 0) >= STREAK_FREEZE_PRICE
+  const previewItem = previewId ? getCosmetic(previewId) : null
 
   function buy(itemId: string) {
     const item = getCosmetic(itemId)
@@ -151,7 +162,7 @@ function ShopView({
         <div>
           <h2>Shop</h2>
           <p className="muted">
-            Cosmetics change your look only. Streak freezes are optional account purchases.
+            Build your look for free above. Gem accents and streak freezes are optional.
           </p>
         </div>
         <div className="shop-balance" aria-label={`${user.gems} gems`}>
@@ -163,39 +174,165 @@ function ShopView({
 
       <MascotBanner line={mascotLineFor('shop', user)} compact />
 
-      <AvatarCustomizer user={user} onUserChange={onUserChange} />
+      <AvatarCustomizer
+        user={user}
+        onUserChange={onUserChange}
+        previewEquipped={previewEquippedFromId(previewId)}
+        previewLabel={previewItem?.name ?? null}
+      />
+
+      <section className="shop-cosmetics" aria-label="Gem cosmetics">
+        <h3 className="shop-section-title">Gem cosmetics</h3>
+        <p className="muted shop-section-blurb">
+          Free look above · gem backgrounds, accessories, and frames below. Cosmetics never affect
+          XP, streaks, or league standing. Tap an item to preview it on your look above.
+        </p>
+
+        <div className="shop-filters" role="tablist" aria-label="Cosmetic type">
+          <button
+            type="button"
+            className={filter === 'all' ? 'active' : ''}
+            onClick={() => setFilter('all')}
+          >
+            All
+          </button>
+          {SLOTS.map((slot) => (
+            <button
+              key={slot}
+              type="button"
+              className={filter === slot ? 'active' : ''}
+              onClick={() => setFilter(slot)}
+            >
+              {slotLabel(slot)}
+            </button>
+          ))}
+        </div>
+
+        {message && <p className={`nudge ${messageTone}`}>{message}</p>}
+
+        {(user.gems ?? 0) <= 0 && (
+          <p className="nudge">
+            Earn gems by completing readings, memory reviews, curriculum lessons, and daily goals —
+            not by replaying the same day forever.
+          </p>
+        )}
+
+        <ul className="shop-grid">
+          {items.map((item) => {
+            const owned = ownsCosmetic(cosmetics, item.id)
+            const equipped =
+              cosmetics.equipped.base === item.id ||
+              cosmetics.equipped.color === item.id ||
+              cosmetics.equipped.frame === item.id ||
+              cosmetics.equipped.accessory === item.id
+            const canAfford = (user.gems ?? 0) >= item.price
+            const previewing = previewId === item.id
+            return (
+              <li
+                key={item.id}
+                className={`shop-card ${owned ? 'owned' : ''} ${equipped ? 'equipped' : ''} ${previewing ? 'previewing' : ''}`}
+              >
+                <button
+                  type="button"
+                  className="shop-swatch"
+                  style={{ background: item.color }}
+                  aria-label={`Preview ${item.name}`}
+                  aria-pressed={previewing}
+                  onClick={() => setPreviewId(item.id)}
+                >
+                  {item.mark}
+                </button>
+                <div className="shop-card-body">
+                  <div className="shop-card-title">
+                    <strong>{item.name}</strong>
+                    <span className="muted shop-card-slot">{slotLabel(item.slot)}</span>
+                  </div>
+                  <p>{item.description}</p>
+                  <div className="shop-card-meta">
+                    <div className="shop-card-status">
+                      {owned ? (
+                        <span className={`pill ${equipped ? 'good' : ''}`}>
+                          {equipped ? 'Equipped' : 'Owned'}
+                        </span>
+                      ) : item.price === 0 ? (
+                        <span className="pill">Free</span>
+                      ) : (
+                        <span className={`pill ${canAfford ? '' : 'risk'}`}>{item.price} gems</span>
+                      )}
+                    </div>
+                    <div className="shop-card-actions">
+                      <button
+                        type="button"
+                        className={`btn tiny ghost-outline ${previewing ? 'active-preview' : ''}`}
+                        onClick={() => setPreviewId(previewing ? null : item.id)}
+                      >
+                        {previewing ? 'Clear' : 'Preview'}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn tiny primary"
+                        disabled={
+                          pendingId === item.id ||
+                          equipped ||
+                          (!owned && !canAfford && item.price > 0)
+                        }
+                        onClick={() => buy(item.id)}
+                      >
+                        {owned
+                          ? equipped
+                            ? 'Equipped'
+                            : 'Equip'
+                          : item.price === 0
+                            ? 'Claim'
+                            : 'Buy'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      </section>
 
       <section className="shop-freeze" aria-label="Streak freezes">
+        <h3 className="shop-section-title">Streak freezes</h3>
         <div className="shop-freeze-card">
           <div className="shop-swatch shop-freeze-swatch" aria-hidden>
             ❄
           </div>
           <div className="shop-card-body">
-            <strong>Streak Freeze</strong>
-            <span className="muted">
-              Inventory {freezes}/{MAX_STREAK_FREEZES}
-            </span>
+            <div className="shop-card-title">
+              <strong>Streak Freeze</strong>
+              <span className="muted shop-card-slot">
+                Inventory {freezes}/{MAX_STREAK_FREEZES}
+              </span>
+            </div>
             <p>
               If you miss a day, one freeze is used automatically to keep your streak. Freezes also
               still earn from steady reading (every 7 plan days, up to {MAX_STREAK_FREEZES}).
             </p>
             <div className="shop-card-meta">
-              <span className={`pill ${freezeAffordable && !freezeFull ? '' : 'risk'}`}>
-                {STREAK_FREEZE_PRICE} gems
-              </span>
-              <button
-                type="button"
-                className="btn tiny primary"
-                disabled={
-                  freezePending ||
-                  freezeFull ||
-                  !freezeAffordable ||
-                  (HAS_CLERK && !isSignedIn)
-                }
-                onClick={() => void buyFreeze()}
-              >
-                {freezePending ? 'Buying…' : freezeFull ? 'Full' : 'Buy freeze'}
-              </button>
+              <div className="shop-card-status">
+                <span className={`pill ${freezeAffordable && !freezeFull ? '' : 'risk'}`}>
+                  {STREAK_FREEZE_PRICE} gems
+                </span>
+              </div>
+              <div className="shop-card-actions">
+                <button
+                  type="button"
+                  className="btn tiny primary"
+                  disabled={
+                    freezePending ||
+                    freezeFull ||
+                    !freezeAffordable ||
+                    (HAS_CLERK && !isSignedIn)
+                  }
+                  onClick={() => void buyFreeze()}
+                >
+                  {freezePending ? 'Buying…' : freezeFull ? 'Full' : 'Buy freeze'}
+                </button>
+              </div>
             </div>
             {HAS_CLERK && !isSignedIn && (
               <p className="muted shop-freeze-hint">Sign in to purchase — verified on the server.</p>
@@ -203,120 +340,6 @@ function ShopView({
           </div>
         </div>
       </section>
-
-      <div className="shop-preview">
-        <AbideAvatar
-          user={user}
-          size="lg"
-          previewEquipped={
-            previewId
-              ? (() => {
-                  const item = getCosmetic(previewId)
-                  if (!item) return undefined
-                  if (item.slot === 'accessory') return { accessory: previewId }
-                  return { [item.slot]: previewId } as Partial<typeof cosmetics.equipped>
-                })()
-              : undefined
-          }
-        />
-        <p className="muted">
-          {previewId
-            ? `Preview: ${getCosmetic(previewId)?.name ?? 'item'}`
-            : 'Equipped look · tap a cosmetic to preview'}
-        </p>
-      </div>
-
-      <h3 className="shop-section-title">Gem cosmetics</h3>
-      <p className="muted shop-section-blurb">
-        Outfits, backgrounds, accessories, and frames. Cosmetics never affect XP, streaks, or
-        league standing.
-      </p>
-
-      <div className="shop-filters" role="tablist" aria-label="Cosmetic type">
-        <button
-          type="button"
-          className={filter === 'all' ? 'active' : ''}
-          onClick={() => setFilter('all')}
-        >
-          All
-        </button>
-        {SLOTS.map((slot) => (
-          <button
-            key={slot}
-            type="button"
-            className={filter === slot ? 'active' : ''}
-            onClick={() => setFilter(slot)}
-          >
-            {slotLabel(slot)}
-          </button>
-        ))}
-      </div>
-
-      {message && <p className={`nudge ${messageTone}`}>{message}</p>}
-
-      {(user.gems ?? 0) <= 0 && (
-        <p className="nudge">
-          Earn gems by completing readings, memory reviews, curriculum lessons, and daily goals —
-          not by replaying the same day forever.
-        </p>
-      )}
-
-      <ul className="shop-grid">
-        {items.map((item) => {
-          const owned = ownsCosmetic(cosmetics, item.id)
-          const equipped =
-            cosmetics.equipped.base === item.id ||
-            cosmetics.equipped.color === item.id ||
-            cosmetics.equipped.frame === item.id ||
-            cosmetics.equipped.accessory === item.id
-          const canAfford = (user.gems ?? 0) >= item.price
-          return (
-            <li
-              key={item.id}
-              className={`shop-card ${owned ? 'owned' : ''} ${equipped ? 'equipped' : ''} ${previewId === item.id ? 'previewing' : ''}`}
-            >
-              <button
-                type="button"
-                className="shop-swatch"
-                style={{ background: item.color }}
-                aria-label={`Preview ${item.name}`}
-                onClick={() => setPreviewId(item.id)}
-              >
-                {item.mark}
-              </button>
-              <div className="shop-card-body">
-                <strong>{item.name}</strong>
-                <span className="muted">{slotLabel(item.slot)}</span>
-                <p>{item.description}</p>
-                <div className="shop-card-meta">
-                  {owned ? (
-                    <span className="pill">{equipped ? 'Equipped' : 'Owned'}</span>
-                  ) : item.price === 0 ? (
-                    <span className="pill">Free</span>
-                  ) : (
-                    <span className={`pill ${canAfford ? '' : 'risk'}`}>{item.price} gems</span>
-                  )}
-                  <button
-                    type="button"
-                    className="btn tiny ghost-outline"
-                    onClick={() => setPreviewId(item.id)}
-                  >
-                    Preview
-                  </button>
-                  <button
-                    type="button"
-                    className="btn tiny primary"
-                    disabled={pendingId === item.id || (!owned && !canAfford && item.price > 0)}
-                    onClick={() => buy(item.id)}
-                  >
-                    {owned ? (equipped ? 'Equipped' : 'Equip') : item.price === 0 ? 'Claim' : 'Buy'}
-                  </button>
-                </div>
-              </div>
-            </li>
-          )
-        })}
-      </ul>
     </div>
   )
 }

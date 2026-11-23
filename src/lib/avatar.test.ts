@@ -107,8 +107,9 @@ describe('cosmetic catalog expansion', () => {
       expect(getCosmetic(item.id)?.id).toBe(item.id)
     }
     expect(COSMETIC_CATALOG.some((c) => c.id === 'acc-glasses')).toBe(true)
-    expect(COSMETIC_CATALOG.some((c) => c.id === 'base-pilgrim')).toBe(true)
+    expect(COSMETIC_CATALOG.some((c) => c.id === 'acc-earrings')).toBe(true)
     expect(COSMETIC_CATALOG.some((c) => c.id === 'color-sky')).toBe(true)
+    expect(COSMETIC_CATALOG.some((c) => c.slot === 'base' && c.price > 0)).toBe(false)
   })
 
   it('purchase remains idempotent and equip requires ownership', () => {
@@ -133,14 +134,13 @@ describe('public avatar privacy', () => {
         'base-seeker',
         'color-deep',
         'frame-simple',
-        'acc-lamp',
-        'base-scribe',
+        'acc-glasses',
         'color-dawn',
       ],
       equipped: {
-        base: 'base-scribe',
+        base: 'base-seeker',
         color: 'color-dawn',
-        accessory: 'acc-lamp',
+        accessory: 'acc-glasses',
         frame: 'frame-simple',
       },
       appearance: {
@@ -153,8 +153,10 @@ describe('public avatar privacy', () => {
     })
     const pub = toPublicAvatar(migrated)
     expect(pub.appearance.skin).toBe('tan')
-    expect(pub.equipped.base).toBe('base-scribe')
+    expect(pub.appearance.expression).toBe('bright')
+    expect(pub.equipped.base).toBe('base-seeker')
     expect(pub.equipped.color).toBe('color-dawn')
+    expect(pub.equipped.accessory).toBe('acc-glasses')
     expect('ownedIds' in pub).toBe(false)
 
     const fromJson = publicAvatarFromStateJson({
@@ -162,7 +164,7 @@ describe('public avatar privacy', () => {
       esvApiKey: 'secret',
       cosmetics: migrated,
     })
-    expect(fromJson.appearance.face).toBe('bright')
+    expect(fromJson.appearance.expression).toBe('bright')
     expect(JSON.stringify(fromJson)).not.toMatch(/secret|999|ownedIds/)
   })
 
@@ -170,9 +172,9 @@ describe('public avatar privacy', () => {
     const migrated = migrateCosmeticsState({
       ownedIds: ['base-seeker', 'color-deep', 'frame-simple'],
       equipped: {
-        base: 'base-scribe',
+        base: 'base-seeker',
         color: 'color-dawn',
-        accessory: 'acc-lamp',
+        accessory: 'acc-glasses',
         frame: 'frame-gold',
       },
     })
@@ -180,6 +182,28 @@ describe('public avatar privacy', () => {
     expect(migrated.equipped.color).toBe('color-deep')
     expect(migrated.equipped.accessory).toBeNull()
     expect(migrated.equipped.frame).toBe('frame-simple')
+  })
+
+  it('drops retired catalog ids from owned inventory', () => {
+    const migrated = migrateCosmeticsState({
+      ownedIds: ['base-seeker', 'color-deep', 'frame-simple', 'base-scribe', 'acc-lamp'],
+      equipped: {
+        base: 'base-scribe',
+        color: 'color-deep',
+        accessory: 'acc-lamp',
+        frame: 'frame-simple',
+      },
+    })
+    expect(migrated.ownedIds).not.toContain('base-scribe')
+    expect(migrated.ownedIds).not.toContain('acc-lamp')
+    expect(migrated.equipped.base).toBe('base-seeker')
+    expect(migrated.equipped.accessory).toBeNull()
+  })
+
+  it('migrates legacy face field onto expression', () => {
+    expect(migrateAppearance({ face: 'thoughtful' } as { face: string }).expression).toBe(
+      'thoughtful',
+    )
   })
 
   it('falls back gracefully for legacy / missing avatar data', () => {
@@ -210,19 +234,19 @@ describe('server shop purchase safeguards', () => {
   it('forces shop activity keys from itemId (ignores spoofed client keys)', () => {
     const id = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'
     const spoofed = validateGemEvent(
-      shopEvent(id, 'base-scribe', 'shop:base-scribe:replay'),
+      shopEvent(id, 'acc-glasses', 'shop:acc-glasses:replay'),
       NOW,
     )
     expect(spoofed.ok).toBe(true)
     if (spoofed.ok) {
-      expect(spoofed.event.activityKey).toBe(shopPurchaseActivityKey('base-scribe'))
+      expect(spoofed.event.activityKey).toBe(shopPurchaseActivityKey('acc-glasses'))
       expect(spoofed.event.deltaGems).toBe(-40)
     }
   })
 
   it('rejects duplicate shop activity in one batch', () => {
-    const a = shopEvent('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'base-scribe')
-    const b = shopEvent('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', 'base-scribe')
+    const a = shopEvent('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'acc-glasses')
+    const b = shopEvent('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', 'acc-glasses')
     const { accepted, rejected } = validateGemEventBatch([a, b], NOW)
     expect(accepted).toHaveLength(1)
     expect(rejected.some((r) => r.error.includes('Duplicate activity'))).toBe(true)
@@ -232,26 +256,26 @@ describe('server shop purchase safeguards', () => {
     const starters = starterCosmeticIds()
     const first = simulateShopPurchases(
       { balance: 100, owned: starters },
-      ['base-scribe', 'base-scribe', 'color-dawn'],
+      ['acc-glasses', 'acc-glasses', 'color-dawn'],
     )
-    // Duplicate base-scribe collapses via activity key; color-dawn still fits (100-40-25).
-    expect(first.inserted).toEqual(['base-scribe', 'color-dawn'])
-    expect(first.duplicates).toEqual(['base-scribe'])
+    // Duplicate acc-glasses collapses via activity key; color-dawn still fits (100-40-25).
+    expect(first.inserted).toEqual(['acc-glasses', 'color-dawn'])
+    expect(first.duplicates).toEqual(['acc-glasses'])
     expect(first.balance).toBe(35)
-    expect(first.owned).toContain('base-scribe')
+    expect(first.owned).toContain('acc-glasses')
     expect(first.owned).toContain('color-dawn')
 
     const concurrent = simulateShopPurchases(
       { balance: 40, owned: starters },
-      ['base-scribe', 'base-watchman'],
+      ['acc-glasses', 'acc-hat'],
     )
-    expect(concurrent.inserted).toEqual(['base-scribe'])
+    expect(concurrent.inserted).toEqual(['acc-glasses'])
     expect(concurrent.rejected).toContain('Insufficient gems')
     expect(concurrent.balance).toBe(0)
 
     const already = simulateShopPurchases(
-      { balance: 200, owned: [...starters, 'base-scribe'] },
-      ['base-scribe'],
+      { balance: 200, owned: [...starters, 'acc-glasses'] },
+      ['acc-glasses'],
     )
     expect(already.inserted).toEqual([])
     expect(already.rejected).toContain('Already owns this item')

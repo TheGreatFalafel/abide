@@ -685,18 +685,20 @@ select:focus-visible {
 
 .path-secondary {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
 }
 
 .path-chip {
   display: grid;
-  gap: 0.15rem;
+  gap: 0.2rem;
+  align-content: start;
   text-align: left;
   border: 1px solid #d5e5df;
   background: #fff;
   border-radius: 14px;
-  padding: 0.7rem 0.75rem;
+  padding: 0.85rem 0.9rem;
+  min-height: 4.5rem;
   font-weight: 800;
   color: var(--ink);
   cursor: pointer;
@@ -705,7 +707,9 @@ select:focus-visible {
 
 .path-chip span {
   font-weight: 600;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
+  line-height: 1.3;
+  color: var(--ink-soft);
 }
 
 .path-chip:hover {
@@ -2530,7 +2534,7 @@ a.btn {
   }
 
   .path-secondary {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -3147,16 +3151,17 @@ a.btn {
 }
 
 .shop-freeze {
-  margin: 0.5rem 0 0.85rem;
+  margin: 1.5rem 0 0.5rem;
 }
 
 .shop-freeze-card {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.85rem;
+  align-items: flex-start;
   background: #fff;
   border: 1px solid #d5e5df;
-  border-radius: 14px;
-  padding: 0.75rem;
+  border-radius: 16px;
+  padding: 0.9rem;
 }
 
 .shop-freeze-swatch {
@@ -3168,20 +3173,20 @@ a.btn {
   font-size: 0.82rem;
 }
 
-.shop-preview {
-  display: grid;
-  justify-items: center;
-  gap: 0.35rem;
-  margin: 0.75rem 0 1rem;
+.shop-cosmetics {
+  margin-top: 0.35rem;
 }
 
 .shop-section-title {
-  margin: 1.25rem 0 0.25rem;
-  font-size: 1.05rem;
+  margin: 0 0 0.3rem;
+  font-family: var(--font-brand);
+  font-size: 1.15rem;
+  color: var(--teal-deep);
 }
 
 .shop-section-blurb {
-  margin: 0 0 0.75rem;
+  margin: 0 0 0.85rem;
+  line-height: 1.45;
 }
 
 .shop-card.previewing {
@@ -3207,22 +3212,94 @@ a.btn {
 
 .avatar-customizer {
   display: grid;
-  gap: 0.85rem;
-  margin: 0.5rem 0 1.25rem;
-  padding: 1rem;
-  background: linear-gradient(180deg, #fff 0%, #f3f8f5 100%);
+  gap: 1.15rem;
+  margin: 0.5rem 0 1.35rem;
+  padding: 1.15rem 1.15rem 1.25rem;
+  background: #fff;
   border: 1px solid #d5e5df;
+  border-radius: 20px;
+  box-shadow: 0 10px 28px rgba(15, 55, 45, 0.05);
+}
+
+.avatar-studio-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1rem 1.15rem;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e4eee9;
+}
+
+.avatar-customizer-copy {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.avatar-customizer-stage {
+  display: grid;
+  place-items: center;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: #eef3f7;
+  border: 1px solid #d9e3ec;
+  box-shadow: inset 0 1px 0 #fff9;
+}
+
+.avatar-customizer-stage .abide-avatar {
+  transform: translateY(-2px);
+  filter: drop-shadow(0 6px 12px rgba(30, 40, 60, 0.1));
+}
+
+.avatar-customizer-copy h3 {
+  margin: 0;
+  font-family: var(--font-brand);
+  font-size: 1.2rem;
+  color: var(--teal-deep);
+}
+
+.avatar-customizer-copy .muted {
+  margin: 0;
+  line-height: 1.45;
+  font-size: 0.9rem;
+}
+
+.avatar-preview-cue {
+  margin: 0.35rem 0 0;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--teal) 12%, #fff);
+  border: 1px solid color-mix(in srgb, var(--teal) 28%, #d5e5df);
+  color: var(--teal-deep);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.avatar-customizer-controls {
+  display: grid;
+  gap: 1rem;
+}
+
+.avatar-group {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.85rem 0.9rem;
+  background: #f7faf8;
+  border: 1px solid #e4eee9;
   border-radius: 16px;
 }
 
-.avatar-customizer-preview {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.avatar-customizer-preview h3 {
-  margin: 0 0 0.25rem;
+.avatar-group-title {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--teal-deep);
 }
 
 .avatar-opt-row {
@@ -3231,68 +3308,180 @@ a.btn {
   padding: 0;
   display: grid;
   gap: 0.4rem;
+  min-width: 0;
 }
 
 .avatar-opt-row legend {
-  font-weight: 800;
-  font-size: 0.85rem;
+  float: none;
+  width: auto;
+  max-width: 100%;
+  padding: 0;
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  font-weight: 700;
+  font-size: 0.8rem;
   color: var(--ink-soft);
-  margin-bottom: 0.15rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.avatar-opt-current {
+  font-weight: 800;
+  color: var(--teal-deep);
+  font-size: 0.78rem;
+}
+
+.avatar-opt-current::before {
+  content: '·';
+  margin-right: 0.35rem;
+  color: #9bb0a8;
+  font-weight: 700;
+}
+
+.avatar-segments {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 0.3rem;
+  padding: 0.25rem;
+  background: #fff;
+  border: 1px solid #d5e5df;
+  border-radius: 12px;
+}
+
+.avatar-segment {
+  border: none;
+  background: transparent;
+  border-radius: 9px;
+  min-height: 38px;
+  padding: 0.35rem 0.4rem;
+  font-weight: 750;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.avatar-segment.active {
+  background: color-mix(in srgb, var(--teal) 14%, #fff);
+  color: var(--teal-deep);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--teal) 55%, #d5e5df);
+}
+
+.avatar-color-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.avatar-color-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.14);
+  cursor: pointer;
+  padding: 0;
+}
+
+.avatar-color-dot.active {
+  box-shadow:
+    0 0 0 2px var(--teal),
+    0 0 0 4px color-mix(in srgb, var(--teal) 18%, transparent);
 }
 
 .avatar-opt-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: 0.3rem;
 }
 
 .avatar-chip {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.35rem;
-  border: 1px solid #c9ddd6;
+  border: 1px solid #d0ddd7;
   background: #fff;
   border-radius: 999px;
-  padding: 0.4rem 0.7rem;
-  min-height: 40px;
+  padding: 0.35rem 0.65rem;
+  min-height: 34px;
   font-weight: 700;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   color: var(--ink);
   cursor: pointer;
 }
 
 .avatar-chip.active {
-  background: color-mix(in srgb, var(--teal) 14%, #fff);
+  background: color-mix(in srgb, var(--teal) 12%, #fff);
   border-color: var(--teal);
   color: var(--teal-deep);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--teal) 20%, transparent);
 }
 
 .avatar-swatch {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   border: 1px solid rgba(0, 0, 0, 0.12);
   flex-shrink: 0;
 }
 
+.abide-avatar.human {
+  border-radius: 50%;
+  overflow: hidden;
+}
+
 .abide-avatar.human svg {
   display: block;
-  border-radius: 16px;
+  border-radius: 50%;
+}
+
+.avatar-hit .abide-avatar {
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3px #d5e5df;
+}
+
+.circle-avatar.abide-avatar,
+.abide-avatar.circle-avatar {
+  border-radius: 50%;
 }
 
 @media (max-width: 480px) {
-  .avatar-customizer-preview {
-    flex-direction: column;
+  .avatar-studio-head {
+    grid-template-columns: 1fr;
+    justify-items: center;
     text-align: center;
+  }
+
+  .avatar-customizer-copy {
+    justify-items: center;
+  }
+
+  .avatar-preview-cue {
+    justify-self: center;
+  }
+
+  .avatar-opt-row legend {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .avatar-opt-chips {
+    justify-content: center;
+  }
+
+  .avatar-color-row {
+    justify-content: center;
   }
 }
 
 .shop-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-bottom: 0.85rem;
+  gap: 0.4rem;
+  margin-bottom: 0.9rem;
 }
 
 .shop-filters button {
@@ -3306,26 +3495,28 @@ a.btn {
 }
 
 .shop-filters button.active {
-  background: var(--teal);
+  background: color-mix(in srgb, var(--teal) 14%, #fff);
   border-color: var(--teal);
-  color: #fff;
+  color: var(--teal-deep);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--teal) 18%, transparent);
 }
 
 .shop-grid {
   list-style: none;
   margin: 0;
-  padding: 0 0 4rem;
+  padding: 0;
   display: grid;
   gap: 0.75rem;
 }
 
 .shop-card {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.85rem;
+  align-items: center;
   background: #fff;
   border: 1px solid #d5e5df;
-  border-radius: 14px;
-  padding: 0.75rem;
+  border-radius: 16px;
+  padding: 0.85rem;
 }
 
 .shop-card.owned {
@@ -3350,11 +3541,30 @@ a.btn {
 .shop-card-body {
   flex: 1;
   min-width: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.shop-card-title {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.shop-card-title strong {
+  display: block;
+  font-size: 0.98rem;
+  line-height: 1.25;
+}
+
+.shop-card-slot {
+  display: block;
+  font-size: 0.78rem;
 }
 
 .shop-card-body p {
-  margin: 0.25rem 0 0.5rem;
+  margin: 0;
   font-size: 0.88rem;
+  line-height: 1.4;
   color: var(--ink-soft);
 }
 
@@ -3362,19 +3572,53 @@ a.btn {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.2rem;
+}
+
+.shop-card-status {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.shop-card-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-left: auto;
 }
 
 .btn.tiny {
   width: auto;
-  margin-top: 0;
-  padding: 0.4rem 0.75rem;
+  min-width: 4.5rem;
+  margin: 0;
+  padding: 0.4rem 0.85rem;
   min-height: 40px;
   font-size: 0.85rem;
+  border-radius: 999px;
+}
+
+.btn.tiny.primary {
+  width: auto;
+  margin: 0;
+  box-shadow: 0 6px 14px rgba(15, 110, 92, 0.22);
+}
+
+.btn.tiny.active-preview {
+  border-color: var(--teal);
+  color: var(--teal-deep);
+  background: color-mix(in srgb, var(--teal) 10%, #fff);
 }
 
 .pill.risk {
   color: var(--danger);
+}
+
+.pill.good {
+  color: var(--good);
 }
 
 /* —— Phase 6: Bible Game Center —— */
@@ -3914,11 +4158,6 @@ a.btn {
   resize: vertical;
 }
 
-.shop-filters button.active {
-  background: color-mix(in srgb, var(--teal, #0f6e5c) 14%, #fff);
-  border-color: var(--teal, #0f6e5c);
-  font-weight: 700;
-}
 
 /* —— Biblical Greek / Hebrew —— */
 .learn-tabs {

@@ -231,7 +231,7 @@ describe('server-authoritative freeze purchase simulation', () => {
   })
 
   it('cosmetic shop_purchase deltas remain unchanged (regression)', () => {
-    expect(computeGemDelta('shop_purchase', { itemId: 'base-scribe' })).toBe(-40)
+    expect(computeGemDelta('shop_purchase', { itemId: 'acc-glasses' })).toBe(-40)
     expect(computeGemDelta('shop_purchase', { itemId: 'base-seeker' })).toBe(0)
   })
 })
