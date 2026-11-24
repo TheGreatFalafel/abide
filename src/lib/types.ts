@@ -1,6 +1,7 @@
 import type { CurriculumDifficulty } from '../data/planQuizzes'
 import type { LanguageProgress } from '../data/languages/types'
 import type { TranslationId } from '../data/translations'
+import type { CosmeticsState } from './cosmetics'
 
 export type { CurriculumDifficulty }
 
@@ -387,23 +388,8 @@ export type UserState = {
   gemsEarnedTotal: number
   /** Lifetime Memory Quests finished (achievement tracking). */
   memoryQuestsCompleted: number
-  cosmetics: {
-    ownedIds: string[]
-    equipped: {
-      base: string
-      color: string
-      accessory: string | null
-      frame: string
-    }
-    /** Free human appearance — migrated when missing. */
-    appearance?: {
-      skin: string
-      hair: string
-      hairColor: string
-      face: string
-      clothes: string
-    }
-  }
+  /** Gem inventory + free appearance (migrated via migrateCosmeticsState). */
+  cosmetics: CosmeticsState
   /** Bible Game Center progress (rewards keyed separately via event activity keys). */
   gameStats: {
     completedGameIds: string[]
